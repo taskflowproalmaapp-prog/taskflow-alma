@@ -45,7 +45,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto, debug_gemini: datos, debug_status: respuesta.status }),
+      body: JSON.stringify({ texto }),
     };
   } catch (error) {
     return {
