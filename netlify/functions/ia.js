@@ -25,7 +25,7 @@ exports.handler = async function (event) {
       return { statusCode: 400, body: JSON.stringify({ error: "Falta el prompt" }) };
     }
 
-    const modelo = "gemini-2.0-flash";
+    const modelo = "gemini-1.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
 
     const parts = [{ text: prompt }];
@@ -55,4 +55,3 @@ exports.handler = async function (event) {
       body: JSON.stringify({ error: "Error al hablar con la IA: " + error.message }),
     };
   }
-};
