@@ -28,6 +28,16 @@ exports.handler = async function (event) {
     const modelo = "gemini-1.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
 
+    // DEBUG TEMPORAL: consultamos qué modelos están disponibles para esta clave.
+    let modelosDisponibles = null;
+    try {
+      const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+      const listResp = await fetch(listUrl);
+      modelosDisponibles = await listResp.json();
+    } catch (e) {
+      modelosDisponibles = { error: "No se pudo listar modelos: " + e.message };
+    }
+
     const parts = [{ text: prompt }];
     if (image && image.data) {
       parts.push({ inline_data: { mime_type: image.mediaType || "image/png", data: image.data } });
@@ -45,14 +55,12 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto, debug_gemini: datos, debug_status: respuesta.status }),
+      body: JSON.stringify({ texto, debug_gemini: datos, debug_status: respuesta.status, debug_modelos_disponibles: modelosDisponibles }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "Error al hablar con la IA: " + error.message,
-      }),
+      body: JSON.stringify({ error: "Error al hablar con la IA: " + error.message }),
     };
   }
 };
