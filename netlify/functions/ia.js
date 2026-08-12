@@ -25,18 +25,8 @@ exports.handler = async function (event) {
       return { statusCode: 400, body: JSON.stringify({ error: "Falta el prompt" }) };
     }
 
-    const modelo = "gemini-1.5-flash";
+    const modelo = "gemini-2.5-flash-lite";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
-
-    // DEBUG TEMPORAL: consultamos qué modelos están disponibles para esta clave.
-    let modelosDisponibles = null;
-    try {
-      const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
-      const listResp = await fetch(listUrl);
-      modelosDisponibles = await listResp.json();
-    } catch (e) {
-      modelosDisponibles = { error: "No se pudo listar modelos: " + e.message };
-    }
 
     const parts = [{ text: prompt }];
     if (image && image.data) {
@@ -55,7 +45,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto, debug_gemini: datos, debug_status: respuesta.status, debug_modelos_disponibles: modelosDisponibles }),
+      body: JSON.stringify({ texto }),
     };
   } catch (error) {
     return {
