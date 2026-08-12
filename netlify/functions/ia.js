@@ -45,13 +45,14 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      // DEBUG TEMPORAL: incluimos la respuesta cruda de Gemini para diagnosticar.
-      // Quitar el campo "debug_gemini" una vez resuelto el problema.
       body: JSON.stringify({ texto, debug_gemini: datos, debug_status: respuesta.status }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error al hablar con la IA: " + error.message }),
+      body: JSON.stringify({
+        error: "Error al hablar con la IA: " + error.message,
+      }),
     };
   }
+};
