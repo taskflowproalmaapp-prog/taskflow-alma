@@ -298,6 +298,14 @@ a{color:inherit;}
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
   padding:24px 28px;margin-bottom:18px;box-shadow:var(--shadow-sm);
 }
+.dash-greeting-row{display:flex;align-items:center;gap:12px;}
+.dash-avatar{
+  width:46px;height:46px;border-radius:50%;flex-shrink:0;cursor:pointer;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#8B9DF0,#C9A7F5);display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:18px;box-shadow:0 2px 8px rgba(139,157,240,.35);
+}
+.dash-avatar:hover{filter:brightness(1.05);}
+.dash-avatar img{width:100%;height:100%;object-fit:cover;}
 .dash-header-text h1{font-size:23px;margin-bottom:5px;}
 .dash-header-text p{color:var(--text-muted);font-size:13.5px;margin:0 0 10px;}
 .dash-meta-row{font-size:11.6px;color:var(--text-faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -1076,6 +1084,10 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .af-hold-mic.qu-hold-mic.locked{box-shadow:0 0 0 10px rgba(63,174,147,.3),0 4px 22px rgba(63,174,147,.6);}
 .af-lock-hint{font-size:11.5px;font-weight:600;color:#7A6BA8;opacity:0;transition:opacity .15s;min-height:16px;}
 .af-lock-hint.show{opacity:1;}
+.af-wave{display:flex;align-items:center;justify-content:center;gap:4px;height:22px;opacity:0;transition:opacity .15s;}
+.af-wave.show{opacity:1;}
+.af-wave span{width:4px;height:100%;border-radius:3px;background:linear-gradient(180deg,#8B9DF0,#C9A7F5);transform:scaleY(.3);transition:transform .12s ease;}
+.af-wave.af-wave-teal span{background:linear-gradient(180deg,#3FAE93,#7FD9C4);}
 .af-hold-confirm-bar{display:none;gap:10px;width:100%;margin-top:4px;}
 .af-hold-confirm-bar.show{display:flex;}
 .af-hold-confirm-bar .btn{flex:1;}
@@ -1524,7 +1536,14 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
         <!-- A. Encabezado -->
         <div class="dash-header" id="dashHeader">
           <div class="dash-header-text">
-            <h1 id="dashGreeting">Hola</h1>
+            <div class="dash-greeting-row">
+              <label class="dash-avatar" id="dashAvatarLabel" title="Cambiar foto de perfil">
+                <img id="dashAvatarImg" class="hidden" alt="Tu foto">
+                <span id="dashAvatarInitial">M</span>
+                <input type="file" accept="image/*" id="dashAvatarInput" class="hidden">
+              </label>
+              <h1 id="dashGreeting">Hola</h1>
+            </div>
             <p id="dashSubtitle">Este es el estado general de tu trabajo</p>
             <div class="dash-meta-row">
               <span id="dashDateFull"></span>
@@ -3280,6 +3299,17 @@ function renderDashHeader(){
   const greeting = hour<12 ? "Buenos días" : hour<19 ? "Buenas tardes" : "Buenas noches";
   const name = (DB.config.userName||"Usuario").split(" ")[0];
   document.getElementById("dashGreeting").textContent = `${greeting}, ${name}`;
+  const avatarImg = document.getElementById("dashAvatarImg");
+  const avatarInitial = document.getElementById("dashAvatarInitial");
+  if(DB.config.profilePhoto){
+    avatarImg.src = DB.config.profilePhoto;
+    avatarImg.classList.remove("hidden");
+    avatarInitial.classList.add("hidden");
+  }else{
+    avatarImg.classList.add("hidden");
+    avatarInitial.classList.remove("hidden");
+    avatarInitial.textContent = (name||"U").charAt(0).toUpperCase();
+  }
 
   const todayTasks = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && isTaskToday(t));
   const personalToday = todayTasks.filter(t=>t.taskType==="personal");
@@ -4151,6 +4181,24 @@ document.querySelectorAll("#dashPeriodToggle button").forEach(btn=>{
 
 document.getElementById("dashSpeakBtn").addEventListener("click", ()=>{
   openAlmaSpeak();
+});
+document.getElementById("dashAvatarLabel").addEventListener("click", (e)=>{
+  // el <label> ya abre el input al hacer clic; esto es solo por si el navegador no lo hace solo
+});
+document.getElementById("dashAvatarInput").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  try{
+    const base64 = await fileToBase64(file);
+    const mediaType = file.type || "image/png";
+    DB.config.profilePhoto = `data:${mediaType};base64,${base64}`;
+    saveDB();
+    renderDashHeader();
+    toast("Foto de perfil actualizada. 🌱","success");
+  }catch(err){
+    toast("No se pudo cargar la imagen.","error");
+  }
 });
 document.getElementById("dashCaptureBtn").addEventListener("click", ()=>{
   openTaskModal(null);
@@ -5409,6 +5457,7 @@ function almaEntryMethod(method){
       <div class="af-hold-wrap">
         <div class="af-lock-hint" id="afLockHint">↑ Desliza para no tener que sostenerlo</div>
         <div class="af-hold-timer" id="afHoldTimer">0s</div>
+        <div class="af-wave" id="afWave"><span></span><span></span><span></span><span></span><span></span></div>
         <button type="button" class="af-hold-mic" id="afHoldMicBtn" aria-label="Mantén presionado para hablar">${iconMic()}</button>
         <div class="af-hint show" id="afHoldHint">Mantén presionado y habla, o toca una vez para grabar sin soltar</div>
         <div class="af-hold-confirm-bar" id="afHoldConfirmBar">
@@ -5588,6 +5637,7 @@ function almaConfirmSmartTask(rawText, parsed){
   if(t.startDate) resumen.push(`la harías ${t.startDate}${t.executionTime?" "+t.executionTime:""}`);
   if(!t.startDate) resumen.push(`en "Por agendar"`);
   resumen.push(`prioridad ${t.priority}`);
+  playSuccessChime();
   toast(`✨ Creé "${t.title}" · ${resumen.join(" · ")}`, "success");
 }
 // Cuando el mismo audio menciona VARIAS tareas/actividades distintas: muestra una
@@ -5650,6 +5700,7 @@ function almaConfirmMultiVoiceTasks(rawText){
   });
   saveDB(); recomputeAll(); saveDB(); render();
   closeGenericModal();
+  playSuccessChime();
   toast(`✨ Creé ${chosen.length} ${chosen.length===1?"tarea":"tareas"}${sinFecha?` · ${sinFecha} en "Por agendar"`:""}.`,"success");
   almaMultiVoiceItems = [];
 }
@@ -5823,6 +5874,7 @@ function quickUpdateMethod(tid, method){
       <div class="af-hold-wrap">
         <div class="af-lock-hint" id="afLockHint">↑ Desliza para no tener que sostenerlo</div>
         <div class="af-hold-timer" id="afHoldTimer">0s</div>
+        <div class="af-wave af-wave-teal" id="afWave"><span></span><span></span><span></span><span></span><span></span></div>
         <button type="button" class="af-hold-mic qu-hold-mic" id="afHoldMicBtn" aria-label="Mantén presionado para hablar">${iconMic()}</button>
         <div class="af-hint show" id="afHoldHint">Mantén presionado y cuenta el avance, o toca una vez para grabar sin soltar</div>
         <div class="af-hold-confirm-bar" id="afHoldConfirmBar">
@@ -5864,6 +5916,7 @@ function setupUpdateHoldMic(container, tid){
   const timerEl = container.querySelector("#afHoldTimer");
   const hintEl = container.querySelector("#afHoldHint");
   const lockHintEl = container.querySelector("#afLockHint");
+  const waveEl = container.querySelector("#afWave");
   const confirmBar = container.querySelector("#afHoldConfirmBar");
   const confirmBtn = container.querySelector("#afHoldConfirmBtn");
   const cancelBtn = container.querySelector("#afHoldCancelBtn");
@@ -5878,27 +5931,23 @@ function setupUpdateHoldMic(container, tid){
     btn.addEventListener("click", ()=>toast(hintEl.textContent, "info"));
     return;
   }
-  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0;
-  let held = false, locked = false, cancelled = false;
+  let recognition = null, committedText = "", sessionFinal = "", timerInterval = null, seconds = 0;
+  let held = false, locked = false, cancelled = false, stopWave = null;
   let pointerStartY = 0, pointerStartTime = 0;
   const MAX_HOLD_SECONDS = 120;
   const TAP_MAX_MS = 300;
   const LOCK_PX = 45;
 
   const startRecognitionSession = ()=>{
+    sessionFinal = "";
     recognition = new SpeechRecognitionAPI();
     recognition.lang = (navigator.language && navigator.language.startsWith("es")) ? navigator.language : "es-ES";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = (event)=>{
-      let interim = "";
       for(let i=event.resultIndex; i<event.results.length; i++){
-        const t = event.results[i][0].transcript;
-        if(event.results[i].isFinal) finalTranscript += t + " ";
-        else interim += t;
+        if(event.results[i].isFinal) sessionFinal += event.results[i][0].transcript + " ";
       }
-      const preview = (finalTranscript + interim).trim();
-      hintEl.textContent = preview ? "🎙️ " + preview : "🎙️ Escuchando...";
     };
     recognition.onerror = (event)=>{
       if(event.error==="no-speech") return; // el navegador reintenta solo vía onend
@@ -5910,13 +5959,14 @@ function setupUpdateHoldMic(container, tid){
       }
     };
     recognition.onend = ()=>{
+      committedText = mergeSpokenText(committedText, sessionFinal);
       // En el celular, el motor de voz se corta solo cada pocos segundos. Si el
       // usuario TODAVÍA está grabando, reiniciamos por dentro sin que se note.
       if(held && seconds < MAX_HOLD_SECONDS){
         try{ startRecognitionSession(); return; }catch(e){ /* sigue abajo si falla el reinicio */ }
       }
       if(cancelled){ cancelled = false; return; }
-      const raw = finalTranscript.trim();
+      const raw = committedText.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
       quickUpdateAnalyze(tid, {text: raw});
     };
@@ -5926,11 +5976,13 @@ function setupUpdateHoldMic(container, tid){
   const beginRecording = ()=>{
     if(held) return;
     held = true; locked = false; cancelled = false;
-    finalTranscript = ""; seconds = 0;
+    committedText = ""; sessionFinal = ""; seconds = 0;
     timerEl.textContent = "0s"; timerEl.classList.add("show");
     btn.classList.add("holding");
     hintEl.textContent = "🎙️ Escuchando...";
     if(lockHintEl) lockHintEl.classList.add("show");
+    playMicTone("start");
+    stopWave = startVoiceWave(waveEl);
     startRecognitionSession();
     timerInterval = setInterval(()=>{
       seconds++; timerEl.textContent = seconds+"s";
@@ -5954,7 +6006,9 @@ function setupUpdateHoldMic(container, tid){
     timerEl.classList.remove("show");
     if(lockHintEl) lockHintEl.classList.remove("show");
     if(confirmBar) confirmBar.classList.remove("show");
+    if(stopWave){ stopWave(); stopWave=null; }
     clearInterval(timerInterval);
+    playMicTone("stop");
     if(recognition){ try{ recognition.stop(); }catch(e){} }
   };
 
@@ -5966,7 +6020,9 @@ function setupUpdateHoldMic(container, tid){
     timerEl.classList.remove("show");
     if(lockHintEl) lockHintEl.classList.remove("show");
     if(confirmBar) confirmBar.classList.remove("show");
+    if(stopWave){ stopWave(); stopWave=null; }
     clearInterval(timerInterval);
+    playMicTone("stop");
     if(recognition){ try{ recognition.stop(); }catch(e){} }
     hintEl.textContent = "Cancelado. Mantén presionado o toca para intentar de nuevo.";
   };
@@ -6065,6 +6121,7 @@ function quickUpdateApply(tid, input, parsed, st){
   t.updatedAt = TODAY();
   logActivity("task_updated", `Actualizaste "${t.title}": ${logText}`);
   recomputeAll(); saveDB(); closeGenericModal(); render();
+  playSuccessChime();
   toast(`✨ "${t.title}" actualizada a "${st.label}".`, "success");
 }
 function askAlmaScheduleMode(tid, title){
@@ -8389,6 +8446,82 @@ let activeMicButton = null;
 let activeRecognition = null;
 let activeMicSafetyTimer = null;
 
+// Sonido cortito estilo WhatsApp al empezar/terminar de grabar (sin archivos de audio,
+// se genera con un tono simple). Si el navegador bloquea el audio, falla en silencio.
+let _micAudioCtx = null;
+function playMicTone(kind){
+  try{
+    if(!_micAudioCtx) _micAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _micAudioCtx;
+    if(ctx.state === "suspended") ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = "sine";
+    const now = ctx.currentTime;
+    if(kind==="start"){ o.frequency.setValueAtTime(700, now); o.frequency.exponentialRampToValueAtTime(1000, now+0.09); }
+    else { o.frequency.setValueAtTime(1000, now); o.frequency.exponentialRampToValueAtTime(650, now+0.09); }
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.exponentialRampToValueAtTime(0.18, now+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, now+0.13);
+    o.start(now); o.stop(now+0.14);
+  }catch(e){ /* audio no disponible: seguimos sin sonido */ }
+}
+// Un "ding" suave de confirmación cuando Alma termina de crear o actualizar algo
+// (para que la interacción no se sienta muda).
+function playSuccessChime(){
+  try{
+    if(!_micAudioCtx) _micAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _micAudioCtx;
+    if(ctx.state === "suspended") ctx.resume();
+    const notes = [880, 1108.73]; // un intervalo simple y agradable (A5 -> C#6)
+    notes.forEach((freq, i)=>{
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = "sine";
+      const start = ctx.currentTime + i*0.09;
+      o.frequency.setValueAtTime(freq, start);
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(0.16, start+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, start+0.35);
+      o.start(start); o.stop(start+0.36);
+    });
+  }catch(e){ /* audio no disponible: seguimos sin sonido */ }
+}
+// Anima las barritas de "onda de sonido" mientras se está grabando (look tipo
+// ChatGPT/Siri), en vez de mostrar el texto reconocido letra por letra.
+function startVoiceWave(waveEl){
+  if(!waveEl) return ()=>{};
+  const bars = waveEl.querySelectorAll("span");
+  const interval = setInterval(()=>{
+    bars.forEach(b=>{ b.style.transform = `scaleY(${(0.25 + Math.random()*0.9).toFixed(2)})`; });
+  }, 140);
+  waveEl.classList.add("show");
+  return ()=>{ clearInterval(interval); waveEl.classList.remove("show"); bars.forEach(b=>b.style.transform="scaleY(.3)"); };
+}
+// Al reiniciar el reconocimiento por dentro (el motor se corta solo en el celular),
+// cada sesión nueva vuelve a transcribir desde su propio inicio y puede re-escuchar
+// parte de lo ya dicho, duplicando palabras ("está está reagenda está reagenda la...").
+// Esta función junta el texto ya confirmado con el de la sesión nueva, recortando
+// el solape entre el final de uno y el principio del otro para no repetir nada.
+function mergeSpokenText(committed, incoming){
+  committed = (committed||"").trim();
+  incoming = (incoming||"").trim();
+  if(!committed) return incoming;
+  if(!incoming) return committed;
+  const cWords = committed.split(/\s+/);
+  const iWords = incoming.split(/\s+/);
+  const maxOverlap = Math.min(cWords.length, iWords.length, 12);
+  let overlap = 0;
+  for(let k=maxOverlap; k>0; k--){
+    const tail = cWords.slice(-k).join(" ").toLowerCase();
+    const head = iWords.slice(0,k).join(" ").toLowerCase();
+    if(tail===head){ overlap = k; break; }
+  }
+  const restante = iWords.slice(overlap).join(" ");
+  return restante ? (committed + " " + restante).trim() : committed;
+}
+
 function smartFormatSpeech(raw, mode){
   let s = (raw||"").trim();
   if(!s) return s;
@@ -8562,6 +8695,7 @@ function setupHoldMic(container){
   const timerEl = container.querySelector("#afHoldTimer");
   const hintEl = container.querySelector("#afHoldHint");
   const lockHintEl = container.querySelector("#afLockHint");
+  const waveEl = container.querySelector("#afWave");
   const confirmBar = container.querySelector("#afHoldConfirmBar");
   const confirmBtn = container.querySelector("#afHoldConfirmBtn");
   const cancelBtn = container.querySelector("#afHoldCancelBtn");
@@ -8577,27 +8711,27 @@ function setupHoldMic(container){
     return;
   }
 
-  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0;
-  let held = false, locked = false, cancelled = false;
+  // committedText: lo ya confirmado de sesiones de reconocimiento anteriores (si el
+  // motor se reinició por dentro). sessionFinal: lo confirmado en la sesión ACTUAL.
+  let recognition = null, committedText = "", sessionFinal = "", timerInterval = null, seconds = 0;
+  let held = false, locked = false, cancelled = false, stopWave = null;
   let pointerStartY = 0, pointerStartTime = 0;
   const MAX_HOLD_SECONDS = 120; // tope de seguridad (2 min) por si queda grabando sin querer
   const TAP_MAX_MS = 300;       // por debajo de esto, un toque cuenta como "toque rápido" (modo 2)
   const LOCK_PX = 45;           // cuánto hay que deslizar hacia arriba para bloquear (modo 3)
 
   const startRecognitionSession = ()=>{
+    sessionFinal = "";
     recognition = new SpeechRecognitionAPI();
     recognition.lang = (navigator.language && navigator.language.startsWith("es")) ? navigator.language : "es-ES";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = (event)=>{
-      let interim = "";
+      // ya no mostramos el texto en vivo (se reemplazó por las ondas de sonido);
+      // solo acumulamos lo confirmado de ESTA sesión.
       for(let i=event.resultIndex; i<event.results.length; i++){
-        const t = event.results[i][0].transcript;
-        if(event.results[i].isFinal) finalTranscript += t + " ";
-        else interim += t;
+        if(event.results[i].isFinal) sessionFinal += event.results[i][0].transcript + " ";
       }
-      const preview = (finalTranscript + interim).trim();
-      hintEl.textContent = preview ? "🎙️ " + preview : "🎙️ Escuchando...";
     };
     recognition.onerror = (event)=>{
       if(event.error==="no-speech") return; // el navegador reintenta solo vía onend
@@ -8609,6 +8743,10 @@ function setupHoldMic(container){
       }
     };
     recognition.onend = ()=>{
+      // Cada vez que termina una sesión, sumamos lo que alcanzó a confirmar,
+      // recortando cualquier solape con lo ya guardado (evita el texto duplicado
+      // típico del celular, tipo "está está reagenda está reagenda la...").
+      committedText = mergeSpokenText(committedText, sessionFinal);
       // En el celular, el motor de voz se corta solo cada pocos segundos aunque sigas
       // presionando o esté bloqueado (limitación conocida de Android/Chrome). Si el
       // usuario TODAVÍA está grabando, reiniciamos por dentro sin que se note.
@@ -8616,7 +8754,7 @@ function setupHoldMic(container){
         try{ startRecognitionSession(); return; }catch(e){ /* sigue abajo si falla el reinicio */ }
       }
       if(cancelled){ cancelled = false; return; }
-      const raw = finalTranscript.trim();
+      const raw = committedText.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
       almaEntryCreateSmart(raw);
     };
@@ -8626,11 +8764,13 @@ function setupHoldMic(container){
   const beginRecording = ()=>{
     if(held) return;
     held = true; locked = false; cancelled = false;
-    finalTranscript = ""; seconds = 0;
+    committedText = ""; sessionFinal = ""; seconds = 0;
     timerEl.textContent = "0s"; timerEl.classList.add("show");
     btn.classList.add("holding");
     hintEl.textContent = "🎙️ Escuchando...";
     if(lockHintEl) lockHintEl.classList.add("show");
+    playMicTone("start");
+    stopWave = startVoiceWave(waveEl);
     startRecognitionSession();
     timerInterval = setInterval(()=>{
       seconds++; timerEl.textContent = seconds+"s";
@@ -8654,7 +8794,9 @@ function setupHoldMic(container){
     timerEl.classList.remove("show");
     if(lockHintEl) lockHintEl.classList.remove("show");
     if(confirmBar) confirmBar.classList.remove("show");
+    if(stopWave){ stopWave(); stopWave=null; }
     clearInterval(timerInterval);
+    playMicTone("stop");
     if(recognition){ try{ recognition.stop(); }catch(e){} }
   };
 
@@ -8666,7 +8808,9 @@ function setupHoldMic(container){
     timerEl.classList.remove("show");
     if(lockHintEl) lockHintEl.classList.remove("show");
     if(confirmBar) confirmBar.classList.remove("show");
+    if(stopWave){ stopWave(); stopWave=null; }
     clearInterval(timerInterval);
+    playMicTone("stop");
     if(recognition){ try{ recognition.stop(); }catch(e){} }
     hintEl.textContent = "Cancelado. Mantén presionado o toca para intentar de nuevo.";
   };
