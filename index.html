@@ -732,6 +732,7 @@ a{color:inherit;}
 }
 .tasktype-toggle button[data-type="personal"].active{border-color:var(--type-personal);background:color-mix(in srgb, var(--type-personal) 14%, var(--surface));color:var(--type-personal);}
 .tasktype-toggle button[data-type="laboral"].active{border-color:var(--type-laboral);background:color-mix(in srgb, var(--type-laboral) 14%, var(--surface));color:var(--type-laboral);}
+.tasktype-toggle button.active{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 14%, var(--surface));color:var(--primary);}
 .tasktype-badge{
   display:inline-flex;align-items:center;gap:4px;font-size:10.4px;font-weight:700;
   padding:2px 8px;border-radius:20px;white-space:nowrap;
@@ -1591,6 +1592,10 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
         <span>Notificaciones</span>
         <span class="nav-badge" id="navNotifBadge">0</span>
       </li>
+      <li class="nav-item hidden" id="navUsersItem" data-view="usuarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Usuarios</span>
+      </li>
       <li class="nav-item" data-view="configuracion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
         <span>Configuración</span>
@@ -1994,6 +1999,21 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
     </section>
 
     <!-- ---------- CONFIGURACIÓN ---------- -->
+    <section class="view hidden" id="view-usuarios">
+      <div class="view-header">
+        <div>
+          <h1>Usuarios</h1>
+          <p>Cuentas registradas en TaskFlow Pro — visible solo para ti</p>
+        </div>
+        <button class="btn btn-ghost" id="refreshUsersBtn">🔄 Actualizar</button>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <div id="usersListWrap">
+          <div class="t-sub" style="padding:20px 2px;">Cargando...</div>
+        </div>
+      </div>
+    </section>
+
     <section class="view hidden" id="view-configuracion">
       <div class="view-header">
         <div>
@@ -3172,7 +3192,7 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 /* ---------------------------------------------------------------------- *
  * Navegación entre vistas
  * ---------------------------------------------------------------------- */
-const VIEWS = ["dashboard","projects","notas","mytasks","kanban","calendar","gantt","matrix","responsables","reportes","notificaciones","configuracion"];
+const VIEWS = ["dashboard","projects","notas","mytasks","kanban","calendar","gantt","matrix","responsables","reportes","notificaciones","usuarios","configuracion"];
 function showView(view){
   selectedTaskIds.clear();
   VIEWS.forEach(v=>{
@@ -9550,7 +9570,7 @@ function render(){
   const renderers = {
     dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, mytasks: renderTaskList, kanban: renderKanban,
     calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
-    reportes: renderReportes, notificaciones: renderNotificaciones, configuracion: renderConfiguracion,
+    reportes: renderReportes, notificaciones: renderNotificaciones, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
   };
   const fn = renderers[activeView];
   if(fn){
@@ -10216,6 +10236,71 @@ function exportBackup(){
 /* ---------------------------------------------------------------------- *
  * CONFIGURACIÓN — módulo 15
  * ---------------------------------------------------------------------- */
+// Pantalla "Usuarios" (solo visible para la cuenta admin). Muestra quién se ha
+// registrado en la app: usuario, correo y fecha de creación de la cuenta.
+let usersListLoaded = false;
+async function renderUsuariosView(){
+  const wrap = document.getElementById("usersListWrap");
+  if(!wrap) return;
+  const refreshBtn = document.getElementById("refreshUsersBtn");
+  if(refreshBtn && !refreshBtn.dataset.bound){
+    refreshBtn.dataset.bound = "1";
+    refreshBtn.addEventListener("click", ()=>{ usersListLoaded=false; renderUsuariosView(); });
+  }
+  if(usersListLoaded) return; // evita recargar cada vez que render() corre por otro motivo
+  usersListLoaded = true;
+  wrap.innerHTML = `<div class="t-sub" style="padding:20px 2px;">Cargando...</div>`;
+  try{
+    const r = await apiAuth("listUsers", { token: getAuthToken() });
+    const list = r.users || [];
+    if(!list.length){
+      wrap.innerHTML = `<div class="t-sub" style="padding:20px 2px;">Todavía no hay cuentas registradas.</div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+          <tr style="text-align:left;color:var(--text-muted);border-bottom:1.5px solid var(--border);">
+            <th style="padding:8px 6px;">Usuario</th>
+            <th style="padding:8px 6px;">Correo</th>
+            <th style="padding:8px 6px;">Creada</th>
+            <th style="padding:8px 6px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(u=>`
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px 6px;font-weight:700;">${esc(u.username)}</td>
+              <td style="padding:8px 6px;">${esc(u.email||"—")}</td>
+              <td style="padding:8px 6px;color:var(--text-muted);">${u.createdAt ? new Date(u.createdAt).toLocaleString() : "—"}</td>
+              <td style="padding:8px 6px;text-align:right;">
+                <button type="button" class="btn btn-ghost btn-sm" data-delete-user="${esc(u.username)}" style="color:var(--danger);">🗑️ Eliminar</button>
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">${list.length} cuenta${list.length===1?"":"s"} en total.</p>`;
+    wrap.querySelectorAll("[data-delete-user]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const uname = btn.dataset.deleteUser;
+        if(!confirm(`¿Eliminar por completo la cuenta "${uname}" y todos sus datos? Esto no se puede deshacer.`)) return;
+        btn.disabled = true; btn.textContent = "Eliminando...";
+        try{
+          await apiAuth("deleteUser", { token: getAuthToken(), targetUsername: uname });
+          toast(`Cuenta "${uname}" eliminada.`,"success");
+          usersListLoaded = false;
+          renderUsuariosView();
+        }catch(err){
+          toast(err.message,"error");
+          btn.disabled = false; btn.textContent = "🗑️ Eliminar";
+        }
+      });
+    });
+  }catch(e){
+    wrap.innerHTML = `<div class="t-sub" style="padding:20px 2px;color:var(--danger);">No se pudo cargar la lista: ${esc(e.message)}</div>`;
+    usersListLoaded = false; // permite reintentar
+  }
+}
 function renderConfiguracion(){
   const c = DB.config;
   document.getElementById("cf_orgName").value = c.orgName || "";
@@ -10967,6 +11052,13 @@ function bootApp(){
       logoutBtn.dataset.bound = "1";
       logoutBtn.addEventListener("click", ()=>{ if(confirm("¿Cerrar sesión en este dispositivo?")) logoutUser(); });
     }
+    // Muestra "Usuarios" en el menú solo si esta cuenta es la administradora
+    // (se define con ADMIN_USERNAME en Netlify). Si falla (sin internet, etc.),
+    // simplemente no se muestra — no es un error visible para la persona.
+    apiAuth("amIAdmin", { token: getAuthToken() }).then(r=>{
+      const navItem = document.getElementById("navUsersItem");
+      if(navItem) navItem.classList.toggle("hidden", !r.isAdmin);
+    }).catch(()=>{});
   }catch(e){
     console.error("Error crítico durante la inicialización:", e);
     // último respaldo: si incluso la carga inicial falla, no dejamos la pantalla en blanco.
