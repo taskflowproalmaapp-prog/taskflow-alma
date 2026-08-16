@@ -5682,14 +5682,9 @@ function setupUpdateHoldMic(container, tid){
     return;
   }
   let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0, held = false;
-  const startHold = (e)=>{
-    if(e) e.preventDefault();
-    if(held) return;
-    held = true;
-    finalTranscript = ""; seconds = 0;
-    timerEl.textContent = "0s";
-    btn.classList.add("holding");
-    hintEl.textContent = "🎙️ Escuchando...";
+  const MAX_HOLD_SECONDS = 120; // tope de seguridad (2 min) por si el dedo queda pegado sin querer
+
+  const startRecognitionSession = ()=>{
     recognition = new SpeechRecognitionAPI();
     recognition.lang = (navigator.language && navigator.language.startsWith("es")) ? navigator.language : "es-ES";
     recognition.continuous = true;
@@ -5705,24 +5700,39 @@ function setupUpdateHoldMic(container, tid){
       hintEl.textContent = preview ? "🎙️ " + preview : "🎙️ Escuchando...";
     };
     recognition.onerror = (event)=>{
-      if(event.error==="no-speech") return;
+      if(event.error==="no-speech") return; // el navegador reintenta solo vía onend
       let msg = "No se pudo usar el micrófono.";
       if(event.error==="not-allowed" || event.error==="service-not-allowed") msg = "Permiso de micrófono denegado. Revisa los permisos del navegador.";
       else if(event.error==="network") msg = "Sin conexión para el reconocimiento de voz.";
-      toast(msg, "error");
+      if(event.error==="not-allowed" || event.error==="service-not-allowed"){ toast(msg,"error"); held=false; }
     };
     recognition.onend = ()=>{
+      // En el celular, el motor de voz se corta solo cada pocos segundos aunque sigas
+      // presionando. Si el usuario TODAVÍA mantiene el dedo, reiniciamos por dentro
+      // sin que se note, sin perder lo dicho.
+      if(held && seconds < MAX_HOLD_SECONDS){
+        try{ startRecognitionSession(); return; }catch(e){ /* sigue abajo si falla el reinicio */ }
+      }
       const raw = finalTranscript.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
       quickUpdateAnalyze(tid, {text: raw});
     };
-    try{
-      recognition.start();
-      timerInterval = setInterval(()=>{ seconds++; timerEl.textContent = seconds+"s"; }, 1000);
-    }catch(err){
-      toast("No se pudo iniciar el micrófono.","error");
-      held = false;
-    }
+    try{ recognition.start(); }catch(err){ toast("No se pudo iniciar el micrófono.","error"); held=false; }
+  };
+
+  const startHold = (e)=>{
+    if(e) e.preventDefault();
+    if(held) return;
+    held = true;
+    finalTranscript = ""; seconds = 0;
+    timerEl.textContent = "0s";
+    btn.classList.add("holding");
+    hintEl.textContent = "🎙️ Escuchando...";
+    startRecognitionSession();
+    timerInterval = setInterval(()=>{
+      seconds++; timerEl.textContent = seconds+"s";
+      if(seconds >= MAX_HOLD_SECONDS){ toast("Grabación detenida (tope de 2 minutos).","info"); endHold(); }
+    }, 1000);
   };
   const endHold = ()=>{
     if(!held) return;
@@ -8306,17 +8316,9 @@ function setupHoldMic(container){
   }
 
   let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0, held = false;
+  const MAX_HOLD_SECONDS = 120; // tope de seguridad (2 min) por si el dedo queda pegado sin querer
 
-  const startHold = (e)=>{
-    if(e) e.preventDefault();
-    if(held) return;
-    held = true;
-    finalTranscript = "";
-    seconds = 0;
-    timerEl.textContent = "0s";
-    btn.classList.add("holding");
-    hintEl.textContent = "🎙️ Escuchando...";
-
+  const startRecognitionSession = ()=>{
     recognition = new SpeechRecognitionAPI();
     recognition.lang = (navigator.language && navigator.language.startsWith("es")) ? navigator.language : "es-ES";
     recognition.continuous = true;
@@ -8332,24 +8334,40 @@ function setupHoldMic(container){
       hintEl.textContent = preview ? "🎙️ " + preview : "🎙️ Escuchando...";
     };
     recognition.onerror = (event)=>{
-      if(event.error==="no-speech") return;
+      if(event.error==="no-speech") return; // el navegador reintenta solo vía onend
       let msg = "No se pudo usar el micrófono.";
       if(event.error==="not-allowed" || event.error==="service-not-allowed") msg = "Permiso de micrófono denegado. Revisa los permisos del navegador.";
       else if(event.error==="network") msg = "Sin conexión para el reconocimiento de voz.";
-      toast(msg, "error");
+      if(event.error==="not-allowed" || event.error==="service-not-allowed"){ toast(msg,"error"); held=false; }
     };
     recognition.onend = ()=>{
+      // En el celular, el motor de voz se corta solo cada pocos segundos aunque sigas
+      // presionando (limitación conocida de Android/Chrome). Si el usuario TODAVÍA
+      // mantiene el dedo, reiniciamos por dentro sin que se note, sin perder lo dicho.
+      if(held && seconds < MAX_HOLD_SECONDS){
+        try{ startRecognitionSession(); return; }catch(e){ /* sigue abajo si falla el reinicio */ }
+      }
       const raw = finalTranscript.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
       almaEntryCreateSmart(raw);
     };
-    try{
-      recognition.start();
-      timerInterval = setInterval(()=>{ seconds++; timerEl.textContent = seconds+"s"; }, 1000);
-    }catch(err){
-      toast("No se pudo iniciar el micrófono.","error");
-      held = false;
-    }
+    try{ recognition.start(); }catch(err){ toast("No se pudo iniciar el micrófono.","error"); held=false; }
+  };
+
+  const startHold = (e)=>{
+    if(e) e.preventDefault();
+    if(held) return;
+    held = true;
+    finalTranscript = "";
+    seconds = 0;
+    timerEl.textContent = "0s";
+    btn.classList.add("holding");
+    hintEl.textContent = "🎙️ Escuchando...";
+    startRecognitionSession();
+    timerInterval = setInterval(()=>{
+      seconds++; timerEl.textContent = seconds+"s";
+      if(seconds >= MAX_HOLD_SECONDS){ toast("Grabación detenida (tope de 2 minutos).","info"); endHold(); }
+    }, 1000);
   };
 
   const endHold = ()=>{
