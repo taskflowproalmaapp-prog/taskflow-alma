@@ -12,6 +12,19 @@ const crypto = require("crypto");
 const { getStore } = require("@netlify/blobs");
 const nodemailer = require("nodemailer");
 
+// En algunos despliegues, Netlify Blobs no se configura solo dentro de la función
+// y hay que decirle explícitamente a qué sitio conectarse y con qué credencial.
+// Si NETLIFY_SITE_ID / NETLIFY_BLOBS_TOKEN están configurados, los usamos; si no,
+// dejamos que se configure automáticamente (comportamiento normal en Netlify).
+function store(name) {
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN;
+  if (siteID && token) {
+    return getStore({ name, siteID, token });
+  }
+  return getStore(name);
+}
+
 function json(statusCode, obj) {
   return {
     statusCode,
@@ -62,9 +75,9 @@ exports.handler = async function (event) {
   const { action, username, password, token, email, inviteCode, siteUrl } = body;
 
   try {
-    const users = getStore("users");
-    const sessions = getStore("sessions");
-    const resets = getStore("password_resets");
+    const users = store("users");
+    const sessions = store("sessions");
+    const resets = store("password_resets");
 
     if (action === "register") {
       const requiredInvite = process.env.INVITE_CODE;
