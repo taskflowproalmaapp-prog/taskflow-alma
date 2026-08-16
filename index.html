@@ -310,14 +310,19 @@ a{color:inherit;}
 /* En escritorio: acciones secundarias siempre visibles en línea; botón "Más" oculto */
 .dash-actions-secondary{display:contents;}
 .dash-more-toggle{display:none;}
+.btn-mic-featured{
+  background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 40%, #8B9DF0 75%);
+  color:#fff;border:none;box-shadow:0 3px 12px rgba(139,157,240,.4);font-weight:700;
+}
+.btn-mic-featured:hover{box-shadow:0 4px 16px rgba(139,157,240,.55);transform:translateY(-1px);}
 @media (max-width:700px){
   .dash-header{padding:18px;}
   .dash-header-actions{width:100%;gap:8px;}
   .period-toggle{width:100%;}
   .period-toggle button{flex:1;padding:9px 6px;font-size:12.5px;}
-  /* Nueva tarea y Organizar mi día a lo ancho */
-  #dashNewTaskBtn, #dashPlanDayBtn{width:100%;justify-content:center;}
-  /* botón Más visible; secundarias ocultas hasta desplegar */
+  /* Nueva tarea, Organizar mi día y Hablar a lo ancho, siempre visibles (no se esconden en "Más") */
+  #dashNewTaskBtn, #dashPlanDayBtn, #dashSpeakBtn{width:100%;justify-content:center;}
+  /* botón Más visible; el resto de acciones secundarias ocultas hasta desplegar */
   .dash-more-toggle{display:inline-flex;width:100%;justify-content:center;}
   .dash-actions-secondary{display:none;flex-direction:column;gap:8px;width:100%;}
   .dash-actions-secondary.open{display:flex;}
@@ -1011,6 +1016,11 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .af-entry-method.sel{border-color:#8B9DF0;background:#F3EDFC;}
 .aem-icon{font-size:24px;}
 .aem-label{font-size:13.5px;font-weight:600;color:#3A2F5C;}
+.af-entry-method.aem-featured{flex:1.35;padding:20px 10px;border:none;background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 40%, #8B9DF0 75%);box-shadow:0 4px 14px rgba(139,157,240,.4);}
+.af-entry-method.aem-featured .aem-icon{font-size:32px;}
+.af-entry-method.aem-featured .aem-label{color:#fff;font-size:14.5px;}
+.af-entry-method.aem-featured:hover{box-shadow:0 5px 18px rgba(139,157,240,.55);transform:translateY(-1px);}
+.af-entry-method.aem-featured.sel{background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 35%, #7A8CE8 80%);box-shadow:0 4px 16px rgba(122,140,232,.55);}
 .qi-trash{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;opacity:.55;}
 .qi-trash:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);opacity:1;}
 #genericModalBackdrop{background:rgba(10,11,20,.72);backdrop-filter:blur(7px);}
@@ -1464,6 +1474,9 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
             <button class="btn btn-primary" id="dashPlanDayBtn" title="Deja que Alma te proponga un orden para hoy">
               🗓️ Organizar mi día
             </button>
+            <button class="btn btn-mic-featured" id="dashSpeakBtn" title="Crear tarea hablando">
+              🎙️ Hablar
+            </button>
             <button class="btn btn-ghost dash-more-toggle" id="dashMoreBtn" title="Más acciones">⋯ Más</button>
             <div class="dash-actions-secondary" id="dashSecondaryActions">
               <button class="btn btn-ghost" id="dashNewProjectBtn">Crear proyecto</button>
@@ -1475,9 +1488,6 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
               </button>
               <button class="btn btn-ghost" id="dashWeeklyBtn" title="Cierra tu semana con calma">
                 📅 Cerrar mi semana
-              </button>
-              <button class="btn btn-ghost" id="dashSpeakBtn" title="Crear tarea hablando">
-                🎙️ Hablar
               </button>
               <button class="btn btn-ghost" id="dashCaptureBtn" title="Crear tarea desde una foto o captura">
                 📋 Agregar captura
@@ -5289,11 +5299,11 @@ function openAlmaEntry(){
       </div>
       <div class="af-question">¿Cómo me lo quieres contar?</div>
       <div class="af-entry-methods">
+        <button class="af-entry-method aem-featured" data-method="dictate">
+          <span class="aem-icon">🎙️</span><span class="aem-label">Hablar</span>
+        </button>
         <button class="af-entry-method" data-method="write">
           <span class="aem-icon">✍️</span><span class="aem-label">Escribir</span>
-        </button>
-        <button class="af-entry-method" data-method="dictate">
-          <span class="aem-icon">🎙️</span><span class="aem-label">Dictar</span>
         </button>
         <button class="af-entry-method" data-method="photo">
           <span class="aem-icon">📷</span><span class="aem-label">Foto</span>
@@ -5327,21 +5337,16 @@ function almaEntryMethod(method){
     document.getElementById("afEntryGo").addEventListener("click", go);
     inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
   } else if(method==="dictate"){
-    const available = !!(window.SpeechRecognition || window.webkitSpeechRecognition) && window.isSecureContext;
-    area.innerHTML = available
-      ? `<div class="af-hint">🎙️ El dictado por voz estará disponible al publicar la app en línea. Por ahora, escribe tu tarea aquí:</div>
-         <div style="position:relative;margin-top:8px;">
-           <input type="text" id="afEntryInput" class="af-input" placeholder="Ej: llamar al dentista" style="padding-right:52px;">
-           <button id="afEntryGo" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,#8B9DF0,#C9A7F5);color:#fff;cursor:pointer;font-size:18px;">→</button>
-         </div>`
-      : `<div class="af-hint">🎙️ El dictado por voz se activará cuando la app esté publicada en línea (https). Por ahora, puedes escribirla:</div>
-         <div style="position:relative;margin-top:8px;">
-           <input type="text" id="afEntryInput" class="af-input" placeholder="Ej: llamar al dentista" style="padding-right:52px;">
-           <button id="afEntryGo" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,#8B9DF0,#C9A7F5);color:#fff;cursor:pointer;font-size:18px;">→</button>
-         </div>`;
+    area.innerHTML = `<div class="af-hint" id="afEntryInput_michint"></div>
+       <div style="position:relative;margin-top:8px;">
+         <input type="text" id="afEntryInput" class="af-input" placeholder="Ej: llamar al dentista" style="padding-right:88px;">
+         <button type="button" class="mic-btn" data-mic-target="afEntryInput" data-mic-mode="title" title="Dictar por voz" style="position:absolute;right:46px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:none;border-radius:10px;background:#f0edfb;color:#6b5b95;cursor:pointer;display:flex;align-items:center;justify-content:center;">${iconMic()}</button>
+         <button id="afEntryGo" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,#8B9DF0,#C9A7F5);color:#fff;cursor:pointer;font-size:18px;">→</button>
+       </div>`;
+    bindMicButtons(area);
     const inp = document.getElementById("afEntryInput");
     if(inp){ inp.focus();
-      const go = ()=>{ const v=inp.value.trim(); if(v) almaEntryCreate(v); };
+      const go = ()=>{ const v=inp.value.trim(); if(v) almaEntryCreateSmart(v); };
       document.getElementById("afEntryGo").addEventListener("click", go);
       inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
     }
@@ -5384,6 +5389,45 @@ function almaEntryCreate(title){
   };
   DB.tasks.push(t); saveDB();
   askAlmaScheduleMode(t.id, title);
+}
+// Igual que almaEntryCreate, pero primero le pide a la IA que interprete el texto
+// dictado (fecha, hora, prioridad, si es personal o laboral, etc.) en vez de crear
+// la tarea solo con el título literal. Si la IA falla, cae de vuelta al flujo normal.
+async function almaEntryCreateSmart(rawText){
+  const area = document.getElementById("afEntryArea");
+  if(area) area.innerHTML = `<div class="af-hint">✨ Entendiendo tu tarea...</div>`;
+  try{
+    const content = `Instrucción o texto dictado por voz para crear una tarea: """${rawText}"""\n\n${smartCaptureInstructions()}`;
+    const raw = await askAI(content);
+    const cleaned = raw.replace(/```json|```/g,"").trim();
+    const parsed = JSON.parse(cleaned);
+    const title = String(parsed.titulo || rawText).slice(0,120);
+    const t = {
+      id: uid("t"), title, description: parsed.descripcion||"", kind:"tarea", projectId:null, owner:null, ownerName:"",
+      requestArea: parsed.area||"", lifeArea:"", requestedBy: parsed.solicitante||"", company: parsed.empresa||"",
+      taskType: (parsed.tipo_tarea==="laboral"?"laboral":"personal"),
+      requestDate: parsed.fecha_solicitud||"", requestTime:"",
+      startDate: parsed.fecha_ejecucion||"", executionTime: parsed.hora_ejecucion||"",
+      dueDate: parsed.fecha_vencimiento||"", dueTime: parsed.hora_vencimiento||"",
+      priority: ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media",
+      status:"pendiente", tags: Array.isArray(parsed.etiquetas)?parsed.etiquetas:[], estimatedTime:0, actualTime:0, progress:0,
+      subtasks:[], checklist:[], comments:[], files:[], dependencies:[], updates:[],
+      blocking:false, recurring:{enabled:false, frequency:"semanal"}, reminders:[],
+      realStart:"", realEnd:"", createdAt: TODAY(), updatedAt: TODAY(), archived:false,
+    };
+    DB.tasks.push(t); saveDB();
+    recomputeAll(); saveDB(); render();
+    closeGenericModal();
+    const resumen = [];
+    resumen.push(t.taskType==="laboral" ? "💼 laboral" : "🌿 personal");
+    if(t.dueDate) resumen.push(`vence ${t.dueDate}${t.dueTime?" "+t.dueTime:""}`);
+    if(t.startDate) resumen.push(`la harías ${t.startDate}${t.executionTime?" "+t.executionTime:""}`);
+    resumen.push(`prioridad ${t.priority}`);
+    toast(`✨ Creé "${title}" · ${resumen.join(" · ")}`, "success");
+  }catch(e){
+    // si la IA no responde, seguimos con el flujo normal (texto literal + wizard manual)
+    almaEntryCreate(rawText);
+  }
 }
 // Pregunta cómo agendar (manual o con sugerencia de IA), igual que en "Por agendar".
 // Lee una imagen con IA dentro del flujo de Alma: extrae el/los título(s) y sigue
@@ -7872,16 +7916,37 @@ function startDictation(btn){
     toast(msg, "error");
     stopDictation("error");
   };
-  recognition.onend = ()=>{
-    // finaliza con formato inteligente aplicado al texto ya confirmado
-    if(field === document.activeElement || activeMicButton===btn){
-      field.value = startValue + smartFormatSpeech(finalTranscript, mode);
-      field.dispatchEvent(new Event("input", {bubbles:true}));
-    }
+  recognition.onend = async ()=>{
+    const stillActive = (field === document.activeElement || activeMicButton===btn);
     btn.classList.remove("listening");
-    if(hint){ hint.classList.remove("show"); hint.textContent=""; }
     if(activeMicButton===btn){ activeMicButton=null; activeRecognition=null; }
     if(activeMicSafetyTimer){ clearTimeout(activeMicSafetyTimer); activeMicSafetyTimer=null; }
+    if(!stillActive){ if(hint){ hint.classList.remove("show"); hint.textContent=""; } return; }
+
+    const rawFinal = finalTranscript.trim();
+    // paso 1: formato local instantáneo, para que no se sienta en blanco mientras llega la IA
+    field.value = startValue + smartFormatSpeech(rawFinal, mode);
+    field.dispatchEvent(new Event("input", {bubbles:true}));
+    if(!rawFinal){ if(hint){ hint.classList.remove("show"); hint.textContent=""; } return; }
+
+    // paso 2: Gemini pule/interpreta el texto dictado (corrige, da formato natural)
+    if(hint){ hint.textContent = "✨ Puliendo con IA..."; hint.classList.add("show"); }
+    try{
+      const guia = mode==="title"
+        ? "Es un TÍTULO breve: sin punto final, sin viñetas."
+        : "Es un texto libre: usa oraciones completas y puntuación correcta.";
+      const prompt = `Corrige y da formato natural en español a este texto dictado por voz. No agregues información que no esté, no inventes datos, conserva el significado exacto. ${guia} Responde SOLO con el texto corregido, sin comillas ni explicaciones.\n\nTexto dictado: """${rawFinal}"""`;
+      const polished = await askAI(prompt);
+      const clean = polished.trim().replace(/^["“]+|["”]+$/g,"");
+      if(clean && document.body.contains(field)){
+        field.value = startValue + clean;
+        field.dispatchEvent(new Event("input", {bubbles:true}));
+      }
+    }catch(e){
+      // si la IA falla, se queda el formato local ya aplicado en el paso 1
+    }finally{
+      if(hint){ hint.classList.remove("show"); hint.textContent=""; }
+    }
   };
 
   activeMicButton = btn;
