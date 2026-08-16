@@ -111,6 +111,13 @@ a{color:inherit;}
   font-size:13.5px;outline:none;color:#3A2F5C;
 }
 .login-form input:focus{border-color:#C9A7F5;box-shadow:0 0 0 3px rgba(201,167,245,.18);}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:38px;}
+.pw-toggle{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;
+  cursor:pointer;font-size:15px;padding:4px;opacity:.55;line-height:1;
+}
+.pw-toggle:hover{opacity:.9;}
 .login-error{color:#C0392B;font-size:12px;min-height:16px;margin-top:8px;}
 .login-ok{color:#2E9680;font-size:12px;margin-top:8px;}
 
@@ -1450,7 +1457,10 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
       <label>Usuario</label>
       <input type="text" id="loginUsername" autocomplete="username" placeholder="ej: miguel" required>
       <label>Clave</label>
-      <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" required>
+      <div class="pw-wrap">
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" required>
+        <button type="button" class="pw-toggle" data-pw-toggle="loginPassword">👁️</button>
+      </div>
       <div class="login-error" id="loginError"></div>
       <button type="submit" class="btn btn-primary" id="loginSubmitBtn" style="width:100%;margin-top:6px;">Entrar</button>
       <div style="text-align:center;margin-top:10px;">
@@ -1472,9 +1482,15 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 
     <form id="resetForm" class="login-form hidden">
       <label>Elige tu nueva clave</label>
-      <input type="password" id="resetPassword" placeholder="mínimo 6 caracteres" required>
+      <div class="pw-wrap">
+        <input type="password" id="resetPassword" placeholder="mínimo 6 caracteres" required>
+        <button type="button" class="pw-toggle" data-pw-toggle="resetPassword">👁️</button>
+      </div>
       <label>Repítela</label>
-      <input type="password" id="resetPassword2" placeholder="mínimo 6 caracteres" required>
+      <div class="pw-wrap">
+        <input type="password" id="resetPassword2" placeholder="mínimo 6 caracteres" required>
+        <button type="button" class="pw-toggle" data-pw-toggle="resetPassword2">👁️</button>
+      </div>
       <div class="login-error" id="resetError"></div>
       <button type="submit" class="btn btn-primary" id="resetSubmitBtn" style="width:100%;margin-top:6px;">Guardar nueva clave</button>
     </form>
@@ -1485,9 +1501,15 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
       <label>Tu correo</label>
       <input type="email" id="registerEmail" autocomplete="email" placeholder="para recuperar tu clave si la olvidas" required>
       <label>Elige una clave</label>
-      <input type="password" id="registerPassword" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
+      <div class="pw-wrap">
+        <input type="password" id="registerPassword" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
+        <button type="button" class="pw-toggle" data-pw-toggle="registerPassword">👁️</button>
+      </div>
       <label>Repite la clave</label>
-      <input type="password" id="registerPassword2" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
+      <div class="pw-wrap">
+        <input type="password" id="registerPassword2" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
+        <button type="button" class="pw-toggle" data-pw-toggle="registerPassword2">👁️</button>
+      </div>
       <label>Código de invitación</label>
       <input type="text" id="registerInvite" placeholder="te lo comparte quien te invitó" required>
       <div class="login-error" id="registerError"></div>
@@ -11021,6 +11043,15 @@ async function tryRestoreSession(){
   }
 }
 function setupAuthUI(){
+  document.querySelectorAll("[data-pw-toggle]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const inp = document.getElementById(btn.dataset.pwToggle);
+      if(!inp) return;
+      const showing = inp.type === "text";
+      inp.type = showing ? "password" : "text";
+      btn.textContent = showing ? "👁️" : "🙈";
+    });
+  });
   const tabLogin = document.getElementById("loginTabLogin");
   const tabRegister = document.getElementById("loginTabRegister");
   const formLogin = document.getElementById("loginForm");
