@@ -1024,6 +1024,11 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .asp-card{background:#F9F6FD;border:1.5px solid #E8DDF0;border-radius:14px;padding:16px;}
 .asp-title{font-size:16px;font-weight:700;color:#3A2F5C;margin-bottom:10px;}
 .asp-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#4A3F6C;padding:5px 0;}
+.amv-row{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1.5px solid #E8DDF0;border-radius:12px;margin-bottom:8px;cursor:pointer;background:#fff;}
+.amv-row:hover{border-color:#C9A7F5;}
+.amv-row input[type="checkbox"]{margin-top:3px;width:16px;height:16px;flex-shrink:0;}
+.amv-title{font-size:13.5px;font-weight:700;color:#3A2F5C;}
+.amv-meta{font-size:11.5px;color:#8A7D95;margin-top:2px;}
 .af-hold-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 10px 6px;}
 .af-hold-timer{font-size:13px;font-weight:700;color:#7A6BA8;min-height:18px;opacity:0;transition:opacity .15s;}
 .af-hold-timer.show{opacity:1;}
@@ -1043,11 +1048,46 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
   transition:transform .12s, box-shadow .12s;
 }
 .tk-update-btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(63,174,147,.5);}
+.tk-update-info{
+  border:1.5px solid #E8DDF0;background:#fff;color:#7A6BA8;border-radius:9px;width:30px;height:30px;
+  font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:background .12s, border-color .12s;
+}
+.tk-update-info:hover{background:#F3EDFC;border-color:#C9A7F5;}
+.update-info-cloud{
+  position:fixed;z-index:400;background:linear-gradient(180deg,#FBF8FF,#F3EDFC);
+  border:1.5px solid #E8DDF0;border-radius:16px;padding:12px 14px;box-shadow:0 8px 28px rgba(90,70,140,.22);
+  font-size:12.5px;color:#3A2F5C;animation:modalIn .12s ease;
+}
+.uic-arrow{position:absolute;width:14px;height:14px;background:#F3EDFC;border:1.5px solid #E8DDF0;transform:translateX(-50%) rotate(45deg);}
+.update-info-cloud.uic-above .uic-arrow{bottom:-8px;border-top:none;border-left:none;}
+.update-info-cloud.uic-below .uic-arrow{top:-8px;border-bottom:none;border-right:none;}
+.uic-head{display:flex;align-items:center;gap:6px;font-size:12px;color:#6B5B95;margin-bottom:4px;}
+.uic-head .af-orb{background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 45%, #8B9DF0 80%);border-radius:50%;flex-shrink:0;}
+.uic-when{font-size:11.5px;color:#9B8BB5;margin-bottom:6px;}
+.uic-text{font-size:12.8px;line-height:1.4;margin-bottom:8px;}
+.uic-status{font-size:11.5px;}
 .af-entry-method.aem-featured.aem-teal{background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 40%, #3FAE93 75%);box-shadow:0 4px 14px rgba(63,174,147,.4);}
 .af-entry-method.aem-featured.aem-teal:hover{box-shadow:0 5px 18px rgba(63,174,147,.55);}
 .af-entry-method.aem-featured.aem-teal.sel{background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 35%, #2E9680 80%);}
 .af-hold-mic.qu-hold-mic{background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 40%, #3FAE93 75%);box-shadow:0 4px 16px rgba(63,174,147,.45);}
 .af-hold-mic.qu-hold-mic.holding{box-shadow:0 0 0 10px rgba(63,174,147,.22),0 4px 20px rgba(63,174,147,.55);}
+.af-hold-mic.locked{transform:scale(1.12);}
+.af-hold-mic.qu-hold-mic.locked{box-shadow:0 0 0 10px rgba(63,174,147,.3),0 4px 22px rgba(63,174,147,.6);}
+.af-lock-hint{font-size:11.5px;font-weight:600;color:#7A6BA8;opacity:0;transition:opacity .15s;min-height:16px;}
+.af-lock-hint.show{opacity:1;}
+.af-hold-confirm-bar{display:none;gap:10px;width:100%;margin-top:4px;}
+.af-hold-confirm-bar.show{display:flex;}
+.af-hold-confirm-bar .btn{flex:1;}
+@media (max-width:700px){
+  .af-hold-wrap{
+    position:fixed;left:12px;right:12px;bottom:16px;z-index:250;
+    background:var(--surface);border-radius:20px;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    box-shadow:0 -6px 24px rgba(0,0,0,.16);
+    border:1px solid var(--border);
+  }
+}
 .qi-trash{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;opacity:.55;}
 .qi-trash:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);opacity:1;}
 #genericModalBackdrop{background:rgba(10,11,20,.72);backdrop-filter:blur(7px);}
@@ -4648,6 +4688,7 @@ function taskCardHTML(t){
     </div>
     ${owner?`<span class="tk-avatar" style="background:${owner.color}" title="${esc(owner.name)}">${initials(owner.name)}</span>`:""}
     ${!done?`<button type="button" class="tk-update-btn" data-quick-update="${t.id}" title="Agregar actualización">💬 Actualizar</button>`:""}
+    ${Array.isArray(t.updates)&&t.updates.length?`<button type="button" class="tk-update-info" data-update-info="${t.id}" title="Ver última actualización">🕓</button>`:""}
     ${canReag?`<button class="tk-reag" data-reag="${t.id}" title="Reagendar">🔄</button>`:""}
     <button type="button" class="status-pill status-pill-btn tk-status" data-status-btn="${t.id}" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color};" title="Cambiar estado">${st.label} <span style="font-size:9px;opacity:.7;">▾</span></button>
   </div>`;
@@ -4690,6 +4731,7 @@ function renderTaskList(){
   wrap.querySelectorAll("[data-status-btn]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); openStatusMenu(b, b.dataset.statusBtn); }));
   wrap.querySelectorAll("[data-reag]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); reagendarTask(b.dataset.reag); }));
   wrap.querySelectorAll("[data-quick-update]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); openQuickUpdate(b.dataset.quickUpdate); }));
+  wrap.querySelectorAll("[data-update-info]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); toggleUpdateInfoPopover(b, b.dataset.updateInfo); }));
   wrap.querySelectorAll(".tk-check").forEach(c=>c.addEventListener("change",(e)=>{
     const id=c.dataset.tid; if(e.target.checked) selectedTaskIds.add(id); else selectedTaskIds.delete(id); renderBulkBar();
   }));
@@ -5365,9 +5407,14 @@ function almaEntryMethod(method){
   } else if(method==="dictate"){
     area.innerHTML = `
       <div class="af-hold-wrap">
+        <div class="af-lock-hint" id="afLockHint">↑ Desliza para no tener que sostenerlo</div>
         <div class="af-hold-timer" id="afHoldTimer">0s</div>
         <button type="button" class="af-hold-mic" id="afHoldMicBtn" aria-label="Mantén presionado para hablar">${iconMic()}</button>
-        <div class="af-hint show" id="afHoldHint">Mantén presionado el micrófono y habla — suelta para que Alma entienda</div>
+        <div class="af-hint show" id="afHoldHint">Mantén presionado y habla, o toca una vez para grabar sin soltar</div>
+        <div class="af-hold-confirm-bar" id="afHoldConfirmBar">
+          <button type="button" class="btn btn-ghost" id="afHoldCancelBtn">✖️ Cancelar</button>
+          <button type="button" class="btn btn-primary" id="afHoldConfirmBtn">✅ Generar tarea</button>
+        </div>
       </div>
       <input type="text" id="afEntryInput" class="hidden">`;
     setupHoldMic(area);
@@ -5415,9 +5462,18 @@ function almaEntryCreate(title){
 // le pide a la IA que decida si es una TAREA (algo pendiente, sin hora fija todavía)
 // o una ACTIVIDAD (un evento que ya tiene fecha y hora, como una reunión o una cita).
 function almaVoiceCaptureInstructions(){
-  return `Hoy es ${TODAY()}. Analiza este texto dictado por voz para crear una tarea o actividad. Responde SOLO con un JSON válido, sin texto adicional ni comillas de bloque, con esta forma exacta:
+  return `Hoy es ${TODAY()}. Analiza este texto dictado por voz para crear tareas y/o actividades.
+
+Primero decide: ¿el texto describe UNA sola cosa, o VARIAS tareas/actividades distintas? (ej. "compra pan, llama al dentista y paga la luz" son 3 cosas distintas — cada verbo/pendiente independiente cuenta como una).
+
+Responde SOLO con un JSON válido, sin texto adicional ni comillas de bloque:
+- Si es UNA sola: {"varias": false, "item": { ...campos... }}
+- Si son VARIAS: {"varias": true, "items": [ { ...campos... }, { ...campos... } ] }
+
+Cada objeto de campos (ya sea "item" o cada elemento de "items") debe tener EXACTAMENTE esta forma:
 {"titulo":"...", "descripcion":"...", "kind":"tarea|actividad", "tipo_tarea":"personal|laboral", "solicitante":"...", "fecha_vencimiento":"YYYY-MM-DD", "hora_vencimiento":"HH:MM", "fecha_ejecucion":"YYYY-MM-DD", "hora_ejecucion":"HH:MM", "horas_estimadas":0, "prioridad":"alta|media|baja", "etiquetas":["..."]}
-Instrucciones:
+
+Instrucciones para cada campo:
 - "kind": usa "actividad" SOLO si es un evento que ya tiene su cuándo (una reunión, una cita, una llamada agendada, un vuelo, etc). Usa "tarea" para todo lo demás — algo pendiente por hacer, sin hora fija todavía.
 - "titulo": breve (máx 80 caracteres), qué hay que hacer.
 - "descripcion": resume la tarea o actividad y su contexto relevante, en español.
@@ -5431,26 +5487,58 @@ Instrucciones:
 Nunca inventes datos que no estén sugeridos por el texto — usa null si no aparece. Responde solo el JSON.`;
 }
 // Igual que almaEntryCreate, pero primero le pide a la IA que interprete el texto
-// dictado (tarea o actividad, fecha, hora, prioridad, si es personal o laboral, etc.),
-// muestra un resumen de lo que entendió, y pide confirmación antes de crear la tarea.
+// dictado (una o varias tareas/actividades, fecha, hora, prioridad, personal/laboral, etc.),
+// muestra un resumen de lo que entendió, y pide confirmación antes de crear. Si detecta
+// varias cosas distintas en el mismo audio, muestra una lista para elegir cuáles crear.
 // Si la IA falla, cae de vuelta al flujo normal (texto literal + wizard manual).
 async function almaEntryCreateSmart(rawText){
   const area = document.getElementById("afEntryArea");
   if(area) area.innerHTML = `<div class="af-hint">✨ Entendiendo tu tarea...</div>`;
   try{
-    const content = `Instrucción o texto dictado por voz para crear una tarea: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
+    const content = `Instrucción o texto dictado por voz para crear una o varias tareas: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
     const raw = await askAI(content);
     const cleaned = raw.replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(cleaned);
-    almaRenderSmartPreview(rawText, parsed);
+    if(parsed && parsed.varias===true && Array.isArray(parsed.items) && parsed.items.length>1){
+      almaRenderMultiVoicePreview(rawText, parsed.items);
+    }else{
+      const item = (parsed && parsed.item) ? parsed.item : (Array.isArray(parsed && parsed.items) ? parsed.items[0] : parsed);
+      almaRenderSmartPreview(rawText, item||{});
+    }
   }catch(e){
     // si la IA no responde, seguimos con el flujo normal (texto literal + wizard manual)
     almaEntryCreate(rawText);
   }
 }
-// Muestra la tarjeta "Esto entendí" con resumen y pide confirmación antes de crear.
-// Regla importante: una ACTIVIDAD sin fecha/hora clara NUNCA se agenda a medias —
-// se avisa que quedará en "Por agendar" para completarla después (manual o con IA).
+// Construye el objeto de tarea (sin guardarlo aún) a partir de lo que interpretó la IA.
+// Regla importante: una ACTIVIDAD sin fecha/hora clara NUNCA se agenda a medias — se
+// guarda como pendiente sin horario y cae sola en "Por agendar".
+function buildTaskFromParsedVoiceItem(rawTextFallback, parsed){
+  const title = String((parsed&&parsed.titulo) || rawTextFallback || "Tarea").slice(0,120);
+  const isActivity = parsed && parsed.kind === "actividad";
+  const startDate = (parsed&&parsed.fecha_ejecucion)||"", execTime = (parsed&&parsed.hora_ejecucion)||"";
+  const activityComplete = isActivity && startDate && execTime;
+  const estimatedTime = (parsed && typeof parsed.horas_estimadas === "number") ? parsed.horas_estimadas : (Number(parsed&&parsed.horas_estimadas)||0);
+  return {
+    id: uid("t"), title, description: (parsed&&parsed.descripcion)||"", kind: activityComplete ? "actividad" : "tarea",
+    projectId:null, owner:null, ownerName:"",
+    requestArea: (parsed&&parsed.area)||"", lifeArea:"", requestedBy: activityComplete ? "" : ((parsed&&parsed.solicitante)||""), company: (parsed&&parsed.empresa)||"",
+    taskType: (parsed&&parsed.tipo_tarea==="laboral"?"laboral":"personal"),
+    requestDate: (parsed&&parsed.fecha_solicitud)||"", requestTime:"",
+    // una actividad incompleta NO se agenda a medias: se guarda sin fecha/hora de ejecución
+    startDate: activityComplete ? startDate : "",
+    executionTime: activityComplete ? execTime : "",
+    dueDate: activityComplete ? "" : ((parsed&&parsed.fecha_vencimiento)||""),
+    dueTime: activityComplete ? "" : ((parsed&&parsed.hora_vencimiento)||""),
+    priority: (parsed && ["alta","media","baja"].includes(parsed.prioridad)) ? parsed.prioridad : "media",
+    status:"pendiente", tags: (parsed && Array.isArray(parsed.etiquetas))?parsed.etiquetas:[], estimatedTime, actualTime:0, progress:0,
+    subtasks:[], checklist:[], comments:[], files:[], dependencies:[], updates:[],
+    blocking:false, recurring:{enabled:false, frequency:"semanal"}, reminders:[],
+    realStart:"", realEnd:"", createdAt: TODAY(), updatedAt: TODAY(), archived:false,
+  };
+}
+// Muestra la tarjeta "Esto entendí" con resumen y pide confirmación antes de crear
+// (caso de UNA sola tarea/actividad detectada).
 function almaRenderSmartPreview(rawText, parsed){
   const area = document.getElementById("afEntryArea");
   if(!area) return;
@@ -5488,32 +5576,8 @@ function almaRenderSmartPreview(rawText, parsed){
   document.getElementById("almaSpCancel").addEventListener("click", ()=>almaEntryMethod("dictate"));
 }
 // Crea la tarea de verdad, ya confirmada por el usuario desde la tarjeta de resumen.
-// Si es una ACTIVIDAD con fecha y hora completas, se guarda ya agendada (igual que
-// el asistente manual). Si falta fecha u hora, se guarda como pendiente sin horario
-// (nunca como actividad a medias) y cae sola en "Por agendar".
 function almaConfirmSmartTask(rawText, parsed){
-  const title = String(parsed.titulo || rawText).slice(0,120);
-  const isActivity = parsed.kind === "actividad";
-  const startDate = parsed.fecha_ejecucion||"", execTime = parsed.hora_ejecucion||"";
-  const activityComplete = isActivity && startDate && execTime;
-  const estimatedTime = (typeof parsed.horas_estimadas === "number") ? parsed.horas_estimadas : (Number(parsed.horas_estimadas)||0);
-  const t = {
-    id: uid("t"), title, description: parsed.descripcion||"", kind: activityComplete ? "actividad" : "tarea",
-    projectId:null, owner:null, ownerName:"",
-    requestArea: parsed.area||"", lifeArea:"", requestedBy: activityComplete ? "" : (parsed.solicitante||""), company: parsed.empresa||"",
-    taskType: (parsed.tipo_tarea==="laboral"?"laboral":"personal"),
-    requestDate: parsed.fecha_solicitud||"", requestTime:"",
-    // una actividad incompleta NO se agenda a medias: se guarda sin fecha/hora de ejecución
-    startDate: activityComplete ? startDate : "",
-    executionTime: activityComplete ? execTime : "",
-    dueDate: activityComplete ? "" : (parsed.fecha_vencimiento||""),
-    dueTime: activityComplete ? "" : (parsed.hora_vencimiento||""),
-    priority: ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media",
-    status:"pendiente", tags: Array.isArray(parsed.etiquetas)?parsed.etiquetas:[], estimatedTime, actualTime:0, progress:0,
-    subtasks:[], checklist:[], comments:[], files:[], dependencies:[], updates:[],
-    blocking:false, recurring:{enabled:false, frequency:"semanal"}, reminders:[],
-    realStart:"", realEnd:"", createdAt: TODAY(), updatedAt: TODAY(), archived:false,
-  };
+  const t = buildTaskFromParsedVoiceItem(rawText, parsed);
   DB.tasks.push(t); saveDB();
   recomputeAll(); saveDB(); render();
   closeGenericModal();
@@ -5524,7 +5588,70 @@ function almaConfirmSmartTask(rawText, parsed){
   if(t.startDate) resumen.push(`la harías ${t.startDate}${t.executionTime?" "+t.executionTime:""}`);
   if(!t.startDate) resumen.push(`en "Por agendar"`);
   resumen.push(`prioridad ${t.priority}`);
-  toast(`✨ Creé "${title}" · ${resumen.join(" · ")}`, "success");
+  toast(`✨ Creé "${t.title}" · ${resumen.join(" · ")}`, "success");
+}
+// Cuando el mismo audio menciona VARIAS tareas/actividades distintas: muestra una
+// lista con checkbox por cada una (marcadas por defecto), para aceptar todas, solo
+// algunas, o descartar el resto — sin perder ninguna de las que sí quieres.
+let almaMultiVoiceItems = [];
+function almaRenderMultiVoicePreview(rawText, items){
+  const area = document.getElementById("afEntryArea");
+  if(!area) return;
+  almaMultiVoiceItems = items.filter(it=>it && it.titulo).map((it,i)=>({ idx:i, parsed:it, include:true }));
+  if(!almaMultiVoiceItems.length){ almaRenderSmartPreview(rawText, {}); return; }
+
+  const rowHTML = (rec)=>{
+    const p = rec.parsed;
+    const isActivity = p.kind === "actividad";
+    const startDate = p.fecha_ejecucion||"", execTime = p.hora_ejecucion||"";
+    const dueDate = p.fecha_vencimiento||"";
+    const activityIncomplete = isActivity && !(startDate && execTime);
+    let when = "";
+    if(startDate) when = `${isActivity?"📅":"🗓️"} ${esc(startDate)}${execTime?" · "+esc(execTime):""}`;
+    else if(dueDate) when = `⏰ vence ${esc(dueDate)}`;
+    else when = `<span style="color:#9B8BB5;">💭 sin fecha — por agendar</span>`;
+    return `<label class="amv-row" data-amv="${rec.idx}">
+      <input type="checkbox" data-amv-inc ${rec.include?"checked":""}>
+      <div class="amv-body">
+        <div class="amv-title">${isActivity?"📅":"📋"} ${esc(String(p.titulo).slice(0,90))}</div>
+        <div class="amv-meta">${p.tipo_tarea==="laboral"?"💼 laboral":"🌿 personal"} · ${when}${activityIncomplete?' · <span style="color:#B8860B;">⚠️ sin hora clara</span>':""}</div>
+      </div>
+    </label>`;
+  };
+  const renderList = ()=> almaMultiVoiceItems.map(rowHTML).join("");
+
+  area.innerHTML = `
+    <div class="asp-card">
+      <div class="af-hint" style="margin-bottom:8px;">✨ Detecté ${almaMultiVoiceItems.length} cosas distintas — elige cuáles crear:</div>
+      <div id="amvList">${renderList()}</div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-ghost" id="amvCancel" style="flex:1;">✖️ Cancelar</button>
+        <button class="btn btn-primary" id="amvConfirm" style="flex:1;">✅ Generar seleccionadas</button>
+      </div>
+    </div>`;
+  area.querySelectorAll("[data-amv]").forEach(row=>{
+    const idx = parseInt(row.dataset.amv,10);
+    row.querySelector("[data-amv-inc]").addEventListener("change", e=>{
+      const rec = almaMultiVoiceItems.find(r=>r.idx===idx);
+      if(rec) rec.include = e.target.checked;
+    });
+  });
+  document.getElementById("amvConfirm").addEventListener("click", ()=>almaConfirmMultiVoiceTasks(rawText));
+  document.getElementById("amvCancel").addEventListener("click", ()=>{ almaMultiVoiceItems=[]; almaEntryMethod("dictate"); });
+}
+function almaConfirmMultiVoiceTasks(rawText){
+  const chosen = almaMultiVoiceItems.filter(r=>r.include);
+  if(!chosen.length){ toast("No hay ninguna seleccionada.","info"); return; }
+  let sinFecha = 0;
+  chosen.forEach(r=>{
+    const t = buildTaskFromParsedVoiceItem(rawText, r.parsed);
+    if(!t.startDate) sinFecha++;
+    DB.tasks.push(t);
+  });
+  saveDB(); recomputeAll(); saveDB(); render();
+  closeGenericModal();
+  toast(`✨ Creé ${chosen.length} ${chosen.length===1?"tarea":"tareas"}${sinFecha?` · ${sinFecha} en "Por agendar"`:""}.`,"success");
+  almaMultiVoiceItems = [];
 }
 // Pregunta cómo agendar (manual o con sugerencia de IA), igual que en "Por agendar".
 // Lee una imagen con IA dentro del flujo de Alma: extrae el/los título(s) y sigue
@@ -5587,6 +5714,67 @@ function reagendarTask(tid){
  * Igual que Alma (Hablar/Escribir/Foto), pero para contar el avance de una
  * tarea que ya existe, sin necesidad de abrir el formulario completo.
  * ---------------------------------------------------------------------- */
+// Nube tipo Alma que muestra cuándo fue la última actualización y su resumen,
+// sin ocupar espacio permanente en la fila — se despliega al tocar el ícono 🕓.
+let updateInfoPopoverEl = null;
+function closeUpdateInfoPopover(){
+  if(updateInfoPopoverEl){ updateInfoPopoverEl.remove(); updateInfoPopoverEl = null; }
+  document.removeEventListener("click", onOutsideClickCloseUpdateInfo, true);
+  window.removeEventListener("scroll", closeUpdateInfoPopover, true);
+  window.removeEventListener("resize", closeUpdateInfoPopover);
+}
+function onOutsideClickCloseUpdateInfo(e){
+  if(updateInfoPopoverEl && !updateInfoPopoverEl.contains(e.target)) closeUpdateInfoPopover();
+}
+function toggleUpdateInfoPopover(anchorEl, tid){
+  // si ya está abierta (para esta misma tarea), un segundo toque la cierra
+  const wasOpenForThis = updateInfoPopoverEl && updateInfoPopoverEl.dataset.forTid === tid;
+  closeUpdateInfoPopover();
+  if(wasOpenForThis) return;
+
+  const t = byId(DB.tasks, tid);
+  if(!t || !Array.isArray(t.updates) || !t.updates.length) return;
+  const upd = t.updates[0];
+  const st = byId(TASK_STATUSES, upd.status) || {label:"—", color:"var(--text-muted)"};
+  const d = new Date(upd.at);
+  const fecha = isNaN(d) ? "" : `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+  const hora = isNaN(d) ? "" : `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+
+  const pop = document.createElement("div");
+  pop.className = "update-info-cloud";
+  pop.dataset.forTid = tid;
+  pop.innerHTML = `
+    <div class="uic-arrow"></div>
+    <div class="uic-head"><span class="af-orb" style="width:22px;height:22px;"></span><b>Última actualización</b></div>
+    <div class="uic-when">${fecha}${hora?" · "+hora:""}</div>
+    <div class="uic-text">${esc(upd.text||"")}</div>
+    <div class="uic-status">Estado: <span class="status-pill" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color};">${esc(st.label)}</span></div>
+  `;
+  document.body.appendChild(pop);
+
+  const r = anchorEl.getBoundingClientRect();
+  const popW = 240;
+  let left = r.left + r.width/2 - popW/2;
+  left = Math.max(10, Math.min(left, window.innerWidth - popW - 10));
+  pop.style.left = left + "px";
+  pop.style.width = popW + "px";
+  // por defecto arriba del ícono; si no cabe, la ponemos debajo
+  const popHEstimate = 130;
+  if(r.top - popHEstimate > 8){
+    pop.style.top = (r.top - popHEstimate - 10) + "px";
+    pop.classList.add("uic-above");
+  }else{
+    pop.style.top = (r.bottom + 10) + "px";
+    pop.classList.add("uic-below");
+  }
+  const arrowLeft = (r.left + r.width/2) - left;
+  pop.querySelector(".uic-arrow").style.left = arrowLeft + "px";
+
+  updateInfoPopoverEl = pop;
+  setTimeout(()=>document.addEventListener("click", onOutsideClickCloseUpdateInfo, true), 0);
+  window.addEventListener("scroll", closeUpdateInfoPopover, true);
+  window.addEventListener("resize", closeUpdateInfoPopover);
+}
 function openQuickUpdate(tid){
   const t = byId(DB.tasks, tid);
   if(!t) return;
@@ -5633,9 +5821,14 @@ function quickUpdateMethod(tid, method){
   } else if(method==="dictate"){
     area.innerHTML = `
       <div class="af-hold-wrap">
+        <div class="af-lock-hint" id="afLockHint">↑ Desliza para no tener que sostenerlo</div>
         <div class="af-hold-timer" id="afHoldTimer">0s</div>
         <button type="button" class="af-hold-mic qu-hold-mic" id="afHoldMicBtn" aria-label="Mantén presionado para hablar">${iconMic()}</button>
-        <div class="af-hint show" id="afHoldHint">Mantén presionado el micrófono y cuenta el avance — suelta cuando termines</div>
+        <div class="af-hint show" id="afHoldHint">Mantén presionado y cuenta el avance, o toca una vez para grabar sin soltar</div>
+        <div class="af-hold-confirm-bar" id="afHoldConfirmBar">
+          <button type="button" class="btn btn-ghost" id="afHoldCancelBtn">✖️ Cancelar</button>
+          <button type="button" class="btn btn-primary" id="afHoldConfirmBtn" style="background:linear-gradient(135deg,#3FAE93,#7FD9C4);">✅ Enviar actualización</button>
+        </div>
       </div>`;
     setupUpdateHoldMic(area, tid);
   } else if(method==="photo"){
@@ -5670,6 +5863,10 @@ function setupUpdateHoldMic(container, tid){
   const btn = container.querySelector("#afHoldMicBtn");
   const timerEl = container.querySelector("#afHoldTimer");
   const hintEl = container.querySelector("#afHoldHint");
+  const lockHintEl = container.querySelector("#afLockHint");
+  const confirmBar = container.querySelector("#afHoldConfirmBar");
+  const confirmBtn = container.querySelector("#afHoldConfirmBtn");
+  const cancelBtn = container.querySelector("#afHoldCancelBtn");
   if(!btn) return;
   const secure = window.isSecureContext === true;
   const voiceAvailable = !!SpeechRecognitionAPI && secure;
@@ -5681,8 +5878,12 @@ function setupUpdateHoldMic(container, tid){
     btn.addEventListener("click", ()=>toast(hintEl.textContent, "info"));
     return;
   }
-  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0, held = false;
-  const MAX_HOLD_SECONDS = 120; // tope de seguridad (2 min) por si el dedo queda pegado sin querer
+  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0;
+  let held = false, locked = false, cancelled = false;
+  let pointerStartY = 0, pointerStartTime = 0;
+  const MAX_HOLD_SECONDS = 120;
+  const TAP_MAX_MS = 300;
+  const LOCK_PX = 45;
 
   const startRecognitionSession = ()=>{
     recognition = new SpeechRecognitionAPI();
@@ -5701,18 +5902,20 @@ function setupUpdateHoldMic(container, tid){
     };
     recognition.onerror = (event)=>{
       if(event.error==="no-speech") return; // el navegador reintenta solo vía onend
-      let msg = "No se pudo usar el micrófono.";
-      if(event.error==="not-allowed" || event.error==="service-not-allowed") msg = "Permiso de micrófono denegado. Revisa los permisos del navegador.";
-      else if(event.error==="network") msg = "Sin conexión para el reconocimiento de voz.";
-      if(event.error==="not-allowed" || event.error==="service-not-allowed"){ toast(msg,"error"); held=false; }
+      if(event.error==="not-allowed" || event.error==="service-not-allowed"){
+        toast("Permiso de micrófono denegado. Revisa los permisos del navegador.","error");
+        held=false;
+      }else if(event.error==="network"){
+        toast("Sin conexión para el reconocimiento de voz.","error");
+      }
     };
     recognition.onend = ()=>{
-      // En el celular, el motor de voz se corta solo cada pocos segundos aunque sigas
-      // presionando. Si el usuario TODAVÍA mantiene el dedo, reiniciamos por dentro
-      // sin que se note, sin perder lo dicho.
+      // En el celular, el motor de voz se corta solo cada pocos segundos. Si el
+      // usuario TODAVÍA está grabando, reiniciamos por dentro sin que se note.
       if(held && seconds < MAX_HOLD_SECONDS){
         try{ startRecognitionSession(); return; }catch(e){ /* sigue abajo si falla el reinicio */ }
       }
+      if(cancelled){ cancelled = false; return; }
       const raw = finalTranscript.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
       quickUpdateAnalyze(tid, {text: raw});
@@ -5720,30 +5923,80 @@ function setupUpdateHoldMic(container, tid){
     try{ recognition.start(); }catch(err){ toast("No se pudo iniciar el micrófono.","error"); held=false; }
   };
 
-  const startHold = (e)=>{
-    if(e) e.preventDefault();
+  const beginRecording = ()=>{
     if(held) return;
-    held = true;
+    held = true; locked = false; cancelled = false;
     finalTranscript = ""; seconds = 0;
-    timerEl.textContent = "0s";
+    timerEl.textContent = "0s"; timerEl.classList.add("show");
     btn.classList.add("holding");
     hintEl.textContent = "🎙️ Escuchando...";
+    if(lockHintEl) lockHintEl.classList.add("show");
     startRecognitionSession();
     timerInterval = setInterval(()=>{
       seconds++; timerEl.textContent = seconds+"s";
-      if(seconds >= MAX_HOLD_SECONDS){ toast("Grabación detenida (tope de 2 minutos).","info"); endHold(); }
+      if(seconds >= MAX_HOLD_SECONDS){ toast("Grabación detenida (tope de 2 minutos).","info"); finishRecording(); }
     }, 1000);
   };
-  const endHold = ()=>{
-    if(!held) return;
-    held = false;
+
+  const lockRecording = ()=>{
+    if(locked || !held) return;
+    locked = true;
+    btn.classList.add("locked");
     btn.classList.remove("holding");
+    if(lockHintEl) lockHintEl.classList.remove("show");
+    if(confirmBar) confirmBar.classList.add("show");
+  };
+
+  const finishRecording = ()=>{
+    if(!held) return;
+    held = false; locked = false;
+    btn.classList.remove("holding","locked");
+    timerEl.classList.remove("show");
+    if(lockHintEl) lockHintEl.classList.remove("show");
+    if(confirmBar) confirmBar.classList.remove("show");
     clearInterval(timerInterval);
     if(recognition){ try{ recognition.stop(); }catch(e){} }
   };
-  btn.addEventListener("mousedown", startHold);
-  btn.addEventListener("touchstart", startHold, {passive:false});
-  ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>btn.addEventListener(ev, endHold));
+
+  const cancelRecording = ()=>{
+    if(!held) return;
+    cancelled = true;
+    held = false; locked = false;
+    btn.classList.remove("holding","locked");
+    timerEl.classList.remove("show");
+    if(lockHintEl) lockHintEl.classList.remove("show");
+    if(confirmBar) confirmBar.classList.remove("show");
+    clearInterval(timerInterval);
+    if(recognition){ try{ recognition.stop(); }catch(e){} }
+    hintEl.textContent = "Cancelado. Mantén presionado o toca para intentar de nuevo.";
+  };
+
+  const onDown = (e)=>{
+    if(e) e.preventDefault();
+    if(held) return;
+    pointerStartY = e.touches ? e.touches[0].clientY : e.clientY;
+    pointerStartTime = Date.now();
+    beginRecording();
+  };
+  const onMove = (e)=>{
+    if(!held || locked) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    if(pointerStartY - y > LOCK_PX) lockRecording();
+  };
+  const onUp = ()=>{
+    if(!held || locked) return;
+    const heldMs = Date.now() - pointerStartTime;
+    if(heldMs < TAP_MAX_MS) lockRecording();
+    else finishRecording();
+  };
+
+  btn.addEventListener("mousedown", onDown);
+  btn.addEventListener("touchstart", onDown, {passive:false});
+  document.addEventListener("mousemove", onMove);
+  btn.addEventListener("touchmove", onMove, {passive:false});
+  ["mouseup","touchend","touchcancel"].forEach(ev=>btn.addEventListener(ev, onUp));
+  if(confirmBtn) confirmBtn.addEventListener("click", finishRecording);
+  if(cancelBtn) cancelBtn.addEventListener("click", cancelRecording);
 }
 async function quickUpdateAnalyze(tid, input){
   const area = document.getElementById("quEntryArea");
@@ -8296,13 +8549,22 @@ function stopDictation(reason){
   if(reason==="timeout") toast("Dictado detenido automáticamente tras 90 segundos.","info");
 }
 
-// Micrófono de "mantener presionado" (estilo WhatsApp): se mantiene apretado
-// para grabar, se suelta para detener y enviar directo a la IA. Un solo gesto,
-// sin tocar el micrófono dos veces. Se usa en el atajo rápido de Alma ("Hablar").
+// Micrófono con 3 formas de usarlo (estilo WhatsApp), para no obligar a sostenerlo
+// todo el rato:
+//  1) Mantener presionado y soltar → graba mientras lo sostienes, al soltar se envía.
+//  2) Tocar una vez (toque rápido, sin sostener) → queda grabando solo, sin que
+//     tengas que sostener nada; aparece un botón "Generar tarea" para terminar.
+//  3) Mantener y deslizar el dedo hacia arriba → se "bloquea" en modo grabación
+//     continua (igual que el toque rápido), y sueltas el dedo sin que se corte.
+// Se usa en el atajo rápido de Alma ("Hablar").
 function setupHoldMic(container){
   const btn = container.querySelector("#afHoldMicBtn");
   const timerEl = container.querySelector("#afHoldTimer");
   const hintEl = container.querySelector("#afHoldHint");
+  const lockHintEl = container.querySelector("#afLockHint");
+  const confirmBar = container.querySelector("#afHoldConfirmBar");
+  const confirmBtn = container.querySelector("#afHoldConfirmBtn");
+  const cancelBtn = container.querySelector("#afHoldCancelBtn");
   if(!btn) return;
   const secure = window.isSecureContext === true;
   const voiceAvailable = !!SpeechRecognitionAPI && secure;
@@ -8315,8 +8577,12 @@ function setupHoldMic(container){
     return;
   }
 
-  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0, held = false;
-  const MAX_HOLD_SECONDS = 120; // tope de seguridad (2 min) por si el dedo queda pegado sin querer
+  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0;
+  let held = false, locked = false, cancelled = false;
+  let pointerStartY = 0, pointerStartTime = 0;
+  const MAX_HOLD_SECONDS = 120; // tope de seguridad (2 min) por si queda grabando sin querer
+  const TAP_MAX_MS = 300;       // por debajo de esto, un toque cuenta como "toque rápido" (modo 2)
+  const LOCK_PX = 45;           // cuánto hay que deslizar hacia arriba para bloquear (modo 3)
 
   const startRecognitionSession = ()=>{
     recognition = new SpeechRecognitionAPI();
@@ -8335,18 +8601,21 @@ function setupHoldMic(container){
     };
     recognition.onerror = (event)=>{
       if(event.error==="no-speech") return; // el navegador reintenta solo vía onend
-      let msg = "No se pudo usar el micrófono.";
-      if(event.error==="not-allowed" || event.error==="service-not-allowed") msg = "Permiso de micrófono denegado. Revisa los permisos del navegador.";
-      else if(event.error==="network") msg = "Sin conexión para el reconocimiento de voz.";
-      if(event.error==="not-allowed" || event.error==="service-not-allowed"){ toast(msg,"error"); held=false; }
+      if(event.error==="not-allowed" || event.error==="service-not-allowed"){
+        toast("Permiso de micrófono denegado. Revisa los permisos del navegador.","error");
+        held=false;
+      }else if(event.error==="network"){
+        toast("Sin conexión para el reconocimiento de voz.","error");
+      }
     };
     recognition.onend = ()=>{
       // En el celular, el motor de voz se corta solo cada pocos segundos aunque sigas
-      // presionando (limitación conocida de Android/Chrome). Si el usuario TODAVÍA
-      // mantiene el dedo, reiniciamos por dentro sin que se note, sin perder lo dicho.
+      // presionando o esté bloqueado (limitación conocida de Android/Chrome). Si el
+      // usuario TODAVÍA está grabando, reiniciamos por dentro sin que se note.
       if(held && seconds < MAX_HOLD_SECONDS){
         try{ startRecognitionSession(); return; }catch(e){ /* sigue abajo si falla el reinicio */ }
       }
+      if(cancelled){ cancelled = false; return; }
       const raw = finalTranscript.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
       almaEntryCreateSmart(raw);
@@ -8354,33 +8623,80 @@ function setupHoldMic(container){
     try{ recognition.start(); }catch(err){ toast("No se pudo iniciar el micrófono.","error"); held=false; }
   };
 
-  const startHold = (e)=>{
-    if(e) e.preventDefault();
+  const beginRecording = ()=>{
     if(held) return;
-    held = true;
-    finalTranscript = "";
-    seconds = 0;
-    timerEl.textContent = "0s";
+    held = true; locked = false; cancelled = false;
+    finalTranscript = ""; seconds = 0;
+    timerEl.textContent = "0s"; timerEl.classList.add("show");
     btn.classList.add("holding");
     hintEl.textContent = "🎙️ Escuchando...";
+    if(lockHintEl) lockHintEl.classList.add("show");
     startRecognitionSession();
     timerInterval = setInterval(()=>{
       seconds++; timerEl.textContent = seconds+"s";
-      if(seconds >= MAX_HOLD_SECONDS){ toast("Grabación detenida (tope de 2 minutos).","info"); endHold(); }
+      if(seconds >= MAX_HOLD_SECONDS){ toast("Grabación detenida (tope de 2 minutos).","info"); finishRecording(); }
     }, 1000);
   };
 
-  const endHold = ()=>{
-    if(!held) return;
-    held = false;
+  const lockRecording = ()=>{
+    if(locked || !held) return;
+    locked = true;
+    btn.classList.add("locked");
     btn.classList.remove("holding");
+    if(lockHintEl) lockHintEl.classList.remove("show");
+    if(confirmBar) confirmBar.classList.add("show");
+  };
+
+  const finishRecording = ()=>{
+    if(!held) return;
+    held = false; locked = false;
+    btn.classList.remove("holding","locked");
+    timerEl.classList.remove("show");
+    if(lockHintEl) lockHintEl.classList.remove("show");
+    if(confirmBar) confirmBar.classList.remove("show");
     clearInterval(timerInterval);
     if(recognition){ try{ recognition.stop(); }catch(e){} }
   };
 
-  btn.addEventListener("mousedown", startHold);
-  btn.addEventListener("touchstart", startHold, {passive:false});
-  ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>btn.addEventListener(ev, endHold));
+  const cancelRecording = ()=>{
+    if(!held) return;
+    cancelled = true;
+    held = false; locked = false;
+    btn.classList.remove("holding","locked");
+    timerEl.classList.remove("show");
+    if(lockHintEl) lockHintEl.classList.remove("show");
+    if(confirmBar) confirmBar.classList.remove("show");
+    clearInterval(timerInterval);
+    if(recognition){ try{ recognition.stop(); }catch(e){} }
+    hintEl.textContent = "Cancelado. Mantén presionado o toca para intentar de nuevo.";
+  };
+
+  const onDown = (e)=>{
+    if(e) e.preventDefault();
+    if(held) return;
+    pointerStartY = e.touches ? e.touches[0].clientY : e.clientY;
+    pointerStartTime = Date.now();
+    beginRecording();
+  };
+  const onMove = (e)=>{
+    if(!held || locked) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    if(pointerStartY - y > LOCK_PX) lockRecording();
+  };
+  const onUp = ()=>{
+    if(!held || locked) return; // si ya está bloqueado, soltar no hace nada — se espera el botón
+    const heldMs = Date.now() - pointerStartTime;
+    if(heldMs < TAP_MAX_MS) lockRecording(); // toque rápido → modo 2: queda grabando solo
+    else finishRecording(); // mantener y soltar → modo 1: envía directo
+  };
+
+  btn.addEventListener("mousedown", onDown);
+  btn.addEventListener("touchstart", onDown, {passive:false});
+  document.addEventListener("mousemove", onMove);
+  btn.addEventListener("touchmove", onMove, {passive:false});
+  ["mouseup","touchend","touchcancel"].forEach(ev=>btn.addEventListener(ev, onUp));
+  if(confirmBtn) confirmBtn.addEventListener("click", finishRecording);
+  if(cancelBtn) cancelBtn.addEventListener("click", cancelRecording);
 }
 
 /* ---------------------------------------------------------------------- *
