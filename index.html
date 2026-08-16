@@ -1037,6 +1037,17 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .af-hold-mic.holding{transform:scale(1.12);box-shadow:0 0 0 10px rgba(139,157,240,.22),0 4px 20px rgba(139,157,240,.55);}
 .af-hold-mic.unsupported{background:#E8E2F2;cursor:not-allowed;box-shadow:none;}
 .af-hold-mic.unsupported svg{opacity:.5;}
+.tk-update-btn{
+  border:none;border-radius:9px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;
+  background:linear-gradient(135deg,#3FAE93,#7FD9C4);color:#fff;box-shadow:0 2px 8px rgba(63,174,147,.35);
+  transition:transform .12s, box-shadow .12s;
+}
+.tk-update-btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(63,174,147,.5);}
+.af-entry-method.aem-featured.aem-teal{background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 40%, #3FAE93 75%);box-shadow:0 4px 14px rgba(63,174,147,.4);}
+.af-entry-method.aem-featured.aem-teal:hover{box-shadow:0 5px 18px rgba(63,174,147,.55);}
+.af-entry-method.aem-featured.aem-teal.sel{background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 35%, #2E9680 80%);}
+.af-hold-mic.qu-hold-mic{background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 40%, #3FAE93 75%);box-shadow:0 4px 16px rgba(63,174,147,.45);}
+.af-hold-mic.qu-hold-mic.holding{box-shadow:0 0 0 10px rgba(63,174,147,.22),0 4px 20px rgba(63,174,147,.55);}
 .qi-trash{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;opacity:.55;}
 .qi-trash:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);opacity:1;}
 #genericModalBackdrop{background:rgba(10,11,20,.72);backdrop-filter:blur(7px);}
@@ -1671,10 +1682,6 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
           <h1>Mis tareas</h1>
           <p>Todas las tareas — filtra, ordena y busca en segundos</p>
         </div>
-        <button class="btn btn-primary" id="newTaskBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-          Nueva tarea
-        </button>
       </div>
       <div id="taskFiltersBarNew"></div>
       <div id="bulkActionsBar" class="hidden"></div>
@@ -1693,10 +1700,6 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
           <h1>Tablero Kanban</h1>
           <p>Arrastra las tarjetas para actualizar el estado de cada tarea</p>
         </div>
-        <button class="btn btn-primary" id="newTaskBtnKanban">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-          Nueva tarea
-        </button>
       </div>
       <div id="kanbanFiltersBarNew"></div>
       <div class="kanban-board" id="kanbanBoard"></div>
@@ -1709,10 +1712,6 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
           <h1>Calendario</h1>
           <p>Visualiza tus vencimientos por mes o por semana</p>
         </div>
-        <button class="btn btn-primary" id="newTaskBtnCalendar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-          Nueva tarea
-        </button>
       </div>
       <div class="filters-bar" id="calendarFiltersBar"></div>
       <div class="panel" id="calQueuePanel" style="margin-bottom:16px;">
@@ -3006,9 +3005,6 @@ document.getElementById("themeToggle").addEventListener("click", ()=>{
 
 /* quick add */
 document.getElementById("quickAddTask").addEventListener("click", ()=>openAlmaEntry());
-document.getElementById("newTaskBtn").addEventListener("click", ()=>openTaskModal(null));
-document.getElementById("newTaskBtnKanban").addEventListener("click", ()=>openTaskModal(null));
-document.getElementById("newTaskBtnCalendar").addEventListener("click", ()=>openTaskModal(null));
 document.getElementById("newProjectBtn").addEventListener("click", ()=>openProjectModal(null));
 
 /* global search */
@@ -4651,6 +4647,7 @@ function taskCardHTML(t){
       ${ctx?`<div class="tk-ctx">${esc(ctx)}</div>`:""}
     </div>
     ${owner?`<span class="tk-avatar" style="background:${owner.color}" title="${esc(owner.name)}">${initials(owner.name)}</span>`:""}
+    ${!done?`<button type="button" class="tk-update-btn" data-quick-update="${t.id}" title="Agregar actualización">💬 Actualizar</button>`:""}
     ${canReag?`<button class="tk-reag" data-reag="${t.id}" title="Reagendar">🔄</button>`:""}
     <button type="button" class="status-pill status-pill-btn tk-status" data-status-btn="${t.id}" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color};" title="Cambiar estado">${st.label} <span style="font-size:9px;opacity:.7;">▾</span></button>
   </div>`;
@@ -4692,6 +4689,7 @@ function renderTaskList(){
   wrap.querySelectorAll("[data-open-task]").forEach(el=>el.addEventListener("click",()=>openTaskModal(el.dataset.openTask)));
   wrap.querySelectorAll("[data-status-btn]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); openStatusMenu(b, b.dataset.statusBtn); }));
   wrap.querySelectorAll("[data-reag]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); reagendarTask(b.dataset.reag); }));
+  wrap.querySelectorAll("[data-quick-update]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); openQuickUpdate(b.dataset.quickUpdate); }));
   wrap.querySelectorAll(".tk-check").forEach(c=>c.addEventListener("change",(e)=>{
     const id=c.dataset.tid; if(e.target.checked) selectedTaskIds.add(id); else selectedTaskIds.delete(id); renderBulkBar();
   }));
@@ -5583,6 +5581,228 @@ function reagendarTask(tid){
   askAlmaScheduleMode(tid, t.title);
   // pista amable
   setTimeout(()=>{ const q=document.querySelector(".alma-form .af-sub"); if(q) q.textContent = "busquemos un nuevo momento"; }, 30);
+}
+/* ---------------------------------------------------------------------- *
+ * ACTUALIZACIÓN RÁPIDA — atajo desde "Mis tareas" (botón 💬 Actualizar)
+ * Igual que Alma (Hablar/Escribir/Foto), pero para contar el avance de una
+ * tarea que ya existe, sin necesidad de abrir el formulario completo.
+ * ---------------------------------------------------------------------- */
+function openQuickUpdate(tid){
+  const t = byId(DB.tasks, tid);
+  if(!t) return;
+  const html = `
+    <div class="alma-form manual">
+      <div class="af-head">
+        <div class="af-orb" style="background:radial-gradient(circle at 35% 30%, #E3FBF3 0%, #7FD9C4 45%, #3FAE93 80%);"></div>
+        <div><div class="af-name">Actualización</div><div class="af-sub">${esc(t.title)}</div></div>
+      </div>
+      <div class="af-question">¿Cómo me cuentas el avance?</div>
+      <div class="af-entry-methods">
+        <button class="af-entry-method aem-featured aem-teal" data-qumethod="dictate">
+          <span class="aem-icon">🎙️</span><span class="aem-label">Hablar</span>
+        </button>
+        <button class="af-entry-method" data-qumethod="write">
+          <span class="aem-icon">✍️</span><span class="aem-label">Escribir</span>
+        </button>
+        <button class="af-entry-method" data-qumethod="photo">
+          <span class="aem-icon">📷</span><span class="aem-label">Foto</span>
+        </button>
+      </div>
+      <div id="quEntryArea" style="margin-top:16px;"></div>
+    </div>`;
+  openGenericModal("", html);
+  document.getElementById("genericModalTitle").style.display = "none";
+  document.querySelectorAll("[data-qumethod]").forEach(b=>b.addEventListener("click", ()=>{
+    document.querySelectorAll("[data-qumethod]").forEach(x=>x.classList.remove("sel"));
+    b.classList.add("sel");
+    quickUpdateMethod(tid, b.dataset.qumethod);
+  }));
+  quickUpdateMethod(tid, "dictate");
+  document.querySelector('[data-qumethod="dictate"]').classList.add("sel");
+}
+function quickUpdateMethod(tid, method){
+  const area = document.getElementById("quEntryArea");
+  if(!area) return;
+  if(method==="write"){
+    area.innerHTML = `
+      <textarea id="quInput" class="af-input" placeholder="Ej: ya envié el informe, quedó pendiente la firma" style="min-height:70px;"></textarea>
+      <button id="quGo" class="btn btn-primary" style="width:100%;margin-top:8px;">Enviar</button>`;
+    const inp = document.getElementById("quInput");
+    inp.focus();
+    document.getElementById("quGo").addEventListener("click", ()=>{ const v=inp.value.trim(); if(v) quickUpdateAnalyze(tid, {text:v}); });
+  } else if(method==="dictate"){
+    area.innerHTML = `
+      <div class="af-hold-wrap">
+        <div class="af-hold-timer" id="afHoldTimer">0s</div>
+        <button type="button" class="af-hold-mic qu-hold-mic" id="afHoldMicBtn" aria-label="Mantén presionado para hablar">${iconMic()}</button>
+        <div class="af-hint show" id="afHoldHint">Mantén presionado el micrófono y cuenta el avance — suelta cuando termines</div>
+      </div>`;
+    setupUpdateHoldMic(area, tid);
+  } else if(method==="photo"){
+    area.innerHTML = `
+      <div class="alma-dropzone" id="quDropzone" tabindex="0">
+        <span style="font-size:26px;">📷</span>
+        <div style="font-weight:600;color:#3A2F5C;margin-top:4px;">Toma una foto, sube una imagen o pega (Ctrl+V)</div>
+        <div style="font-size:12px;color:#9B8BB5;margin-top:3px;">Por ejemplo, una captura de un correo con la novedad.</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;">
+          <label class="af-mini-btn">📷 Tomar foto<input type="file" accept="image/*" capture="environment" id="quCam" class="hidden"></label>
+          <label class="af-mini-btn">🖼️ Subir imagen<input type="file" accept="image/*" id="quPhoto" class="hidden"></label>
+        </div>
+      </div>`;
+    const dz = document.getElementById("quDropzone");
+    const handle = (e)=>{ const f=e.target.files[0]; if(f) quickUpdateAnalyze(tid, {imageFile:f}); e.target.value=""; };
+    document.getElementById("quPhoto").addEventListener("change", handle);
+    const cam = document.getElementById("quCam");
+    if(cam) cam.addEventListener("change", handle);
+    dz.addEventListener("paste", (e)=>{
+      const f = Array.from((e.clipboardData||{}).items||[]).map(i=>i.getAsFile&&i.getAsFile()).find(x=>x&&x.type.startsWith("image/"));
+      if(f) quickUpdateAnalyze(tid, {imageFile:f});
+    });
+    dz.addEventListener("dragover",(e)=>{e.preventDefault();dz.classList.add("dragover");});
+    dz.addEventListener("dragleave",()=>dz.classList.remove("dragover"));
+    dz.addEventListener("drop",(e)=>{e.preventDefault();dz.classList.remove("dragover");const f=Array.from(e.dataTransfer.files||[]).find(x=>x.type.startsWith("image/"));if(f)quickUpdateAnalyze(tid,{imageFile:f});});
+    dz.focus();
+  }
+}
+// Igual que setupHoldMic, pero al soltar manda el texto a quickUpdateAnalyze
+// (interpretar avance de ESTA tarea) en vez de crear una tarea nueva.
+function setupUpdateHoldMic(container, tid){
+  const btn = container.querySelector("#afHoldMicBtn");
+  const timerEl = container.querySelector("#afHoldTimer");
+  const hintEl = container.querySelector("#afHoldHint");
+  if(!btn) return;
+  const secure = window.isSecureContext === true;
+  const voiceAvailable = !!SpeechRecognitionAPI && secure;
+  if(!voiceAvailable){
+    btn.classList.add("unsupported");
+    hintEl.textContent = SpeechRecognitionAPI
+      ? "🎙️ El dictado por voz se activará cuando la app esté publicada en línea (con https)."
+      : "🎙️ Tu navegador no soporta dictado por voz (prueba con Chrome o Edge).";
+    btn.addEventListener("click", ()=>toast(hintEl.textContent, "info"));
+    return;
+  }
+  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0, held = false;
+  const startHold = (e)=>{
+    if(e) e.preventDefault();
+    if(held) return;
+    held = true;
+    finalTranscript = ""; seconds = 0;
+    timerEl.textContent = "0s";
+    btn.classList.add("holding");
+    hintEl.textContent = "🎙️ Escuchando...";
+    recognition = new SpeechRecognitionAPI();
+    recognition.lang = (navigator.language && navigator.language.startsWith("es")) ? navigator.language : "es-ES";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event)=>{
+      let interim = "";
+      for(let i=event.resultIndex; i<event.results.length; i++){
+        const t = event.results[i][0].transcript;
+        if(event.results[i].isFinal) finalTranscript += t + " ";
+        else interim += t;
+      }
+      const preview = (finalTranscript + interim).trim();
+      hintEl.textContent = preview ? "🎙️ " + preview : "🎙️ Escuchando...";
+    };
+    recognition.onerror = (event)=>{
+      if(event.error==="no-speech") return;
+      let msg = "No se pudo usar el micrófono.";
+      if(event.error==="not-allowed" || event.error==="service-not-allowed") msg = "Permiso de micrófono denegado. Revisa los permisos del navegador.";
+      else if(event.error==="network") msg = "Sin conexión para el reconocimiento de voz.";
+      toast(msg, "error");
+    };
+    recognition.onend = ()=>{
+      const raw = finalTranscript.trim();
+      if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
+      quickUpdateAnalyze(tid, {text: raw});
+    };
+    try{
+      recognition.start();
+      timerInterval = setInterval(()=>{ seconds++; timerEl.textContent = seconds+"s"; }, 1000);
+    }catch(err){
+      toast("No se pudo iniciar el micrófono.","error");
+      held = false;
+    }
+  };
+  const endHold = ()=>{
+    if(!held) return;
+    held = false;
+    btn.classList.remove("holding");
+    clearInterval(timerInterval);
+    if(recognition){ try{ recognition.stop(); }catch(e){} }
+  };
+  btn.addEventListener("mousedown", startHold);
+  btn.addEventListener("touchstart", startHold, {passive:false});
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>btn.addEventListener(ev, endHold));
+}
+async function quickUpdateAnalyze(tid, input){
+  const area = document.getElementById("quEntryArea");
+  if(area) area.innerHTML = `<div class="af-hint">✨ Interpretando el avance...</div>`;
+  try{
+    const statusList = TASK_STATUSES.map(s=>`${s.id} (${s.label})`).join(", ");
+    const instructions = `Eres un asistente que interpreta actualizaciones de avance de una tarea, dichas de forma informal (por voz, escritas, o desde una imagen). Hoy es ${TODAY()}. Responde SOLO con un JSON válido, sin texto adicional, con esta forma exacta:
+{"status":"...", "resumen":"...", "proxima_fecha":"YYYY-MM-DD o null", "proxima_hora":"HH:MM o null"}
+- "status": el estado más lógico, elige EXACTAMENTE uno de: ${statusList}. Ejemplos: si dice que ya terminó/entregó → completada. Si está esperando algo de un tercero o con un impedimento → bloqueada. Si está trabajando o avanzando → en_progreso. Si está listo para revisión → en_revision. Si no ha empezado → pendiente.
+- "resumen": reescribe el avance en una frase clara y profesional en español (máx 200 caracteres).
+- "proxima_fecha"/"proxima_hora": SOLO si menciona cuándo retomará o continuará, para reagendar la MISMA tarea (no crea una nueva). Si no menciona nada, usa null.
+Responde solo el JSON.`;
+    let content;
+    if(input.imageFile){
+      const base64 = await fileToBase64(input.imageFile);
+      const mediaType = input.imageFile.type || "image/png";
+      content = [
+        { type:"image", source:{ type:"base64", media_type: mediaType, data: base64 } },
+        { type:"text", text: `Esta imagen muestra evidencia del avance de una tarea (ej. una captura de correo). ${instructions}` },
+      ];
+    }else{
+      content = `Actualización dictada/escrita por el usuario sobre el avance de su tarea: """${input.text}"""\n\n${instructions}`;
+    }
+    const raw = await askAI(content);
+    const cleaned = raw.replace(/```json|```/g,"").trim();
+    const parsed = JSON.parse(cleaned);
+    quickUpdateRenderPreview(tid, input, parsed);
+  }catch(e){
+    const area2 = document.getElementById("quEntryArea");
+    if(area2) area2.innerHTML = `<div class="af-hint" style="color:var(--danger);">${aiUnavailableMessage()}</div>`;
+  }
+}
+function quickUpdateRenderPreview(tid, input, parsed){
+  const area = document.getElementById("quEntryArea");
+  if(!area) return;
+  const st = byId(TASK_STATUSES, parsed.status) || {id:"en_progreso", label:"En progreso", color:"var(--info)"};
+  const rescheduleLine = parsed.proxima_fecha
+    ? `<div class="asp-row"><span>📅</span><span>Se reagenda para ${esc(parsed.proxima_fecha)}${parsed.proxima_hora?" · "+esc(parsed.proxima_hora):""}</span></div>`
+    : "";
+  area.innerHTML = `
+    <div class="asp-card">
+      <div class="af-hint" style="margin-bottom:8px;">✨ Esto entendí:</div>
+      <div class="asp-title" style="font-size:14px;">${esc(parsed.resumen||input.text||"")}</div>
+      <div class="asp-row"><span>🚦</span><span>Nuevo estado: ${esc(st.label)}</span></div>
+      ${rescheduleLine}
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-ghost" id="quCancel" style="flex:1;">✖️ Descartar</button>
+        <button class="btn btn-primary" id="quConfirm" style="flex:1;background:linear-gradient(135deg,#3FAE93,#7FD9C4);">✅ Aplicar</button>
+      </div>
+    </div>`;
+  document.getElementById("quConfirm").addEventListener("click", ()=>quickUpdateApply(tid, input, parsed, st));
+  document.getElementById("quCancel").addEventListener("click", ()=>closeGenericModal());
+}
+function quickUpdateApply(tid, input, parsed, st){
+  const t = byId(DB.tasks, tid);
+  if(!t){ closeGenericModal(); return; }
+  let logText = parsed.resumen || input.text || "Actualización agregada.";
+  if(parsed.proxima_fecha){
+    t.startDate = parsed.proxima_fecha;
+    if(parsed.proxima_hora) t.executionTime = parsed.proxima_hora;
+    logText += ` (próxima acción: ${fmtDate(parsed.proxima_fecha)}${parsed.proxima_hora?` a las ${parsed.proxima_hora}`:""})`;
+  }
+  if(!Array.isArray(t.updates)) t.updates = [];
+  t.updates.unshift({ id: uid("upd"), text: logText, at: new Date().toISOString(), status: st.id });
+  t.status = st.id;
+  t.updatedAt = TODAY();
+  logActivity("task_updated", `Actualizaste "${t.title}": ${logText}`);
+  recomputeAll(); saveDB(); closeGenericModal(); render();
+  toast(`✨ "${t.title}" actualizada a "${st.label}".`, "success");
 }
 function askAlmaScheduleMode(tid, title){
   const html = `
