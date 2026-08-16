@@ -134,6 +134,70 @@ exports.handler = async function (event) {
       return json(200, { ok: true });
     }
 
+    // Le dice al front-end si la persona que inició sesión es la administradora
+    // (para mostrarle o no la pantalla de "Usuarios"). Se define quién es admin
+    // con la variable de entorno ADMIN_USERNAME en Netlify.
+    if (action === "amIAdmin") {
+      if (!token) return json(200, { isAdmin: false });
+      const rec = await sessions.get(token, { type: "json" });
+      const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
+      const isAdmin = !!(rec && adminUser && rec.username === adminUser);
+      return json(200, { isAdmin });
+    }
+
+    // Lista todos los usuarios registrados (usuario, correo, fecha de creación).
+    // Solo responde si quien pregunta es realmente la cuenta admin — cualquier
+    // otra persona recibe un error, aunque tenga sesión válida.
+    if (action === "listUsers") {
+      if (!token) return json(401, { error: "Falta token" });
+      const rec = await sessions.get(token, { type: "json" });
+      const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
+      if (!rec || !adminUser || rec.username !== adminUser) {
+        return json(403, { error: "No tienes permiso para ver esto" });
+      }
+      const listing = await users.list();
+      const out = [];
+      for (const entry of listing.blobs || []) {
+        const u = await users.get(entry.key, { type: "json" });
+        if (u) out.push({ username: entry.key, email: u.email || "", createdAt: u.createdAt || "" });
+      }
+      out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)); // más reciente primero
+      return json(200, { users: out });
+    }
+
+    // Elimina por completo una cuenta (la cuenta en sí, sus datos guardados, y
+    // cualquier sesión activa que tuviera) — solo la administradora puede hacerlo,
+    // y no puede eliminarse a sí misma por accidente.
+    if (action === "deleteUser") {
+      if (!token) return json(401, { error: "Falta token" });
+      const rec = await sessions.get(token, { type: "json" });
+      const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
+      if (!rec || !adminUser || rec.username !== adminUser) {
+        return json(403, { error: "No tienes permiso para hacer esto" });
+      }
+      const targetUser = String(body.targetUsername || "").trim().toLowerCase();
+      if (!targetUser) return json(400, { error: "Falta el usuario a eliminar" });
+      if (targetUser === adminUser) {
+        return json(400, { error: "No puedes eliminar tu propia cuenta de administrador" });
+      }
+      const exists = await users.get(targetUser, { type: "json" });
+      if (!exists) return json(404, { error: "Ese usuario ya no existe" });
+
+      await users.delete(targetUser);
+      const userdata = store("userdata");
+      await userdata.delete(targetUser);
+
+      // cerramos cualquier sesión activa que tuviera esa persona, para que no
+      // le quede la app abierta en su celular usando datos ya borrados.
+      const sessionListing = await sessions.list();
+      for (const entry of sessionListing.blobs || []) {
+        const s = await sessions.get(entry.key, { type: "json" });
+        if (s && s.username === targetUser) await sessions.delete(entry.key);
+      }
+
+      return json(200, { ok: true });
+    }
+
     if (action === "forgotPassword") {
       if (!username) return json(400, { error: "Falta el usuario" });
       const uname = String(username).trim().toLowerCase();
