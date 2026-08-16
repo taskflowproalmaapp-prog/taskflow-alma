@@ -1024,6 +1024,19 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .asp-card{background:#F9F6FD;border:1.5px solid #E8DDF0;border-radius:14px;padding:16px;}
 .asp-title{font-size:16px;font-weight:700;color:#3A2F5C;margin-bottom:10px;}
 .asp-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#4A3F6C;padding:5px 0;}
+.af-hold-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 10px 6px;}
+.af-hold-timer{font-size:13px;font-weight:700;color:#7A6BA8;min-height:18px;opacity:0;transition:opacity .15s;}
+.af-hold-timer.show{opacity:1;}
+.af-hold-mic{
+  width:78px;height:78px;border-radius:50%;border:none;cursor:pointer;color:#fff;font-size:0;
+  background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 40%, #8B9DF0 75%);
+  box-shadow:0 4px 16px rgba(139,157,240,.45);display:flex;align-items:center;justify-content:center;
+  transition:transform .12s, box-shadow .12s; touch-action:none; user-select:none;
+}
+.af-hold-mic svg{width:30px;height:30px;}
+.af-hold-mic.holding{transform:scale(1.12);box-shadow:0 0 0 10px rgba(139,157,240,.22),0 4px 20px rgba(139,157,240,.55);}
+.af-hold-mic.unsupported{background:#E8E2F2;cursor:not-allowed;box-shadow:none;}
+.af-hold-mic.unsupported svg{opacity:.5;}
 .qi-trash{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;opacity:.55;}
 .qi-trash:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);opacity:1;}
 #genericModalBackdrop{background:rgba(10,11,20,.72);backdrop-filter:blur(7px);}
@@ -5297,15 +5310,13 @@ function openAlmaSpeak(){
     <div class="alma-form manual">
       <div class="af-head">
         <div class="af-orb"></div>
-        <div><div class="af-name">Alma</div><div class="af-sub">te escucho, cuéntame qué necesitas</div></div>
+        <div><div class="af-name">Alma</div><div class="af-sub">mantén presionado y cuéntame</div></div>
       </div>
       <div id="afEntryArea" style="margin-top:10px;"></div>
     </div>`;
   openGenericModal("", html);
   document.getElementById("genericModalTitle").style.display = "none";
   almaEntryMethod("dictate");
-  const micBtn = document.querySelector('.mic-btn[data-mic-target="afEntryInput"]');
-  if(micBtn && !micBtn.classList.contains("unsupported")) startDictation(micBtn);
 }
 function openAlmaEntry(){
   const html = `
@@ -5354,19 +5365,14 @@ function almaEntryMethod(method){
     document.getElementById("afEntryGo").addEventListener("click", go);
     inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
   } else if(method==="dictate"){
-    area.innerHTML = `<div class="af-hint" id="afEntryInput_michint"></div>
-       <div style="position:relative;margin-top:8px;">
-         <input type="text" id="afEntryInput" class="af-input" placeholder="Ej: llamar al dentista" style="padding-right:88px;">
-         <button type="button" class="mic-btn" data-mic-target="afEntryInput" data-mic-mode="title" title="Dictar por voz" style="position:absolute;right:46px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:none;border-radius:10px;background:#f0edfb;color:#6b5b95;cursor:pointer;display:flex;align-items:center;justify-content:center;">${iconMic()}</button>
-         <button id="afEntryGo" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,#8B9DF0,#C9A7F5);color:#fff;cursor:pointer;font-size:18px;">→</button>
-       </div>`;
-    bindMicButtons(area);
-    const inp = document.getElementById("afEntryInput");
-    if(inp){ inp.focus();
-      const go = ()=>{ const v=inp.value.trim(); if(v) almaEntryCreateSmart(v); };
-      document.getElementById("afEntryGo").addEventListener("click", go);
-      inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
-    }
+    area.innerHTML = `
+      <div class="af-hold-wrap">
+        <div class="af-hold-timer" id="afHoldTimer">0s</div>
+        <button type="button" class="af-hold-mic" id="afHoldMicBtn" aria-label="Mantén presionado para hablar">${iconMic()}</button>
+        <div class="af-hint show" id="afHoldHint">Mantén presionado el micrófono y habla — suelta para que Alma entienda</div>
+      </div>
+      <input type="text" id="afEntryInput" class="hidden">`;
+    setupHoldMic(area);
   } else if(method==="photo"){
     area.innerHTML = `
       <div class="alma-dropzone" id="afEntryDropzone" tabindex="0">
@@ -5407,15 +5413,34 @@ function almaEntryCreate(title){
   DB.tasks.push(t); saveDB();
   askAlmaScheduleMode(t.id, title);
 }
+// Prompt específico para el dictado rápido de Alma: además de los campos de siempre,
+// le pide a la IA que decida si es una TAREA (algo pendiente, sin hora fija todavía)
+// o una ACTIVIDAD (un evento que ya tiene fecha y hora, como una reunión o una cita).
+function almaVoiceCaptureInstructions(){
+  return `Hoy es ${TODAY()}. Analiza este texto dictado por voz para crear una tarea o actividad. Responde SOLO con un JSON válido, sin texto adicional ni comillas de bloque, con esta forma exacta:
+{"titulo":"...", "descripcion":"...", "kind":"tarea|actividad", "tipo_tarea":"personal|laboral", "solicitante":"...", "fecha_vencimiento":"YYYY-MM-DD", "hora_vencimiento":"HH:MM", "fecha_ejecucion":"YYYY-MM-DD", "hora_ejecucion":"HH:MM", "horas_estimadas":0, "prioridad":"alta|media|baja", "etiquetas":["..."]}
+Instrucciones:
+- "kind": usa "actividad" SOLO si es un evento que ya tiene su cuándo (una reunión, una cita, una llamada agendada, un vuelo, etc). Usa "tarea" para todo lo demás — algo pendiente por hacer, sin hora fija todavía.
+- "titulo": breve (máx 80 caracteres), qué hay que hacer.
+- "descripcion": resume la tarea o actividad y su contexto relevante, en español.
+- "tipo_tarea": "personal" (vida, familia, salud, hogar) o "laboral" (trabajo, clientes, empresa).
+- "solicitante": quién se la pidió, si lo menciona. Si no aplica, usa null.
+- "fecha_vencimiento"/"hora_vencimiento": SOLO para una TAREA con plazo límite mencionado. Para una actividad, deja ambos en null.
+- "fecha_ejecucion"/"hora_ejecucion": el día y hora en que ocurre la actividad, o en que el usuario piensa hacer la tarea, si lo menciona.
+- "horas_estimadas": número (puede ser decimal, ej 0.5, 1, 2) de cuánto cree que toma. Si no lo menciona, usa null.
+- "prioridad": "alta" si es urgente/importante, "media" si es normal, "baja" si puede esperar. Si no hay pistas, usa "media".
+- "etiquetas": 0 a 3 palabras clave relevantes, en minúscula.
+Nunca inventes datos que no estén sugeridos por el texto — usa null si no aparece. Responde solo el JSON.`;
+}
 // Igual que almaEntryCreate, pero primero le pide a la IA que interprete el texto
-// dictado (fecha, hora, prioridad, si es personal o laboral, etc.), muestra un
-// resumen de lo que entendió, y pide confirmación antes de crear la tarea.
+// dictado (tarea o actividad, fecha, hora, prioridad, si es personal o laboral, etc.),
+// muestra un resumen de lo que entendió, y pide confirmación antes de crear la tarea.
 // Si la IA falla, cae de vuelta al flujo normal (texto literal + wizard manual).
 async function almaEntryCreateSmart(rawText){
   const area = document.getElementById("afEntryArea");
   if(area) area.innerHTML = `<div class="af-hint">✨ Entendiendo tu tarea...</div>`;
   try{
-    const content = `Instrucción o texto dictado por voz para crear una tarea: """${rawText}"""\n\n${smartCaptureInstructions()}`;
+    const content = `Instrucción o texto dictado por voz para crear una tarea: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
     const raw = await askAI(content);
     const cleaned = raw.replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(cleaned);
@@ -5426,21 +5451,30 @@ async function almaEntryCreateSmart(rawText){
   }
 }
 // Muestra la tarjeta "Esto entendí" con resumen y pide confirmación antes de crear.
+// Regla importante: una ACTIVIDAD sin fecha/hora clara NUNCA se agenda a medias —
+// se avisa que quedará en "Por agendar" para completarla después (manual o con IA).
 function almaRenderSmartPreview(rawText, parsed){
   const area = document.getElementById("afEntryArea");
   if(!area) return;
   const title = String(parsed.titulo || rawText).slice(0,120);
+  const isActivity = parsed.kind === "actividad";
   const taskType = (parsed.tipo_tarea==="laboral") ? "laboral" : "personal";
   const priority = ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media";
   const dueDate = parsed.fecha_vencimiento||"", dueTime = parsed.hora_vencimiento||"";
   const startDate = parsed.fecha_ejecucion||"", execTime = parsed.hora_ejecucion||"";
+  const activityIncomplete = isActivity && !(startDate && execTime);
   const prioLabel = {alta:"🔴 Alta", media:"🟡 Media", baja:"🟢 Baja"}[priority];
   const filas = [];
+  filas.push(`<div class="asp-row"><span>${isActivity?"📅":"📋"}</span><span>${isActivity?"Actividad":"Tarea"}</span></div>`);
   filas.push(`<div class="asp-row"><span>${taskType==="laboral"?"💼":"🌿"}</span><span>${taskType==="laboral"?"Laboral":"Personal"}</span></div>`);
   if(dueDate) filas.push(`<div class="asp-row"><span>⏰</span><span>Vence ${esc(dueDate)}${dueTime?" · "+esc(dueTime):""}</span></div>`);
   if(startDate) filas.push(`<div class="asp-row"><span>📅</span><span>La harías ${esc(startDate)}${execTime?" · "+esc(execTime):""}</span></div>`);
   filas.push(`<div class="asp-row"><span>🚩</span><span>Prioridad ${prioLabel}</span></div>`);
-  if(!dueDate && !startDate) filas.push(`<div class="asp-row" style="color:#9B8BB5;"><span>💭</span><span>Sin fecha aún — quedará en "Por agendar"</span></div>`);
+  if(activityIncomplete){
+    filas.push(`<div class="asp-row" style="color:#B8860B;"><span>⚠️</span><span>Es una actividad pero no capté bien cuándo — quedará en "Por agendar" para que le pongas día y hora</span></div>`);
+  } else if(!dueDate && !startDate){
+    filas.push(`<div class="asp-row" style="color:#9B8BB5;"><span>💭</span><span>Sin fecha aún — quedará en "Por agendar"</span></div>`);
+  }
 
   area.innerHTML = `
     <div class="asp-card">
@@ -5456,17 +5490,28 @@ function almaRenderSmartPreview(rawText, parsed){
   document.getElementById("almaSpCancel").addEventListener("click", ()=>almaEntryMethod("dictate"));
 }
 // Crea la tarea de verdad, ya confirmada por el usuario desde la tarjeta de resumen.
+// Si es una ACTIVIDAD con fecha y hora completas, se guarda ya agendada (igual que
+// el asistente manual). Si falta fecha u hora, se guarda como pendiente sin horario
+// (nunca como actividad a medias) y cae sola en "Por agendar".
 function almaConfirmSmartTask(rawText, parsed){
   const title = String(parsed.titulo || rawText).slice(0,120);
+  const isActivity = parsed.kind === "actividad";
+  const startDate = parsed.fecha_ejecucion||"", execTime = parsed.hora_ejecucion||"";
+  const activityComplete = isActivity && startDate && execTime;
+  const estimatedTime = (typeof parsed.horas_estimadas === "number") ? parsed.horas_estimadas : (Number(parsed.horas_estimadas)||0);
   const t = {
-    id: uid("t"), title, description: parsed.descripcion||"", kind:"tarea", projectId:null, owner:null, ownerName:"",
-    requestArea: parsed.area||"", lifeArea:"", requestedBy: parsed.solicitante||"", company: parsed.empresa||"",
+    id: uid("t"), title, description: parsed.descripcion||"", kind: activityComplete ? "actividad" : "tarea",
+    projectId:null, owner:null, ownerName:"",
+    requestArea: parsed.area||"", lifeArea:"", requestedBy: activityComplete ? "" : (parsed.solicitante||""), company: parsed.empresa||"",
     taskType: (parsed.tipo_tarea==="laboral"?"laboral":"personal"),
     requestDate: parsed.fecha_solicitud||"", requestTime:"",
-    startDate: parsed.fecha_ejecucion||"", executionTime: parsed.hora_ejecucion||"",
-    dueDate: parsed.fecha_vencimiento||"", dueTime: parsed.hora_vencimiento||"",
+    // una actividad incompleta NO se agenda a medias: se guarda sin fecha/hora de ejecución
+    startDate: activityComplete ? startDate : "",
+    executionTime: activityComplete ? execTime : "",
+    dueDate: activityComplete ? "" : (parsed.fecha_vencimiento||""),
+    dueTime: activityComplete ? "" : (parsed.hora_vencimiento||""),
     priority: ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media",
-    status:"pendiente", tags: Array.isArray(parsed.etiquetas)?parsed.etiquetas:[], estimatedTime:0, actualTime:0, progress:0,
+    status:"pendiente", tags: Array.isArray(parsed.etiquetas)?parsed.etiquetas:[], estimatedTime, actualTime:0, progress:0,
     subtasks:[], checklist:[], comments:[], files:[], dependencies:[], updates:[],
     blocking:false, recurring:{enabled:false, frequency:"semanal"}, reminders:[],
     realStart:"", realEnd:"", createdAt: TODAY(), updatedAt: TODAY(), archived:false,
@@ -5475,9 +5520,11 @@ function almaConfirmSmartTask(rawText, parsed){
   recomputeAll(); saveDB(); render();
   closeGenericModal();
   const resumen = [];
+  resumen.push(t.kind==="actividad" ? "📅 actividad" : "📋 tarea");
   resumen.push(t.taskType==="laboral" ? "💼 laboral" : "🌿 personal");
   if(t.dueDate) resumen.push(`vence ${t.dueDate}${t.dueTime?" "+t.dueTime:""}`);
   if(t.startDate) resumen.push(`la harías ${t.startDate}${t.executionTime?" "+t.executionTime:""}`);
+  if(!t.startDate) resumen.push(`en "Por agendar"`);
   resumen.push(`prioridad ${t.priority}`);
   toast(`✨ Creé "${title}" · ${resumen.join(" · ")}`, "success");
 }
@@ -8017,6 +8064,85 @@ function stopDictation(reason){
     try{ activeRecognition.stop(); }catch(e){}
   }
   if(reason==="timeout") toast("Dictado detenido automáticamente tras 90 segundos.","info");
+}
+
+// Micrófono de "mantener presionado" (estilo WhatsApp): se mantiene apretado
+// para grabar, se suelta para detener y enviar directo a la IA. Un solo gesto,
+// sin tocar el micrófono dos veces. Se usa en el atajo rápido de Alma ("Hablar").
+function setupHoldMic(container){
+  const btn = container.querySelector("#afHoldMicBtn");
+  const timerEl = container.querySelector("#afHoldTimer");
+  const hintEl = container.querySelector("#afHoldHint");
+  if(!btn) return;
+  const secure = window.isSecureContext === true;
+  const voiceAvailable = !!SpeechRecognitionAPI && secure;
+  if(!voiceAvailable){
+    btn.classList.add("unsupported");
+    hintEl.textContent = SpeechRecognitionAPI
+      ? "🎙️ El dictado por voz se activará cuando la app esté publicada en línea (con https)."
+      : "🎙️ Tu navegador no soporta dictado por voz (prueba con Chrome o Edge).";
+    btn.addEventListener("click", ()=>toast(hintEl.textContent, "info"));
+    return;
+  }
+
+  let recognition = null, finalTranscript = "", timerInterval = null, seconds = 0, held = false;
+
+  const startHold = (e)=>{
+    if(e) e.preventDefault();
+    if(held) return;
+    held = true;
+    finalTranscript = "";
+    seconds = 0;
+    timerEl.textContent = "0s";
+    btn.classList.add("holding");
+    hintEl.textContent = "🎙️ Escuchando...";
+
+    recognition = new SpeechRecognitionAPI();
+    recognition.lang = (navigator.language && navigator.language.startsWith("es")) ? navigator.language : "es-ES";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event)=>{
+      let interim = "";
+      for(let i=event.resultIndex; i<event.results.length; i++){
+        const t = event.results[i][0].transcript;
+        if(event.results[i].isFinal) finalTranscript += t + " ";
+        else interim += t;
+      }
+      const preview = (finalTranscript + interim).trim();
+      hintEl.textContent = preview ? "🎙️ " + preview : "🎙️ Escuchando...";
+    };
+    recognition.onerror = (event)=>{
+      if(event.error==="no-speech") return;
+      let msg = "No se pudo usar el micrófono.";
+      if(event.error==="not-allowed" || event.error==="service-not-allowed") msg = "Permiso de micrófono denegado. Revisa los permisos del navegador.";
+      else if(event.error==="network") msg = "Sin conexión para el reconocimiento de voz.";
+      toast(msg, "error");
+    };
+    recognition.onend = ()=>{
+      const raw = finalTranscript.trim();
+      if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
+      almaEntryCreateSmart(raw);
+    };
+    try{
+      recognition.start();
+      timerInterval = setInterval(()=>{ seconds++; timerEl.textContent = seconds+"s"; }, 1000);
+    }catch(err){
+      toast("No se pudo iniciar el micrófono.","error");
+      held = false;
+    }
+  };
+
+  const endHold = ()=>{
+    if(!held) return;
+    held = false;
+    btn.classList.remove("holding");
+    clearInterval(timerInterval);
+    if(recognition){ try{ recognition.stop(); }catch(e){} }
+  };
+
+  btn.addEventListener("mousedown", startHold);
+  btn.addEventListener("touchstart", startHold, {passive:false});
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>btn.addEventListener(ev, endHold));
 }
 
 /* ---------------------------------------------------------------------- *
