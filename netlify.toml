@@ -1,6 +1,12 @@
 # Configuración de Netlify
 [build]
+  publish = "."
   functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
+
+# Función programada: revisa las tareas de todas las personas y les manda una
+# notificación (push) si tienen algo vencido o para hoy. Corre una vez al día.
+[functions."send-reminders"]
+  schedule = "0 13 * * *"
