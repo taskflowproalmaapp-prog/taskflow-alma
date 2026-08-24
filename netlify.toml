@@ -6,7 +6,14 @@
 [functions]
   node_bundler = "esbuild"
 
-# Función programada: revisa las tareas de todas las personas y les manda una
-# notificación (push) si tienen algo vencido o para hoy. Corre una vez al día.
+# Función programada: revisa las tareas de todas las personas y les manda un
+# resumen (push) si tienen algo vencido, para hoy, o próximo. Corre 2 veces al
+# día: 12:00 UTC y 00:00 UTC (aprox. 8:00 am y 8:00 pm en Chile — ajustable).
 [functions."send-reminders"]
-  schedule = "0 13 * * *"
+  schedule = "0 12,0 * * *"
+
+# Función programada: revisa cada 15 minutos si hay una actividad/tarea con
+# hora específica que esté por comenzar (según cuántas horas de anticipación
+# eligió cada persona), y manda un aviso puntual para esa tarea.
+[functions."send-activity-alerts"]
+  schedule = "*/15 * * * *"

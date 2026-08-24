@@ -2030,10 +2030,24 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">🔔 Notificaciones en el navegador</div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Recibe un aviso una vez al día si tienes tareas vencidas o para hoy — aunque no tengas la app abierta. Gratis, sin WhatsApp ni SMS.</p>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Recibe resúmenes generales (8am y 8pm) + un aviso puntual antes de cada tarea/actividad con hora — aunque no tengas la app abierta. Gratis, sin WhatsApp ni SMS.</p>
         <div id="pushStatusText" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px;"></div>
         <button type="button" class="btn btn-primary" id="cf_pushEnableBtn">🔔 Activar notificaciones</button>
         <button type="button" class="btn btn-ghost hidden" id="cf_pushDisableBtn">🔕 Desactivar notificaciones</button>
+        <div class="form-row" style="margin-top:14px;">
+          <div class="form-field">
+            <label>Avisarme con cuánta anticipación (horas)</label>
+            <input type="number" id="cf_pushHoursBefore" min="1" max="24" step="1" style="max-width:120px;">
+          </div>
+          <div class="form-field">
+            <label>Tu huso horario</label>
+            <select id="cf_utcOffset">
+              <option value="-5">Perú, Colombia, Ecuador, México (UTC-5)</option>
+              <option value="-4">Chile, Bolivia, Venezuela (UTC-4)</option>
+              <option value="-3">Argentina, Uruguay, Brasil-este (UTC-3)</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="panel" style="margin-bottom:16px;">
@@ -10407,6 +10421,8 @@ function renderConfiguracion(){
   document.getElementById("cf_theme").value = c.theme || "light";
   document.getElementById("cf_notifEnabled").checked = c.notificationsEnabled !== false;
   document.getElementById("cf_reminderLeadDays").value = c.reminderLeadDays!=null ? String(c.reminderLeadDays) : "3";
+  document.getElementById("cf_pushHoursBefore").value = c.pushAlertHoursBefore!=null ? String(c.pushAlertHoursBefore) : "3";
+  document.getElementById("cf_utcOffset").value = c.utcOffsetHours!=null ? String(c.utcOffsetHours) : "-4";
   refreshPushUI();
   const pushEnableBtn = document.getElementById("cf_pushEnableBtn");
   const pushDisableBtn = document.getElementById("cf_pushDisableBtn");
@@ -10793,6 +10809,8 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   DB.config.weekStart = document.getElementById("cf_weekStart").value;
   DB.config.notificationsEnabled = document.getElementById("cf_notifEnabled").checked;
   DB.config.reminderLeadDays = parseInt(document.getElementById("cf_reminderLeadDays").value, 10) || 3;
+  DB.config.pushAlertHoursBefore = parseInt(document.getElementById("cf_pushHoursBefore").value, 10) || 3;
+  DB.config.utcOffsetHours = parseInt(document.getElementById("cf_utcOffset").value, 10);
   DB.config.emailNotifications = {};
   ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary"].forEach(key=>{
     DB.config.emailNotifications[key] = document.getElementById("cf_email_"+key).checked;
