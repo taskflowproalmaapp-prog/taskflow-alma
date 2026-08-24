@@ -15,21 +15,27 @@ function store(name) {
   return getStore(name);
 }
 
-function todayISO() {
-  // fecha de "hoy" en UTC — simplificación razonable para un recordatorio diario;
-  // puede variar 1 día para personas en zonas horarias muy alejadas de UTC.
-  return new Date().toISOString().slice(0, 10);
+function todayISOFor(utcOffsetHours) {
+  // "hoy" según el huso horario de ESA persona (no el de UTC), para que no se
+  // desfase de fecha para quienes están en América.
+  const localMs = Date.now() + utcOffsetHours * 3600 * 1000;
+  return new Date(localMs).toISOString().slice(0, 10);
 }
 
-function summarizeTasks(tasks) {
-  const today = todayISO();
-  let overdue = 0, dueToday = 0;
+function summarizeTasks(tasks, utcOffsetHours, leadDays) {
+  const today = todayISOFor(utcOffsetHours);
+  const leadCutoff = new Date(Date.parse(today + "T00:00:00Z"));
+  leadCutoff.setUTCDate(leadCutoff.getUTCDate() + leadDays);
+  const leadCutoffISO = leadCutoff.toISOString().slice(0, 10);
+
+  let overdue = 0, dueToday = 0, upcoming = 0;
   (tasks || []).forEach((t) => {
     if (!t || t.status === "completada" || t.archived) return;
     if (t.dueDate && t.dueDate < today) overdue++;
     else if (t.dueDate === today || t.startDate === today) dueToday++;
+    else if (t.dueDate && t.dueDate > today && t.dueDate <= leadCutoffISO) upcoming++;
   });
-  return { overdue, dueToday };
+  return { overdue, dueToday, upcoming };
 }
 
 exports.handler = async function () {
@@ -54,14 +60,18 @@ exports.handler = async function () {
       if (!subscription) continue;
 
       const data = await userdata.get(username, { type: "json" });
-      const { overdue, dueToday } = summarizeTasks(data && data.tasks);
+      const cfg = (data && data.config) || {};
+      const utcOffsetHours = typeof cfg.utcOffsetHours === "number" ? cfg.utcOffsetHours : -4;
+      const leadDays = typeof cfg.reminderLeadDays === "number" ? cfg.reminderLeadDays : 3;
+      const { overdue, dueToday, upcoming } = summarizeTasks(data && data.tasks, utcOffsetHours, leadDays);
 
-      if (overdue === 0 && dueToday === 0) { skipped++; continue; }
+      if (overdue === 0 && dueToday === 0 && upcoming === 0) { skipped++; continue; }
 
       const parts = [];
       if (overdue > 0) parts.push(`${overdue} vencida${overdue === 1 ? "" : "s"}`);
       if (dueToday > 0) parts.push(`${dueToday} para hoy`);
-      const body = `Tienes ${parts.join(" y ")}. Échale un vistazo cuando puedas 🌱`;
+      if (upcoming > 0) parts.push(`${upcoming} próxima${upcoming === 1 ? "" : "s"}`);
+      const body = `Tienes ${parts.join(", ")}. Échale un vistazo cuando puedas 🌱`;
 
       const payload = JSON.stringify({
         title: "TaskFlow Pro",
