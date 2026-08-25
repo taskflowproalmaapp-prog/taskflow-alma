@@ -2770,36 +2770,58 @@ function isoUtcToLocalParts(isoStr){
   return { date: iso.slice(0,10), time: iso.slice(11,16) };
 }
 let googleEventsCache = { date: null, events: [] };
-async function refreshGoogleEventsForToday(){
+let googleEventsRangeCache = { start: null, end: null, byDate: {} };
+function buildGoogleEventItem(ev, workIds){
+  if(ev.allDay) return { title: ev.title, allDay:true, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId };
+  const s = isoUtcToLocalParts(ev.start), e = isoUtcToLocalParts(ev.end);
+  if(!s || !e) return null;
+  return {
+    title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
+    joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId,
+    isWork: workIds ? workIds.includes(ev.calendarId) : null,
+  };
+}
+// Trae los eventos de Google Calendar para un RANGO de días (ej. toda la semana
+// que se ve en el Calendario), no solo el día de hoy — así las otras columnas
+// también muestran las reuniones reales.
+async function refreshGoogleEventsForRange(startIso, endIso){
   if(!getAuthToken()) return;
-  const today = TODAY();
-  if(googleEventsCache.date === today) return; // ya los tenemos para hoy
+  if(googleEventsRangeCache.start===startIso && googleEventsRangeCache.end===endIso) return; // ya lo tenemos
   try{
     const offsetHours = (DB.config && typeof DB.config.utcOffsetHours==="number") ? DB.config.utcOffsetHours : -4;
-    const localStartMs = Date.parse(today+"T00:00:00Z") - offsetHours*3600000;
-    const localEndMs = localStartMs + 24*3600000;
+    const localStartMs = Date.parse(startIso+"T00:00:00Z") - offsetHours*3600000;
+    const localEndMs = Date.parse(endIso+"T00:00:00Z") - offsetHours*3600000 + 24*3600000;
     const workIds = (DB.config && Array.isArray(DB.config.workCalendarIds)) ? DB.config.workCalendarIds : null;
     const r = await apiGCalEvents({
       timeMin: new Date(localStartMs).toISOString(),
       timeMax: new Date(localEndMs).toISOString(),
     });
-    if(!r.connected){ googleEventsCache = { date: today, events: [] }; return; }
-    const events = (r.events||[]).map(ev=>{
-      if(ev.allDay) return { title: ev.title, allDay:true, date: ev.start, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId };
-      const s = isoUtcToLocalParts(ev.start), e = isoUtcToLocalParts(ev.end);
-      if(!s || !e) return null;
-      return {
-        title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
-        joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId,
-        isWork: workIds ? workIds.includes(ev.calendarId) : null,
-      };
-    }).filter(Boolean).filter(e=>e.date===today);
-    googleEventsCache = { date: today, events };
+    const byDate = {};
+    if(r.connected){
+      (r.events||[]).forEach(ev=>{
+        const item = buildGoogleEventItem(ev, workIds);
+        if(!item) return;
+        const d = item.allDay ? ev.start : item.date;
+        (byDate[d] = byDate[d]||[]).push(item);
+      });
+    }
+    googleEventsRangeCache = { start: startIso, end: endIso, byDate };
     if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashAgenda();
+    if(!document.getElementById("view-calendar").classList.contains("hidden")) renderCalendar();
   }catch(e){
     console.warn("No se pudieron traer eventos de Google Calendar:", e.message);
-    googleEventsCache = { date: today, events: [] };
+    googleEventsRangeCache = { start: startIso, end: endIso, byDate: {} };
   }
+}
+// Devuelve los eventos (con hora) ya cargados para un día específico, si está
+// dentro del rango que ya trajimos.
+function getGoogleEventsForDate(iso){
+  const list = (googleEventsRangeCache.byDate && googleEventsRangeCache.byDate[iso]) || [];
+  return list.filter(e=>!e.allDay);
+}
+async function refreshGoogleEventsForToday(){
+  const today = TODAY();
+  await refreshGoogleEventsForRange(today, today);
 }
 /* ---------------------------------------------------------------------- *
  * NOTIFICACIONES PUSH — avisos del navegador aunque la app esté cerrada.
@@ -3888,8 +3910,7 @@ function renderDashAttentionBar(){
    editables ni se guardan: solo ilustran cómo se verá la agenda mezclada
    cuando exista sincronización real. */
 function getDemoEventsToday(){
-  if(googleEventsCache.date !== TODAY()) return [];
-  return googleEventsCache.events.filter(e=>!e.allDay);
+  return getGoogleEventsForDate(TODAY());
 }
 /* ¿Ya terminó esta reunión? (su hora de término quedó en el pasado hoy) */
 function isEventFinished(ev){
@@ -5637,11 +5658,9 @@ function dayItemsFor(iso, list){
       items.push({kind:"task", t, startMin, endMin:Math.min(1439,startMin+30), isBlock:false});
     }
   });
-  if(iso===TODAY()){
-    getDemoEventsToday().forEach(ev=>{
-      items.push({kind:"event", ev, startMin:timeToMinutes(ev.startTime), endMin:timeToMinutes(ev.endTime)});
-    });
-  }
+  getGoogleEventsForDate(iso).forEach(ev=>{
+    items.push({kind:"event", ev, startMin:timeToMinutes(ev.startTime), endMin:timeToMinutes(ev.endTime)});
+  });
   // rutinas recurrentes (gimnasio, iglesia, etc.) — se muestran como citas fijas
   const dow = dowNameFor(new Date(iso+"T00:00:00"));
   (DB.config.routines||[]).forEach(r=>{
@@ -7564,7 +7583,23 @@ document.getElementById("calQueueToggle").addEventListener("click", ()=>{
   renderCalQueue(DB.tasks.filter(matchesTaskFilters));
 });
 
+function calendarViewRange(){
+  if(calState.mode==="day"){ const iso=isoOf(calState.anchor); return {start:iso, end:iso}; }
+  if(calState.mode==="week"){
+    const start = startOfWeek(calState.anchor);
+    const end = new Date(start); end.setDate(start.getDate()+6);
+    return {start:isoOf(start), end:isoOf(end)};
+  }
+  // month
+  const anchor = calState.anchor;
+  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  const gridEnd = new Date(gridStart); gridEnd.setDate(gridStart.getDate()+41);
+  return {start:isoOf(gridStart), end:isoOf(gridEnd)};
+}
 function renderCalendar(){
+  const range = calendarViewRange();
+  refreshGoogleEventsForRange(range.start, range.end); // async: si trae datos nuevos, vuelve a llamar a renderCalendar()
   renderFiltersBar("calendarFiltersBar", {showSort:false});
   const list = DB.tasks.filter(matchesTaskFilters);
   renderCalQueue(list);
@@ -7659,8 +7694,9 @@ function renderCalHourGrid(daysArr, list){
       if(it.kind==="event"){
         const fin = isEventFinished(it.ev);
         const ec = CAL_TYPE_COLORS.laboral;
-        return `<div class="calmod-event compact${fin?' calmod-finished':''}" title="Reunión: usa su propio horario (${it.ev.startTime}–${it.ev.endTime}). No necesita botón de inicio ni completarse.${fin?' Ya finalizó.':''}" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};border-left-color:${ec.solid};color:${fin?'#3A5A70':ec.text};">
-          <div class="ce-title">${fin?"✓ ":"🗓️ "}${esc(it.ev.title)}</div>
+        const link = it.ev.joinLink || it.ev.htmlLink || "";
+        return `<div class="calmod-event compact${fin?' calmod-finished':''}"${link?` data-google-link="${esc(link)}"`:""} title="Reunión: usa su propio horario (${it.ev.startTime}–${it.ev.endTime}).${fin?' Ya finalizó.':link?' Clic para abrir.':''}" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};border-left-color:${ec.solid};color:${fin?'#3A5A70':ec.text};${link?'cursor:pointer;':''}">
+          <div class="ce-title">${fin?"✓ ":it.ev.joinLink?"📹 ":"🗓️ "}${esc(it.ev.title)}</div>
           <div class="ce-time">${formatTimeRange12h(timeToMinutes(it.ev.startTime), timeToMinutes(it.ev.endTime))}${fin?" · Finalizada":""}</div>
         </div>`;
       }
@@ -7712,6 +7748,9 @@ function renderCalHourGrid(daysArr, list){
     el.addEventListener("click", ()=>openTaskModal(el.dataset.taskId));
     const t = byId(DB.tasks, el.dataset.taskId);
     if(t) bindCalTooltip(el, t);
+  });
+  document.querySelectorAll("#calBody [data-google-link]").forEach(el=>{
+    el.addEventListener("click", ()=>window.open(el.dataset.googleLink, "_blank"));
   });
 
   const scrollEl = document.getElementById("calmodScroll");
