@@ -138,6 +138,15 @@ body.cal-fullscreen .topbar{display:none;}
 body.cal-fullscreen .main{padding:0;}
 body.cal-fullscreen #view-calendar{padding:14px 18px;}
 body.cal-fullscreen .cal-toolbar{padding-top:2px;}
+.cal-fab-fullscreen{
+  position:fixed;right:22px;bottom:22px;z-index:60;width:52px;height:52px;border-radius:50%;border:none;
+  background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 45%, #8B9DF0 80%);color:#fff;font-size:20px;
+  box-shadow:0 4px 16px rgba(139,157,240,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s, box-shadow .15s;
+}
+.cal-fab-fullscreen:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(139,157,240,.6);}
+.cal-fab-fullscreen.is-exit{background:radial-gradient(circle at 35% 30%, #FBEAFB 0%, #C9A7F5 35%, #7A8CE8 80%);font-size:16px;}
+body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 
 /* ===== Sidebar ===== */
 .sidebar{
@@ -1918,8 +1927,8 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
           <button data-calmode="day" id="calModeDay">Día</button>
           <button data-calmode="month" id="calModeMonth">Mes</button>
         </div>
-        <button class="btn btn-ghost btn-sm" id="calFullscreenBtn" style="margin-left:8px;" title="Ver el calendario a pantalla completa">⛶ Vista completa</button>
       </div>
+      <button class="cal-fab-fullscreen" id="calFullscreenBtn" title="Ver el calendario a pantalla completa">⛶</button>
       <div id="calBody"></div>
     </section>
 
@@ -2756,6 +2765,82 @@ async function apiGCalEvents(payload){
   if(!res.ok) throw new Error(data.error || "No se pudo traer tus eventos.");
   return data;
 }
+async function apiGCalAction(action, payload){
+  const token = getAuthToken();
+  const res = await fetch("/.netlify/functions/google-calendar-event-action", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(Object.assign({action, token}, payload||{})),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || "No se pudo actualizar la reunión.");
+  return data;
+}
+function refreshAfterGCalChange(){
+  googleEventsRangeCache = { start:null, end:null, byDate:{} };
+  if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashAgenda();
+  if(!document.getElementById("view-calendar").classList.contains("hidden")) renderCalendar();
+}
+// Modal para editar o cancelar una reunión REAL de Google Calendar, sin salir
+// de TaskFlow. Se abre al tocar la reunión en la Agenda o en el Calendario.
+function openGCalEventModal(ev){
+  if(!ev.id || !ev.calendarId){ if(ev.joinLink||ev.htmlLink) window.open(ev.joinLink||ev.htmlLink,"_blank"); return; }
+  const html = `
+    <div style="padding:2px 2px 4px;">
+      <label style="font-size:12px;font-weight:600;color:#6B5B95;display:block;margin-bottom:5px;">Título</label>
+      <input type="text" id="gcalEditTitle" class="af-input" value="${esc(ev.title||"")}" style="margin-bottom:10px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;font-weight:600;color:#6B5B95;display:block;margin-bottom:5px;">Fecha</label>
+          <input type="date" id="gcalEditDate" class="af-input" value="${ev.date||""}">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;font-weight:600;color:#6B5B95;display:block;margin-bottom:5px;">Inicio</label>
+          <input type="time" id="gcalEditStart" class="af-input" value="${ev.startTime||""}">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;font-weight:600;color:#6B5B95;display:block;margin-bottom:5px;">Fin</label>
+          <input type="time" id="gcalEditEnd" class="af-input" value="${ev.endTime||""}">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+        ${ev.joinLink?`<a href="${esc(ev.joinLink)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">📹 Unirse</a>`:""}
+        ${ev.htmlLink?`<a href="${esc(ev.htmlLink)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">🔗 Ver en Google Calendar</a>`:""}
+      </div>
+      <div class="login-error" id="gcalEditError" style="margin-top:8px;"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-ghost" id="gcalCancelMeetingBtn" style="color:var(--danger);flex:1;">❌ Cancelar reunión</button>
+        <button class="btn btn-primary" id="gcalSaveMeetingBtn" style="flex:1;">💾 Guardar cambios</button>
+      </div>
+    </div>`;
+  openGenericModal("Reunión de Google Calendar", html);
+  document.getElementById("gcalSaveMeetingBtn").addEventListener("click", async ()=>{
+    const errEl = document.getElementById("gcalEditError");
+    errEl.textContent = "";
+    const title = document.getElementById("gcalEditTitle").value.trim();
+    const date = document.getElementById("gcalEditDate").value;
+    const start = document.getElementById("gcalEditStart").value;
+    const end = document.getElementById("gcalEditEnd").value;
+    if(!date || !start || !end){ errEl.textContent = "Completa fecha, inicio y fin."; return; }
+    try{
+      const offsetHours = (DB.config && typeof DB.config.utcOffsetHours==="number") ? DB.config.utcOffsetHours : -4;
+      const startIso = new Date(Date.parse(date+"T"+start+":00Z") - offsetHours*3600000).toISOString();
+      const endIso = new Date(Date.parse(date+"T"+end+":00Z") - offsetHours*3600000).toISOString();
+      await apiGCalAction("update", { calendarId: ev.calendarId, eventId: ev.id, summary: title, startIso, endIso });
+      toast("Reunión actualizada. 🌱","success");
+      closeGenericModal();
+      refreshAfterGCalChange();
+    }catch(e){ errEl.textContent = e.message; }
+  });
+  document.getElementById("gcalCancelMeetingBtn").addEventListener("click", async ()=>{
+    if(!confirm(`¿Cancelar "${ev.title}" en Google Calendar? Esto no se puede deshacer.`)) return;
+    try{
+      await apiGCalAction("delete", { calendarId: ev.calendarId, eventId: ev.id });
+      toast("Reunión cancelada.","success");
+      closeGenericModal();
+      refreshAfterGCalChange();
+    }catch(e){ toast(e.message,"error"); }
+  });
+}
 function startGoogleCalendarConnect(){
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
@@ -2781,11 +2866,11 @@ function isoUtcToLocalParts(isoStr){
 let googleEventsCache = { date: null, events: [] };
 let googleEventsRangeCache = { start: null, end: null, byDate: {} };
 function buildGoogleEventItem(ev, workIds){
-  if(ev.allDay) return { title: ev.title, allDay:true, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId };
+  if(ev.allDay) return { id: ev.id, title: ev.title, allDay:true, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId };
   const s = isoUtcToLocalParts(ev.start), e = isoUtcToLocalParts(ev.end);
   if(!s || !e) return null;
   return {
-    title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
+    id: ev.id, title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
     joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId,
     isWork: workIds ? workIds.includes(ev.calendarId) : null,
   };
@@ -2827,6 +2912,16 @@ async function refreshGoogleEventsForRange(startIso, endIso){
 function getGoogleEventsForDate(iso){
   const list = (googleEventsRangeCache.byDate && googleEventsRangeCache.byDate[iso]) || [];
   return list.filter(e=>!e.allDay);
+}
+// Busca un evento ya cargado por su id real de Google, para abrir el modal de
+// editar/cancelar sin tener que volver a pedirlo al servidor.
+function findCachedGoogleEvent(calendarId, eventId){
+  const byDate = googleEventsRangeCache.byDate || {};
+  for(const d in byDate){
+    const found = byDate[d].find(e=>e.id===eventId && e.calendarId===calendarId);
+    if(found) return found;
+  }
+  return null;
 }
 async function refreshGoogleEventsForToday(){
   const today = TODAY();
@@ -3481,7 +3576,7 @@ function showView(view){
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
     document.body.classList.remove("cal-fullscreen");
     const btn = document.getElementById("calFullscreenBtn");
-    if(btn) btn.innerHTML = "⛶ Vista completa";
+    if(btn){ btn.textContent = "⛶"; btn.classList.remove("is-exit"); }
   }
   VIEWS.forEach(v=>{
     document.getElementById("view-"+v).classList.toggle("hidden", v!==view);
@@ -4100,14 +4195,14 @@ function renderDashAgenda(){
 
   if(!items.length){ wrap.innerHTML = `<div class="empty-state" style="padding:24px 10px;">Sin compromisos agendados para hoy.</div>`; return; }
 
-  wrap.innerHTML = items.map(it=>{
+  wrap.innerHTML = items.map((it,idx)=>{
     if(it.kind==="event"){
       const fin = isEventFinished(it.ev);
       const isDemo = false;
       const typeTag = it.ev.isWork===true ? `<span class="tag" style="background:color-mix(in srgb, var(--type-laboral) 16%, transparent);color:var(--type-laboral);">💼 Laboral</span>`
         : it.ev.isWork===false ? `<span class="tag" style="background:color-mix(in srgb, var(--type-personal) 16%, transparent);color:var(--type-personal);">🌿 Personal</span>`
         : `<span class="tag">🗓️ Google Calendar</span>`;
-      return `<div class="pt-row${fin?' agenda-finished':''}">
+      return `<div class="pt-row${fin?' agenda-finished':''}"${!fin && it.ev.id ? ` data-gcal-idx="${idx}"` : ""} style="${!fin && it.ev.id ? 'cursor:pointer;' : ''}">
         <div class="pt-rank" style="background:none;font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);">${it.ev.startTime}</div>
         <div class="pt-main">
           <div class="pt-title">${fin?"✓ ":"🗓️ "}${esc(it.ev.title)}</div>
@@ -4165,6 +4260,15 @@ function renderDashAgenda(){
   wrap.querySelectorAll(".pt-row[data-task-id]").forEach(row=>{
     if(row.querySelector("[data-agenda-status]")) return; // los bloques ya tienen sus controles
     row.addEventListener("click", ()=>openTaskModal(row.dataset.taskId));
+  });
+  // tocar una reunión de Google Calendar abre editar/cancelar (los links de
+  // Unirse/Ver evento siguen funcionando normal, sin abrir este modal)
+  wrap.querySelectorAll("[data-gcal-idx]").forEach(row=>{
+    row.addEventListener("click", (e)=>{
+      if(e.target.closest("a")) return;
+      const idx = parseInt(row.dataset.gcalIdx,10);
+      if(items[idx]) openGCalEventModal(items[idx].ev);
+    });
   });
 }
 
@@ -7710,7 +7814,8 @@ function renderCalHourGrid(daysArr, list){
         const fin = isEventFinished(it.ev);
         const ec = CAL_TYPE_COLORS.laboral;
         const link = it.ev.joinLink || it.ev.htmlLink || "";
-        return `<div class="calmod-event compact${fin?' calmod-finished':''}"${link?` data-google-link="${esc(link)}"`:""} title="Reunión: usa su propio horario (${it.ev.startTime}–${it.ev.endTime}).${fin?' Ya finalizó.':link?' Clic para abrir.':''}" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};border-left-color:${ec.solid};color:${fin?'#3A5A70':ec.text};${link?'cursor:pointer;':''}">
+        const idAttrs = (!fin && it.ev.id) ? ` data-gcal-id="${esc(it.ev.id)}" data-gcal-calid="${esc(it.ev.calendarId)}"` : (link?` data-google-link="${esc(link)}"`:"");
+        return `<div class="calmod-event compact${fin?' calmod-finished':''}"${idAttrs} title="Reunión: usa su propio horario (${it.ev.startTime}–${it.ev.endTime}).${fin?' Ya finalizó.':' Clic para ver/editar.'}" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};border-left-color:${ec.solid};color:${fin?'#3A5A70':ec.text};${(!fin)?'cursor:pointer;':''}">
           <div class="ce-title">${fin?"✓ ":it.ev.joinLink?"📹 ":"🗓️ "}${esc(it.ev.title)}</div>
           <div class="ce-time">${formatTimeRange12h(timeToMinutes(it.ev.startTime), timeToMinutes(it.ev.endTime))}${fin?" · Finalizada":""}</div>
         </div>`;
@@ -7767,6 +7872,12 @@ function renderCalHourGrid(daysArr, list){
   document.querySelectorAll("#calBody [data-google-link]").forEach(el=>{
     el.addEventListener("click", ()=>window.open(el.dataset.googleLink, "_blank"));
   });
+  document.querySelectorAll("#calBody [data-gcal-id]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const found = findCachedGoogleEvent(el.dataset.gcalCalid, el.dataset.gcalId);
+      if(found) openGCalEventModal(found);
+    });
+  });
 
   const scrollEl = document.getElementById("calmodScroll");
   let scrollToMin;
@@ -7811,7 +7922,9 @@ document.getElementById("calModeMonth").addEventListener("click", ()=>{ calState
 document.getElementById("calFullscreenBtn").addEventListener("click", ()=>{
   const btn = document.getElementById("calFullscreenBtn");
   const isFull = document.body.classList.toggle("cal-fullscreen");
-  btn.innerHTML = isFull ? "✕ Salir de vista completa" : "⛶ Vista completa";
+  btn.textContent = isFull ? "✕" : "⛶";
+  btn.classList.toggle("is-exit", isFull);
+  btn.title = isFull ? "Salir de vista completa" : "Ver el calendario a pantalla completa";
 });
 document.getElementById("calModeWeek").addEventListener("click", ()=>{ calState.mode="week"; render(); });
 document.getElementById("calModeDay").addEventListener("click", ()=>{ calState.mode="day"; render(); });
