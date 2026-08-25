@@ -2051,6 +2051,12 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
       </div>
 
       <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">🗓️ Google Calendar</div>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Conecta tu calendario real para ver tus reuniones junto a tus tareas, y entrar a ellas directo con un clic.</p>
+        <div id="gcalStatus"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">💜 Mi asistente</div>
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 14px;">Tú decides cómo te acompaña Alma. Todo esto es opcional y puedes cambiarlo cuando quieras.</p>
         <div class="form-grid">
@@ -2649,6 +2655,62 @@ async function apiData(action, payload){
   if(!res.ok) throw new Error(data.error || "No se pudo conectar con el servidor de datos.");
   return data;
 }
+async function renderGCalPanel(){
+  const wrap = document.getElementById("gcalStatus");
+  if(!wrap) return;
+  wrap.innerHTML = `<div class="t-sub">Verificando conexión...</div>`;
+  try{
+    const status = await apiGCalList("status", {});
+    if(!status.connected){
+      wrap.innerHTML = `<button type="button" class="btn btn-primary" id="gcalConnectBtn">🗓️ Conectar Google Calendar</button>`;
+      document.getElementById("gcalConnectBtn").addEventListener("click", startGoogleCalendarConnect);
+      return;
+    }
+    const listData = await apiGCalList("list", {});
+    const workIds = new Set(DB.config.workCalendarIds || []);
+    wrap.innerHTML = `
+      <div style="font-size:12.5px;color:var(--success);margin-bottom:10px;">✅ Conectado.</div>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;">Marca cuáles de tus calendarios son de trabajo (el resto se cuenta como personal):</p>
+      <div id="gcalCalList" style="margin-bottom:12px;">
+        ${(listData.calendars||[]).map(c=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;">
+            <input type="checkbox" data-gcal-work="${esc(c.id)}" ${workIds.has(c.id)?"checked":""}>
+            <span style="width:10px;height:10px;border-radius:50%;background:${c.backgroundColor||'#ccc'};display:inline-block;"></span>
+            ${esc(c.summary)}${c.primary?' <span class="t-sub">(principal)</span>':''}
+          </label>`).join("")}
+      </div>
+      <button type="button" class="btn btn-ghost" id="gcalDisconnectBtn">Desconectar</button>`;
+    wrap.querySelectorAll("[data-gcal-work]").forEach(cb=>{
+      cb.addEventListener("change", ()=>{
+        const checked = Array.from(wrap.querySelectorAll("[data-gcal-work]:checked")).map(c=>c.dataset.gcalWork);
+        DB.config.workCalendarIds = checked;
+        saveDB();
+        googleEventsCache = { date:null, events:[] }; // fuerza a recalcular laboral/personal
+      });
+    });
+    document.getElementById("gcalDisconnectBtn").addEventListener("click", async ()=>{
+      if(!confirm("¿Desconectar Google Calendar?")) return;
+      try{ await apiGCalList("disconnect", {}); toast("Calendario desconectado.","info"); renderGCalPanel(); }
+      catch(e){ toast(e.message,"error"); }
+    });
+  }catch(e){
+    wrap.innerHTML = `<div class="t-sub" style="color:var(--danger);">No se pudo verificar: ${esc(e.message)}</div>`;
+  }
+}
+// Si Google nos devolvió con ?calendar=connected o ?calendar=error, avisamos y
+// limpiamos la URL para que no quede pegado si se recarga la página.
+function handleGoogleCalendarRedirectParams(){
+  const params = new URLSearchParams(window.location.search);
+  const cal = params.get("calendar");
+  if(!cal) return;
+  if(cal === "connected"){
+    toast("¡Google Calendar conectado! 🌱","success");
+    googleEventsCache = { date:null, events:[] };
+  }else if(cal === "error"){
+    toast("No se pudo conectar Google Calendar ("+(params.get("reason")||"error")+").","error");
+  }
+  window.history.replaceState({}, "", window.location.pathname);
+}
 async function apiPush(action, payload){
   const token = getAuthToken();
   const res = await fetch("/.netlify/functions/push-subscribe", {
@@ -2658,6 +2720,86 @@ async function apiPush(action, payload){
   const data = await res.json().catch(()=>({}));
   if(!res.ok) throw new Error(data.error || "No se pudo conectar con notificaciones.");
   return data;
+}
+/* ---------------------------------------------------------------------- *
+ * GOOGLE CALENDAR — conectar el calendario real de cada persona, y traer
+ * sus eventos para mezclarlos con las tareas en la Agenda del día.
+ * ---------------------------------------------------------------------- */
+const GOOGLE_CLIENT_ID = "619791477381-iijd99dj16ob1lqsbksqfi76aso5ju5i.apps.googleusercontent.com";
+const GOOGLE_REDIRECT_URI = "https://taskflow-alma.netlify.app/.netlify/functions/google-oauth-callback";
+async function apiGCalList(action, payload){
+  const token = getAuthToken();
+  const res = await fetch("/.netlify/functions/google-calendar-list", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(Object.assign({action, token}, payload||{})),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || "No se pudo conectar con Google Calendar.");
+  return data;
+}
+async function apiGCalEvents(payload){
+  const token = getAuthToken();
+  const res = await fetch("/.netlify/functions/google-calendar-events", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(Object.assign({token}, payload||{})),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || "No se pudo traer tus eventos.");
+  return data;
+}
+function startGoogleCalendarConnect(){
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type: "code",
+    scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events",
+    access_type: "offline",
+    prompt: "consent",
+    state: getAuthToken(),
+  });
+  window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
+}
+// Convierte una fecha/hora ISO (UTC, como la manda Google) a la fecha y hora
+// LOCAL de la persona, según el huso horario que eligió en Configuración.
+function isoUtcToLocalParts(isoStr){
+  const offsetHours = (DB && DB.config && typeof DB.config.utcOffsetHours==="number") ? DB.config.utcOffsetHours : -4;
+  const utcMs = Date.parse(isoStr);
+  if(isNaN(utcMs)) return null;
+  const localMs = utcMs + offsetHours*3600000;
+  const iso = new Date(localMs).toISOString();
+  return { date: iso.slice(0,10), time: iso.slice(11,16) };
+}
+let googleEventsCache = { date: null, events: [] };
+async function refreshGoogleEventsForToday(){
+  if(!getAuthToken()) return;
+  const today = TODAY();
+  if(googleEventsCache.date === today) return; // ya los tenemos para hoy
+  try{
+    const offsetHours = (DB.config && typeof DB.config.utcOffsetHours==="number") ? DB.config.utcOffsetHours : -4;
+    const localStartMs = Date.parse(today+"T00:00:00Z") - offsetHours*3600000;
+    const localEndMs = localStartMs + 24*3600000;
+    const workIds = (DB.config && Array.isArray(DB.config.workCalendarIds)) ? DB.config.workCalendarIds : null;
+    const r = await apiGCalEvents({
+      timeMin: new Date(localStartMs).toISOString(),
+      timeMax: new Date(localEndMs).toISOString(),
+    });
+    if(!r.connected){ googleEventsCache = { date: today, events: [] }; return; }
+    const events = (r.events||[]).map(ev=>{
+      if(ev.allDay) return { title: ev.title, allDay:true, date: ev.start, joinLink: ev.joinLink, calendarId: ev.calendarId };
+      const s = isoUtcToLocalParts(ev.start), e = isoUtcToLocalParts(ev.end);
+      if(!s || !e) return null;
+      return {
+        title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
+        joinLink: ev.joinLink, calendarId: ev.calendarId,
+        isWork: workIds ? workIds.includes(ev.calendarId) : null,
+      };
+    }).filter(Boolean).filter(e=>e.date===today);
+    googleEventsCache = { date: today, events };
+    if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashAgenda();
+  }catch(e){
+    console.warn("No se pudieron traer eventos de Google Calendar:", e.message);
+    googleEventsCache = { date: today, events: [] };
+  }
 }
 /* ---------------------------------------------------------------------- *
  * NOTIFICACIONES PUSH — avisos del navegador aunque la app esté cerrada.
@@ -3746,9 +3888,8 @@ function renderDashAttentionBar(){
    editables ni se guardan: solo ilustran cómo se verá la agenda mezclada
    cuando exista sincronización real. */
 function getDemoEventsToday(){
-  // App lista para uso real: sin eventos de demostración.
-  // Cuando se conecte Google Calendar, esta función devolverá los eventos reales del día.
-  return [];
+  if(googleEventsCache.date !== TODAY()) return [];
+  return googleEventsCache.events.filter(e=>!e.allDay);
 }
 /* ¿Ya terminó esta reunión? (su hora de término quedó en el pasado hoy) */
 function isEventFinished(ev){
@@ -3893,6 +4034,7 @@ function addHoursToTime(hhmm, hours){
 }
 function renderDashAgenda(){
   const wrap = document.getElementById("dashAgendaDia");
+  refreshGoogleEventsForToday(); // se actualiza solo (async); si trae datos nuevos, vuelve a llamar a renderDashAgenda()
   // incluimos completadas que estaban agendadas hoy, para que queden tachadas (como libreta)
   const allTasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada" || t.startDate===TODAY()));
   const scheduledToday = allTasks.filter(t=>t.startDate===TODAY() && t.executionTime);
@@ -3926,12 +4068,17 @@ function renderDashAgenda(){
   wrap.innerHTML = items.map(it=>{
     if(it.kind==="event"){
       const fin = isEventFinished(it.ev);
+      const isDemo = false;
+      const typeTag = it.ev.isWork===true ? `<span class="tag" style="background:color-mix(in srgb, var(--type-laboral) 16%, transparent);color:var(--type-laboral);">💼 Laboral</span>`
+        : it.ev.isWork===false ? `<span class="tag" style="background:color-mix(in srgb, var(--type-personal) 16%, transparent);color:var(--type-personal);">🌿 Personal</span>`
+        : `<span class="tag">🗓️ Google Calendar</span>`;
       return `<div class="pt-row${fin?' agenda-finished':''}">
         <div class="pt-rank" style="background:none;font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);">${it.ev.startTime}</div>
         <div class="pt-main">
           <div class="pt-title">${fin?"✓ ":"🗓️ "}${esc(it.ev.title)}</div>
-          <div class="pt-meta">${fin?`<span class="tag" style="background:color-mix(in srgb, var(--success) 16%, transparent);color:var(--success);">Finalizada</span>`:`<span class="tag" title="Se sincronizará automáticamente cuando conectemos Google Calendar">Demo — Google Calendar</span>`} <span>${it.ev.startTime}–${it.ev.endTime}</span></div>
+          <div class="pt-meta">${fin?`<span class="tag" style="background:color-mix(in srgb, var(--success) 16%, transparent);color:var(--success);">Finalizada</span>`:typeTag} <span>${it.ev.startTime}–${it.ev.endTime}</span></div>
         </div>
+        ${(!fin && it.ev.joinLink) ? `<a href="${esc(it.ev.joinLink)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="flex-shrink:0;">📹 Unirse</a>` : ""}
       </div>`;
     }
     if(it.kind==="block"){
@@ -10424,6 +10571,7 @@ function renderConfiguracion(){
   document.getElementById("cf_pushHoursBefore").value = c.pushAlertHoursBefore!=null ? String(c.pushAlertHoursBefore) : "3";
   document.getElementById("cf_utcOffset").value = c.utcOffsetHours!=null ? String(c.utcOffsetHours) : "-4";
   refreshPushUI();
+  renderGCalPanel();
   const pushEnableBtn = document.getElementById("cf_pushEnableBtn");
   const pushDisableBtn = document.getElementById("cf_pushDisableBtn");
   if(pushEnableBtn && !pushEnableBtn.dataset.bound){
@@ -11166,6 +11314,7 @@ function bootApp(){
   try{
     try{ ensureStickyToday(); }catch(e){ console.error("sticky init",e); }
     applyTheme((DB && DB.config && DB.config.theme) || "light");
+    handleGoogleCalendarRedirectParams();
     render();
     startTopbarClock();
     window.__tfpAppReady = true;
