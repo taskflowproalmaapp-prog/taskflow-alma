@@ -132,7 +132,7 @@ a{color:inherit;}
 }
 /* Vista completa del calendario: se esconde todo lo demás y el calendario ocupa
    la pantalla entera, como Google Calendar. */
-body.cal-fullscreen .app-shell{grid-template-columns:0 1fr;}
+body.cal-fullscreen .app-shell{display:block;}
 body.cal-fullscreen .sidebar{display:none;}
 body.cal-fullscreen .topbar{display:none;}
 body.cal-fullscreen .main{padding:0;}
@@ -7676,6 +7676,7 @@ function dayModality(iso){
 }
 function renderCalHourGrid(daysArr, list){
   const todayIso = TODAY();
+  const includesToday = daysArr.some(d=>isoOf(d)===todayIso);
   const dowLabels = getDowLabels();
   let headDays = "", dayCols = "";
   let earliestMin = null;
@@ -7768,7 +7769,15 @@ function renderCalHourGrid(daysArr, list){
   });
 
   const scrollEl = document.getElementById("calmodScroll");
-  const scrollToMin = earliestMin!==null ? Math.max(0, earliestMin-30) : 8*60;
+  let scrollToMin;
+  if(includesToday){
+    // como Google Calendar: siempre enfocado en la hora actual, un poco antes
+    // para dar contexto — sin que eso impida moverte libremente después.
+    const now = new Date();
+    scrollToMin = Math.max(0, now.getHours()*60 + now.getMinutes() - 60);
+  }else{
+    scrollToMin = earliestMin!==null ? Math.max(0, earliestMin-30) : 8*60;
+  }
   scrollEl.scrollTop = (scrollToMin/60)*CAL_HOUR_PX;
 }
 
