@@ -1378,7 +1378,8 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .calmod-event .ce-time{font-size:11.5px;opacity:.92;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
 .calmod-event .ce-tag{font-size:9.3px;font-weight:700;padding:1px 7px;border-radius:20px;display:inline-block;margin-top:4px;background:rgba(255,255,255,.55);}
 .calmod-event.compact .ce-time,.calmod-event.compact .ce-tag{display:none;}
-.calmod-event.compact{padding:3px 8px;}
+.calmod-event.compact{padding:2px 7px;}
+.calmod-event.compact .ce-title{font-size:11px;line-height:1.15;-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis;}
 .calmod-routine{
   background:repeating-linear-gradient(45deg, color-mix(in srgb, var(--cal-day-label) 12%, transparent), color-mix(in srgb, var(--cal-day-label) 12%, transparent) 6px, color-mix(in srgb, var(--cal-day-label) 7%, transparent) 6px, color-mix(in srgb, var(--cal-day-label) 7%, transparent) 12px);
   border-left-color:var(--cal-day-label);color:var(--cal-text);cursor:default;
@@ -1929,6 +1930,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
         </div>
       </div>
       <button class="cal-fab-fullscreen" id="calFullscreenBtn" title="Ver el calendario a pantalla completa">⛶</button>
+      <div class="panel" id="calStatsPanel" style="margin-bottom:14px;"></div>
       <div id="calBody"></div>
     </section>
 
@@ -5538,6 +5540,66 @@ function deleteTask(tid){
   const trashId = DB.trash[0].id;
   toast("Tarea eliminada.","success","Deshacer",()=>restoreFromTrash(trashId));
 }
+// Nube de acciones rápidas al tocar una tarea de TaskFlow en el Calendario:
+// ver/editar completa, ocultarla solo de esta vista, o eliminarla del todo.
+let calTaskActionCloudEl = null;
+function closeCalTaskActionCloud(){
+  if(calTaskActionCloudEl){ calTaskActionCloudEl.remove(); calTaskActionCloudEl = null; }
+  document.removeEventListener("click", onOutsideClickCloseCalTaskCloud, true);
+}
+function onOutsideClickCloseCalTaskCloud(e){
+  if(calTaskActionCloudEl && !calTaskActionCloudEl.contains(e.target)) closeCalTaskActionCloud();
+}
+function openCalTaskActionCloud(anchorEl, taskId){
+  closeCalTaskActionCloud();
+  if(typeof closeUpdateInfoPopover==="function") closeUpdateInfoPopover();
+  const t = byId(DB.tasks, taskId);
+  if(!t) return;
+  const pop = document.createElement("div");
+  pop.className = "update-info-cloud";
+  pop.dataset.forTid = taskId;
+  pop.innerHTML = `
+    <div class="uic-arrow"></div>
+    <div class="uic-head"><b>${esc(t.title)}</b></div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+      <button type="button" class="btn btn-ghost btn-sm" id="calCloudEdit" style="justify-content:flex-start;">✏️ Ver / editar tarea completa</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="calCloudHide" style="justify-content:flex-start;">🙈 Ocultar del calendario</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="calCloudDelete" style="justify-content:flex-start;color:var(--danger);">🗑️ Eliminar tarea</button>
+    </div>`;
+  document.body.appendChild(pop);
+
+  const r = anchorEl.getBoundingClientRect();
+  const popW = 230;
+  let left = r.left + r.width/2 - popW/2;
+  left = Math.max(10, Math.min(left, window.innerWidth - popW - 10));
+  pop.style.left = left + "px";
+  pop.style.width = popW + "px";
+  const popHEstimate = 150;
+  if(r.top - popHEstimate > 8){
+    pop.style.top = (r.top - popHEstimate - 10) + "px";
+    pop.classList.add("uic-above");
+  }else{
+    pop.style.top = (r.bottom + 10) + "px";
+    pop.classList.add("uic-below");
+  }
+  const arrowLeft = (r.left + r.width/2) - left;
+  pop.querySelector(".uic-arrow").style.left = arrowLeft + "px";
+
+  calTaskActionCloudEl = pop;
+  setTimeout(()=>document.addEventListener("click", onOutsideClickCloseCalTaskCloud, true), 0);
+
+  document.getElementById("calCloudEdit").addEventListener("click", ()=>{ closeCalTaskActionCloud(); openTaskModal(taskId); });
+  document.getElementById("calCloudHide").addEventListener("click", ()=>{
+    t.hiddenFromCalendar = true; saveDB(); closeCalTaskActionCloud();
+    toast(`"${t.title}" ya no se muestra en el calendario (sigue existiendo en tus tareas).`,"info");
+    render();
+  });
+  document.getElementById("calCloudDelete").addEventListener("click", ()=>{
+    closeCalTaskActionCloud();
+    if(!confirm(`¿Eliminar por completo la tarea "${t.title}"? Esto no se puede deshacer.`)) return;
+    deleteTask(taskId);
+  });
+}
 
 /* ---------------------------------------------------------------------- *
  * Medición de tiempo real (botón Iniciar/Terminar)
@@ -5671,7 +5733,7 @@ function startOfWeek(d){
   const first = DB.config.weekStart === "domingo" ? 0 : 1;
   const day = (d.getDay()-first+7)%7; const r = new Date(d); r.setDate(d.getDate()-day); r.setHours(0,0,0,0); return r;
 }
-function tasksDueOn(iso, list){ return list.filter(t=>t.dueDate===iso); }
+function tasksDueOn(iso, list){ return list.filter(t=>t.dueDate===iso && !t.hiddenFromCalendar); }
 
 /* Colores por tipo/estado — precedencia: completada > vencida > importante > personal/laboral */
 // Paleta del calendario por TIPO, con significado:
@@ -5756,6 +5818,20 @@ function layoutOverlaps(items){
     const cols = new Set(cluster.map(k=>items[k]._col));
     const totalCols = cols.size || 1;
     cluster.forEach(k=>{ items[k]._totalCols = totalCols; });
+    // Si hay un evento "contenedor" (dura tanto que abarca a todos los demás del
+    // clúster, ej. un bloque de 6 horas), no le achicamos el ancho a él — se
+    // deja casi a ancho completo, y los eventos cortos se muestran como
+    // tarjetas más chicas "montadas" encima, igual que en Google Calendar.
+    if(cluster.length > 1){
+      const dominant = cluster.find(k => cluster.every(k2 => k2===k ||
+        (items[k].startMin<=items[k2].startMin && items[k].endMin>=items[k2].endMin && items[k].endMin-items[k].startMin > items[k2].endMin-items[k2].startMin)
+      ));
+      if(dominant !== undefined){
+        items[dominant]._dominant = true;
+        const others = cluster.filter(k=>k!==dominant);
+        others.forEach((k,idx)=>{ items[k]._inset = true; items[k]._insetIndex = idx; items[k]._insetCount = others.length; });
+      }
+    }
   }
   return items;
 }
@@ -5763,6 +5839,7 @@ function dayItemsFor(iso, list){
   const items = [];
   const blockedIds = new Set();
   list.forEach(t=>{
+    if(t.hiddenFromCalendar) return;
     if(t.startDate===iso && t.executionTime){
       const startMin = timeToMinutes(t.executionTime);
       const durMin = Math.max(30, Math.round((t.estimatedTime||1)*60));
@@ -5771,6 +5848,7 @@ function dayItemsFor(iso, list){
     }
   });
   list.forEach(t=>{
+    if(t.hiddenFromCalendar) return;
     if(t.dueDate===iso && !blockedIds.has(t.id)){
       const startMin = timeToMinutes(t.dueTime||"09:00");
       items.push({kind:"task", t, startMin, endMin:Math.min(1439,startMin+30), isBlock:false});
@@ -5809,6 +5887,27 @@ function bindCalTooltip(el, t){
       <div class="tt-row"><span class="tt-accent">🕐 ${when}</span>${t.estimatedTime?` · ${t.estimatedTime}h`:""}</div>
       <div class="tt-row">${typeLabel} · ${st?st.label:t.status}</div>
       ${t.dueDate?`<div class="tt-row">Vence: ${fmtDate(t.dueDate)}</div>`:""}`;
+    tip.classList.add("show");
+  });
+  el.addEventListener("mousemove", (e)=>{
+    if(!calTooltipEl) return;
+    const tw = 250, vw = window.innerWidth;
+    let left = e.clientX+16; if(left+tw>vw-10) left = e.clientX-tw-16;
+    calTooltipEl.style.left = left+"px";
+    calTooltipEl.style.top = (e.clientY+16)+"px";
+  });
+  el.addEventListener("mouseleave", ()=>{ if(calTooltipEl) calTooltipEl.classList.remove("show"); });
+}
+// Igual que bindCalTooltip, pero para una reunión real de Google Calendar
+// (muestra el título completo, horario y si es laboral/personal).
+function bindGCalTooltip(el, ev, finished){
+  el.addEventListener("mouseenter", ()=>{
+    const tip = ensureCalTooltip();
+    const typeLabel = ev.isWork===true ? "💼 Laboral" : ev.isWork===false ? "🌿 Personal" : "🗓️ Google Calendar";
+    tip.innerHTML = `<b>${esc(ev.title)}</b>
+      <div class="tt-row"><span class="tt-accent">🕐 ${ev.startTime}–${ev.endTime}</span></div>
+      <div class="tt-row">${typeLabel}${finished?" · Finalizada":""}</div>
+      ${(!finished)?`<div class="tt-row" style="opacity:.8;">Clic para ver, editar o cancelar</div>`:""}`;
     tip.classList.add("show");
   });
   el.addEventListener("mousemove", (e)=>{
@@ -7715,9 +7814,53 @@ function calendarViewRange(){
   const gridEnd = new Date(gridStart); gridEnd.setDate(gridStart.getDate()+41);
   return {start:isoOf(gridStart), end:isoOf(gridEnd)};
 }
+// Algo que Google Calendar no te da: cuánto de tu semana es reuniones vs.
+// tareas planificadas, y cuánto de eso es trabajo vs. vida personal.
+function computeCalendarStats(range){
+  let meetWork=0, meetPersonal=0, meetOther=0;
+  const byDate = googleEventsRangeCache.byDate || {};
+  Object.keys(byDate).forEach(d=>{
+    if(d<range.start || d>range.end) return;
+    byDate[d].forEach(ev=>{
+      if(ev.allDay) return;
+      const h = (timeToMinutes(ev.endTime)-timeToMinutes(ev.startTime))/60;
+      if(ev.isWork===true) meetWork+=h;
+      else if(ev.isWork===false) meetPersonal+=h;
+      else meetOther+=h;
+    });
+  });
+  let taskWork=0, taskPersonal=0;
+  DB.tasks.forEach(t=>{
+    if(t.archived || !t.startDate || !t.executionTime) return;
+    if(t.startDate<range.start || t.startDate>range.end) return;
+    const h = t.estimatedTime || 1;
+    if(t.taskType==="laboral") taskWork+=h; else taskPersonal+=h;
+  });
+  return {meetWork, meetPersonal, meetOther, taskWork, taskPersonal};
+}
+function renderCalStats(range){
+  const wrap = document.getElementById("calStatsPanel");
+  if(!wrap) return;
+  const s = computeCalendarStats(range);
+  const totalMeet = s.meetWork+s.meetPersonal+s.meetOther;
+  const totalTask = s.taskWork+s.taskPersonal;
+  const fmt = h => (Math.round(h*10)/10) + "h";
+  if(totalMeet+totalTask===0){
+    wrap.innerHTML = `<div class="panel-title" style="margin-bottom:4px;">📊 Tu semana en números</div><p class="t-sub" style="margin:0;">Todavía no hay reuniones ni tareas planificadas en este rango.</p>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="panel-title" style="margin-bottom:8px;">📊 Tu semana en números</div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:13px;">
+      <div><b>${fmt(totalMeet)}</b> en reuniones <span class="t-sub">(💼 ${fmt(s.meetWork)} · 🌿 ${fmt(s.meetPersonal)})</span></div>
+      <div><b>${fmt(totalTask)}</b> en tareas planificadas <span class="t-sub">(💼 ${fmt(s.taskWork)} · 🌿 ${fmt(s.taskPersonal)})</span></div>
+      <div><b>${fmt(totalMeet+totalTask)}</b> comprometidas en total</div>
+    </div>`;
+}
 function renderCalendar(){
   const range = calendarViewRange();
   refreshGoogleEventsForRange(range.start, range.end); // async: si trae datos nuevos, vuelve a llamar a renderCalendar()
+  renderCalStats(range);
   renderFiltersBar("calendarFiltersBar", {showSort:false});
   const list = DB.tasks.filter(matchesTaskFilters);
   renderCalQueue(list);
@@ -7752,7 +7895,7 @@ function renderCalMonth(list){
   const body = document.getElementById("calBody");
   body.innerHTML = html;
   body.querySelectorAll("[data-task-id]").forEach(el=>{
-    el.addEventListener("click", ()=>openTaskModal(el.dataset.taskId));
+    el.addEventListener("click", (e)=>{ e.stopPropagation(); openCalTaskActionCloud(el, el.dataset.taskId); });
     const t = byId(list, el.dataset.taskId) || byId(DB.tasks, el.dataset.taskId);
     if(t) bindCalTooltip(el, t);
   });
@@ -7807,28 +7950,37 @@ function renderCalHourGrid(daysArr, list){
     const eventsHtml = items.map(it=>{
       const top = (it.startMin/60)*CAL_HOUR_PX;
       const height = Math.max(34, ((it.endMin-it.startMin)/60)*CAL_HOUR_PX - 3);
-      const widthPct = 100/it._totalCols;
-      const leftPct = it._col*widthPct;
+      let widthPct, leftPct, extraStyle = "";
+      if(it._dominant){
+        widthPct = 88; leftPct = 0;
+      }else if(it._inset){
+        widthPct = 46;
+        leftPct = 100 - widthPct - it._insetIndex*6;
+        extraStyle = "z-index:15;box-shadow:0 2px 10px rgba(30,41,59,.22);border:2px solid var(--surface);";
+      }else{
+        widthPct = 100/it._totalCols;
+        leftPct = it._col*widthPct;
+      }
       const compact = height < 42;
       if(it.kind==="event"){
         const fin = isEventFinished(it.ev);
         const ec = CAL_TYPE_COLORS.laboral;
         const link = it.ev.joinLink || it.ev.htmlLink || "";
         const idAttrs = (!fin && it.ev.id) ? ` data-gcal-id="${esc(it.ev.id)}" data-gcal-calid="${esc(it.ev.calendarId)}"` : (link?` data-google-link="${esc(link)}"`:"");
-        return `<div class="calmod-event compact${fin?' calmod-finished':''}"${idAttrs} title="Reunión: usa su propio horario (${it.ev.startTime}–${it.ev.endTime}).${fin?' Ya finalizó.':' Clic para ver/editar.'}" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};border-left-color:${ec.solid};color:${fin?'#3A5A70':ec.text};${(!fin)?'cursor:pointer;':''}">
+        return `<div class="calmod-event compact${fin?' calmod-finished':''}"${idAttrs} style="${extraStyle}top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};border-left-color:${ec.solid};color:${fin?'#3A5A70':ec.text};${(!fin)?'cursor:pointer;':''}">
           <div class="ce-title">${fin?"✓ ":it.ev.joinLink?"📹 ":"🗓️ "}${esc(it.ev.title)}</div>
           <div class="ce-time">${formatTimeRange12h(timeToMinutes(it.ev.startTime), timeToMinutes(it.ev.endTime))}${fin?" · Finalizada":""}</div>
         </div>`;
       }
       if(it.kind==="routine"){
         const rc = CAL_TYPE_COLORS.routine;
-        return `<div class="calmod-event ${compact?'compact':''}" title="Rutina habitual — se edita en Configuración › Mi perfil de vida" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${rc.grad};border-left-color:${rc.solid};color:${rc.text};">
+        return `<div class="calmod-event ${compact?'compact':''}" title="Rutina habitual — se edita en Configuración › Mi perfil de vida" style="${extraStyle}top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${rc.grad};border-left-color:${rc.solid};color:${rc.text};">
           <div class="ce-title">🔁 ${esc(it.routineName)}</div>
           <div class="ce-time">${formatTimeRange12h(it.startMin, it.endMin)}</div>
         </div>`;
       }
       const c = calEventColors(it.t);
-      return `<div class="calmod-event ${compact?'compact':''}${c.overdue?' calmod-overdue-ring':''}" data-task-id="${it.t.id}" style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${c.bg};border-left-color:${c.border};color:${c.text};">
+      return `<div class="calmod-event ${compact?'compact':''}${c.overdue?' calmod-overdue-ring':''}" data-task-id="${it.t.id}" style="${extraStyle}top:${top}px;height:${height}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);background:${c.bg};border-left-color:${c.border};color:${c.text};">
         <div class="ce-title">${it.isBlock?"📋 ":""}${esc(it.t.title)}</div>
         <div class="ce-time">${formatTimeRange12h(it.startMin, it.endMin)}</div>
       </div>`;
@@ -7865,7 +8017,7 @@ function renderCalHourGrid(daysArr, list){
     </div>`;
 
   document.querySelectorAll("#calBody [data-task-id]").forEach(el=>{
-    el.addEventListener("click", ()=>openTaskModal(el.dataset.taskId));
+    el.addEventListener("click", (e)=>{ e.stopPropagation(); openCalTaskActionCloud(el, el.dataset.taskId); });
     const t = byId(DB.tasks, el.dataset.taskId);
     if(t) bindCalTooltip(el, t);
   });
@@ -7877,6 +8029,8 @@ function renderCalHourGrid(daysArr, list){
       const found = findCachedGoogleEvent(el.dataset.gcalCalid, el.dataset.gcalId);
       if(found) openGCalEventModal(found);
     });
+    const found = findCachedGoogleEvent(el.dataset.gcalCalid, el.dataset.gcalId);
+    if(found) bindGCalTooltip(el, found, false);
   });
 
   const scrollEl = document.getElementById("calmodScroll");
