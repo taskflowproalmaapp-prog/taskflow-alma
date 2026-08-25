@@ -130,6 +130,14 @@ a{color:inherit;}
 @media (max-width: 900px){
   .app-shell{grid-template-columns:1fr;}
 }
+/* Vista completa del calendario: se esconde todo lo demás y el calendario ocupa
+   la pantalla entera, como Google Calendar. */
+body.cal-fullscreen .app-shell{grid-template-columns:0 1fr;}
+body.cal-fullscreen .sidebar{display:none;}
+body.cal-fullscreen .topbar{display:none;}
+body.cal-fullscreen .main{padding:0;}
+body.cal-fullscreen #view-calendar{padding:14px 18px;}
+body.cal-fullscreen .cal-toolbar{padding-top:2px;}
 
 /* ===== Sidebar ===== */
 .sidebar{
@@ -1910,6 +1918,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
           <button data-calmode="day" id="calModeDay">Día</button>
           <button data-calmode="month" id="calModeMonth">Mes</button>
         </div>
+        <button class="btn btn-ghost btn-sm" id="calFullscreenBtn" style="margin-left:8px;" title="Ver el calendario a pantalla completa">⛶ Vista completa</button>
       </div>
       <div id="calBody"></div>
     </section>
@@ -3469,6 +3478,11 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 const VIEWS = ["dashboard","projects","notas","mytasks","kanban","calendar","gantt","matrix","responsables","reportes","notificaciones","usuarios","configuracion"];
 function showView(view){
   selectedTaskIds.clear();
+  if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
+    document.body.classList.remove("cal-fullscreen");
+    const btn = document.getElementById("calFullscreenBtn");
+    if(btn) btn.innerHTML = "⛶ Vista completa";
+  }
   VIEWS.forEach(v=>{
     document.getElementById("view-"+v).classList.toggle("hidden", v!==view);
   });
@@ -7785,6 +7799,11 @@ document.getElementById("calNext").addEventListener("click", ()=>{
 });
 document.getElementById("calToday").addEventListener("click", ()=>{ calState.anchor = new Date(); render(); });
 document.getElementById("calModeMonth").addEventListener("click", ()=>{ calState.mode="month"; render(); });
+document.getElementById("calFullscreenBtn").addEventListener("click", ()=>{
+  const btn = document.getElementById("calFullscreenBtn");
+  const isFull = document.body.classList.toggle("cal-fullscreen");
+  btn.innerHTML = isFull ? "✕ Salir de vista completa" : "⛶ Vista completa";
+});
 document.getElementById("calModeWeek").addEventListener("click", ()=>{ calState.mode="week"; render(); });
 document.getElementById("calModeDay").addEventListener("click", ()=>{ calState.mode="day"; render(); });
 
