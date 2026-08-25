@@ -2785,12 +2785,12 @@ async function refreshGoogleEventsForToday(){
     });
     if(!r.connected){ googleEventsCache = { date: today, events: [] }; return; }
     const events = (r.events||[]).map(ev=>{
-      if(ev.allDay) return { title: ev.title, allDay:true, date: ev.start, joinLink: ev.joinLink, calendarId: ev.calendarId };
+      if(ev.allDay) return { title: ev.title, allDay:true, date: ev.start, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId };
       const s = isoUtcToLocalParts(ev.start), e = isoUtcToLocalParts(ev.end);
       if(!s || !e) return null;
       return {
         title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
-        joinLink: ev.joinLink, calendarId: ev.calendarId,
+        joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId,
         isWork: workIds ? workIds.includes(ev.calendarId) : null,
       };
     }).filter(Boolean).filter(e=>e.date===today);
@@ -4078,7 +4078,8 @@ function renderDashAgenda(){
           <div class="pt-title">${fin?"✓ ":"🗓️ "}${esc(it.ev.title)}</div>
           <div class="pt-meta">${fin?`<span class="tag" style="background:color-mix(in srgb, var(--success) 16%, transparent);color:var(--success);">Finalizada</span>`:typeTag} <span>${it.ev.startTime}–${it.ev.endTime}</span></div>
         </div>
-        ${(!fin && it.ev.joinLink) ? `<a href="${esc(it.ev.joinLink)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="flex-shrink:0;">📹 Unirse</a>` : ""}
+        ${(!fin && it.ev.joinLink) ? `<a href="${esc(it.ev.joinLink)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="flex-shrink:0;">📹 Unirse</a>`
+          : (!fin && it.ev.htmlLink) ? `<a href="${esc(it.ev.htmlLink)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="flex-shrink:0;">🔗 Ver evento</a>` : ""}
       </div>`;
     }
     if(it.kind==="block"){
