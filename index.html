@@ -1377,7 +1377,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .calmod-scroll{max-height:640px;overflow-y:auto;border-radius:0 0 16px 16px;}
 .calmod-body{display:flex;position:relative;}
 .calmod-gutter{width:60px;flex:none;position:relative;}
-.calmod-hour-label{position:absolute;right:10px;transform:translateY(-50%);font-size:11px;color:var(--cal-text-soft);font-weight:500;font-family:var(--font-mono);white-space:nowrap;}
+.calmod-hour-label{position:absolute;right:10px;transform:translateY(-50%);font-size:10px;color:var(--cal-text-soft);font-weight:500;font-family:var(--font-mono);white-space:nowrap;}
 .calmod-days{flex:1;display:flex;position:relative;}
 .calmod-day-col{flex:1;position:relative;border-left:1px solid var(--cal-line);}
 .calmod-hour-line{position:absolute;left:0;right:0;border-top:1px solid color-mix(in srgb, var(--cal-line) 55%, transparent);}
@@ -1389,17 +1389,17 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .calmod-modality-cell{flex:1;text-align:center;padding:6px 4px;font-size:11.5px;font-weight:600;border-left:1px solid var(--cal-line);}
 .calmod-overdue-ring{box-shadow:0 0 0 2px #D64545 inset;}
 .calmod-event{
-  position:absolute;border-radius:12px;padding:6px 10px;overflow:hidden;cursor:pointer;
+  position:absolute;border-radius:8px;padding:3px 7px;overflow:hidden;cursor:pointer;
   border-left:3px solid; box-shadow:0 1px 2px rgba(30,41,59,.06); z-index:2;
   transition:transform 180ms ease, box-shadow 180ms ease;
 }
 .calmod-event:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(30,41,59,.16);z-index:20;}
-.calmod-event .ce-title{font-size:13.5px;font-weight:700;white-space:normal;overflow:hidden;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.calmod-event .ce-time{font-size:11.5px;opacity:.92;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
-.calmod-event .ce-tag{font-size:9.3px;font-weight:700;padding:1px 7px;border-radius:20px;display:inline-block;margin-top:4px;background:rgba(255,255,255,.55);}
+.calmod-event .ce-title{font-size:11.5px;font-weight:700;white-space:normal;overflow:hidden;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.calmod-event .ce-time{font-size:10px;opacity:.92;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+.calmod-event .ce-tag{font-size:8.6px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block;margin-top:3px;background:rgba(255,255,255,.55);}
 .calmod-event.compact .ce-time,.calmod-event.compact .ce-tag{display:none;}
-.calmod-event.compact{padding:2px 7px;}
-.calmod-event.compact .ce-title{font-size:11px;line-height:1.15;-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis;}
+.calmod-event.compact{padding:1px 6px;}
+.calmod-event.compact .ce-title{font-size:10px;line-height:1.15;-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis;}
 .calmod-routine{
   background:repeating-linear-gradient(45deg, color-mix(in srgb, var(--cal-day-label) 12%, transparent), color-mix(in srgb, var(--cal-day-label) 12%, transparent) 6px, color-mix(in srgb, var(--cal-day-label) 7%, transparent) 6px, color-mix(in srgb, var(--cal-day-label) 7%, transparent) 12px);
   border-left-color:var(--cal-day-label);color:var(--cal-text);cursor:default;
@@ -5754,7 +5754,7 @@ function renderKanban(){
  * ---------------------------------------------------------------------- */
 const calState = { mode:"week", anchor:new Date() };
 let calLastRenderedRange = null; // recuerda qué rango se dibujó, para no resetear el scroll si vuelve a dibujar el MISMO rango (ej. cuando llegan datos de Google Calendar)
-const CAL_HOUR_PX = 60;
+const CAL_HOUR_PX = 44; // alto de cada hora en la grilla semana/día — más compacto, como Google Calendar
 function getDowLabels(){
   const base = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
   if(DB.config.weekStart === "domingo") return base;
@@ -8089,7 +8089,7 @@ function renderCalHourGrid(daysArr, list){
 
     const eventsHtml = items.map(it=>{
       const top = (it.startMin/60)*CAL_HOUR_PX;
-      const height = Math.max(34, ((it.endMin-it.startMin)/60)*CAL_HOUR_PX - 3);
+      const height = Math.max(22, ((it.endMin-it.startMin)/60)*CAL_HOUR_PX - 2);
       let widthPct, leftPct, extraStyle = "";
       if(it._dominant){
         widthPct = 88; leftPct = 0;
@@ -8101,7 +8101,7 @@ function renderCalHourGrid(daysArr, list){
         widthPct = 100/it._totalCols;
         leftPct = it._col*widthPct;
       }
-      const compact = height < 42;
+      const compact = height < 30;
       if(it.kind==="event"){
         const fin = isEventFinished(it.ev);
         const ec = CAL_TYPE_COLORS.laboral;
