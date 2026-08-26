@@ -1326,8 +1326,8 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 
 /* Vista mes */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
-.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;position:sticky;top:64px;z-index:25;background:var(--cal-bg);padding-top:4px;}
-body.cal-fullscreen .cal-dow{top:0;}
+.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;position:sticky;top:var(--cal-sticky-offset, 128px);z-index:25;background:var(--cal-bg);padding-top:4px;}
+body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .cal-cell{
   background:var(--cal-card);border:1px solid var(--cal-line);border-radius:16px;min-height:114px;
   padding:10px;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 2px rgba(30,41,59,.04);
@@ -1346,8 +1346,10 @@ body.cal-fullscreen .cal-dow{top:0;}
 
 /* Vista semana / día — grilla horaria de 24h */
 .calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;overflow:hidden;}
-.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:64px;z-index:25;}
-body.cal-fullscreen .calmod-header{top:0;}
+.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:25;}
+body.cal-fullscreen .calmod-header{top:var(--cal-sticky-offset, 64px);}
+#calStickyTop{position:sticky;top:64px;z-index:24;background:var(--bg);padding-top:2px;}
+body.cal-fullscreen #calStickyTop{top:0;}
 .calmod-header-gutter{width:60px;flex:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
 .calmod-tz-label{font-size:9.5px;color:var(--cal-text-soft);font-weight:600;font-family:var(--font-mono);}
 .calmod-header-days{flex:1;display:flex;}
@@ -1909,8 +1911,8 @@ body.cal-fullscreen .calmod-header{top:0;}
           <p>Visualiza tus vencimientos por mes o por semana</p>
         </div>
       </div>
-      <div class="filters-bar" id="calendarFiltersBar"></div>
-      <div class="panel" id="calQueuePanel" style="margin-bottom:16px;">
+      <div class="filters-bar hidden" id="calendarFiltersBar"></div>
+      <div class="panel hidden" id="calQueuePanel" style="margin-bottom:16px;">
         <div class="panel-title-row">
           <div class="panel-title">📥 Por agendar <span class="nav-badge" id="calQueueCount">0</span></div>
           <button class="btn btn-ghost btn-sm" id="calQueueToggle">Ocultar</button>
@@ -1918,21 +1920,23 @@ body.cal-fullscreen .calmod-header{top:0;}
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 10px;">Tareas que todavía no tienen un día y hora para hacerlas — aunque sepas para cuándo deben estar listas.</p>
         <div id="calQueueList"></div>
       </div>
-      <div class="cal-toolbar">
-        <div class="cal-nav">
-          <button class="icon-btn" id="calPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-          <button class="btn btn-ghost btn-sm" id="calToday">Hoy</button>
-          <button class="icon-btn" id="calNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      <div id="calStickyTop">
+        <div class="cal-toolbar">
+          <div class="cal-nav">
+            <button class="icon-btn" id="calPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="btn btn-ghost btn-sm" id="calToday">Hoy</button>
+            <button class="icon-btn" id="calNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
+          <h2 id="calTitle"></h2>
+          <div class="cal-toggle">
+            <button data-calmode="week" id="calModeWeek">Semana</button>
+            <button data-calmode="day" id="calModeDay">Día</button>
+            <button data-calmode="month" id="calModeMonth">Mes</button>
+          </div>
         </div>
-        <h2 id="calTitle"></h2>
-        <div class="cal-toggle">
-          <button data-calmode="week" id="calModeWeek">Semana</button>
-          <button data-calmode="day" id="calModeDay">Día</button>
-          <button data-calmode="month" id="calModeMonth">Mes</button>
-        </div>
+        <div class="panel" id="calStatsPanel" style="margin-bottom:0;"></div>
       </div>
       <button class="cal-fab-fullscreen" id="calFullscreenBtn" title="Ver el calendario a pantalla completa">⛶</button>
-      <div class="panel" id="calStatsPanel" style="margin-bottom:14px;"></div>
       <div id="calBody"></div>
     </section>
 
@@ -7861,6 +7865,19 @@ function computeCalendarStats(range){
   });
   return {meetWork, meetPersonal, meetOther, taskWork, taskPersonal};
 }
+// Calcula cuánto espacio ocupa de verdad la barra superior + el bloque fijo
+// (fecha/vista + estadísticas), y se lo pasa al CSS — así los títulos de los
+// días quedan pegados justo debajo, sin adivinar un número de píxeles fijo.
+function updateCalendarStickyOffsets(){
+  const topbar = document.querySelector(".topbar");
+  const stickyTop = document.getElementById("calStickyTop");
+  if(!stickyTop) return;
+  const fullscreen = document.body.classList.contains("cal-fullscreen");
+  const topbarH = (!fullscreen && topbar) ? topbar.getBoundingClientRect().height : 0;
+  stickyTop.style.top = topbarH + "px";
+  const stickyTopH = stickyTop.getBoundingClientRect().height;
+  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + stickyTopH) + "px");
+}
 function renderCalStats(range){
   const wrap = document.getElementById("calStatsPanel");
   if(!wrap) return;
@@ -7893,6 +7910,7 @@ function renderCalendar(){
   if(calState.mode==="month") renderCalMonth(list);
   else if(calState.mode==="day") renderCalDay(list);
   else renderCalWeek(list);
+  setTimeout(updateCalendarStickyOffsets, 0);
 }
 function renderCalMonth(list){
   const anchor = calState.anchor;
@@ -8125,6 +8143,7 @@ document.getElementById("calFullscreenBtn").addEventListener("click", ()=>{
   btn.textContent = isFull ? "✕" : "⛶";
   btn.classList.toggle("is-exit", isFull);
   btn.title = isFull ? "Salir de vista completa" : "Ver el calendario a pantalla completa";
+  setTimeout(updateCalendarStickyOffsets, 0);
 });
 document.getElementById("calModeWeek").addEventListener("click", ()=>{ calState.mode="week"; render(); });
 document.getElementById("calModeDay").addEventListener("click", ()=>{ calState.mode="day"; render(); });
