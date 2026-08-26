@@ -8147,11 +8147,11 @@ function renderCalHourGrid(daysArr, list){
       <div class="calmod-header">
         <div class="calmod-header-gutter">${daysArr.length>1?`<div class="calmod-tz-label">${currentTimezoneLabel()}</div>`:""}</div>
         <div class="calmod-header-days">${headDays}</div>
-      </div>`;
+      </div>
+      ${modalityBar}`;
   }
   document.getElementById("calBody").innerHTML = `
     <div class="calmod-wrap">
-      ${modalityBar}
       <div class="calmod-scroll" id="calmodScroll">
         <div class="calmod-body" style="height:${24*CAL_HOUR_PX}px;">
           <div class="calmod-gutter">${gutterLabels}</div>
