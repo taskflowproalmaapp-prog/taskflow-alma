@@ -1347,16 +1347,25 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
 /* Vista semana / día — grilla horaria de 24h */
 .calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;}
-.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:30;border-radius:16px 16px 0 0;}
-body.cal-fullscreen .calmod-header{top:var(--cal-sticky-offset, 64px);}
+.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);border-radius:16px 16px 0 0;}
 /* Todo el bloque superior del calendario (título + toolbar + "tu semana en
-   números") es UNA sola pieza fija — así no hay dos capas "sticky" separadas
-   peleando por su alto/margen mientras se hace scroll (eso era lo que
-   causaba el salto/achicamiento visual). */
-#calHeaderSticky{position:sticky;top:64px;z-index:40;background:var(--bg);}
-body.cal-fullscreen #calHeaderSticky{top:0;}
+   números" + fila de días LUN/MAR/...) es UNA sola pieza, controlada por
+   JS con position:fixed (ver pinCalendarHeader). Usamos fixed en vez de
+   sticky a propósito: sticky depende del "contexto de apilamiento" de
+   todos sus contenedores padre (sidebar sticky, topbar sticky, grid del
+   layout, etc.) y basta con que uno de ellos tenga overflow/transform para
+   que deje de funcionar sin avisar. fixed se posiciona siempre respecto a
+   la ventana, así que es inmune a eso — el único costo es que hay que
+   reservarle el espacio con #calHeaderSpacer para que el contenido de abajo
+   no salte. */
+#calHeaderSticky{position:fixed;z-index:40;background:var(--bg);box-sizing:border-box;}
+#calHeaderSpacer{display:block;}
 #view-calendar .view-header{position:static;top:auto;margin-bottom:14px;padding-top:0;}
 #calStickyTop{padding-top:2px;}
+#calDayRowMount .calmod-header{margin-top:0;}
+/* Debajo del bloque fijo, la tarjeta de la grilla horaria ya no tiene fila
+   de días propia, así que el borde/esquinas superiores quedan planos. */
+.calmod-wrap{border-radius:0 0 16px 16px;border-top:none;}
 .calmod-header-gutter{width:60px;flex:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
 .calmod-tz-label{font-size:9.5px;color:var(--cal-text-soft);font-weight:600;font-family:var(--font-mono);}
 .calmod-header-days{flex:1;display:flex;}
@@ -1944,7 +1953,16 @@ body.cal-fullscreen #calHeaderSticky{top:0;}
           </div>
           <div class="panel" id="calStatsPanel" style="margin-bottom:0;"></div>
         </div>
+        <!-- La fila de días (LUN, MAR...) de las vistas Semana/Día se monta
+             aquí — así queda DENTRO del mismo bloque fijo que el título y
+             "Tu semana en números", en vez de ser una pieza sticky aparte. -->
+        <div id="calDayRowMount"></div>
       </div>
+      <!-- Este espaciador "reserva" en el flujo normal el alto exacto que
+           ocupa #calHeaderSticky (que ahora es position:fixed y ya no
+           empuja contenido). Sin esto, el contenido de abajo saltaría hacia
+           arriba al perder ese espacio. Su alto se actualiza por JS. -->
+      <div id="calHeaderSpacer"></div>
       <button class="cal-fab-fullscreen" id="calFullscreenBtn" title="Ver el calendario a pantalla completa">⛶</button>
       <div id="calBody"></div>
     </section>
@@ -7875,38 +7893,53 @@ function computeCalendarStats(range){
   });
   return {meetWork, meetPersonal, meetOther, taskWork, taskPersonal};
 }
-// Calcula cuánto espacio ocupa de verdad la barra superior + el bloque fijo
-// completo del calendario (título + fecha/vista + "tu semana en números"),
-// y se lo pasa al CSS — así la fila de días (LUN, MAR...) queda pegada justo
-// debajo, sin adivinar un número de píxeles fijo. Todo el bloque de arriba
-// (#calHeaderSticky) es UNA sola pieza "sticky", así que aquí solo hay un
-// alto que medir — nada de capas independientes que puedan desalinearse
-// entre sí mientras se hace scroll.
-function updateCalendarStickyOffsets(){
-  const topbar = document.querySelector(".topbar");
+// Fija (de verdad, con position:fixed) el bloque completo de arriba del
+// calendario: título + fecha/vista + "tu semana en números" + fila de días.
+// Por qué fixed y no sticky: sticky solo funciona si NINGÚN contenedor
+// padre (sidebar, topbar, el grid del layout) tiene overflow/transform que
+// rompa su "contexto de apilamiento" — y con fixed no importa, siempre se
+// posiciona contra la ventana. La contrapartida es que hay que calcular a
+// mano su ancho/posición (para que quede alineado con el resto de la
+// columna central) y reservarle el espacio en el flujo normal con
+// #calHeaderSpacer, para que el contenido de abajo no salte hacia arriba.
+function pinCalendarHeader(){
   const headerSticky = document.getElementById("calHeaderSticky");
-  if(!headerSticky) return;
+  const spacer = document.getElementById("calHeaderSpacer");
+  const anchor = document.getElementById("calBody"); // misma columna que el contenido de abajo
+  if(!headerSticky || !anchor) return;
   const fullscreen = document.body.classList.contains("cal-fullscreen");
+  const topbar = document.querySelector(".topbar");
   const topbarH = (!fullscreen && topbar) ? topbar.getBoundingClientRect().height : 0;
+  const rect = anchor.getBoundingClientRect();
   headerSticky.style.top = topbarH + "px";
-  const headerStickyH = headerSticky.getBoundingClientRect().height;
-  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + headerStickyH) + "px");
+  headerSticky.style.left = rect.left + "px";
+  headerSticky.style.width = rect.width + "px";
+  const headerH = headerSticky.getBoundingClientRect().height;
+  if(spacer) spacer.style.height = headerH + "px";
+  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + headerH) + "px");
 }
 let _calStickyRO = null;
-// Se re-mide solo (sin esperar a que llegues a tocar algo) cada vez que el
-// bloque fijo cambia de alto de verdad: llegan las reuniones de Google
-// Calendar, cambia el ancho de ventana, o el texto de "Tu semana en
-// números" pasa a otra línea. Así el offset nunca queda con un valor viejo.
+// Se re-mide solo (sin esperar a que hagas nada) cada vez que el bloque fijo
+// cambia de alto o de ancho de verdad: llegan las reuniones de Google
+// Calendar, cambia el ancho de ventana, se abre/cierra el sidebar en
+// celular, o el texto de "Tu semana en números" pasa a otra línea. Así la
+// posición nunca queda con un valor viejo.
 function ensureCalendarStickyObserver(){
   const headerSticky = document.getElementById("calHeaderSticky");
+  const anchor = document.getElementById("calBody");
   if(!headerSticky || typeof ResizeObserver==="undefined") return;
   if(_calStickyRO) _calStickyRO.disconnect();
-  _calStickyRO = new ResizeObserver(()=> updateCalendarStickyOffsets());
+  _calStickyRO = new ResizeObserver(()=> pinCalendarHeader());
   _calStickyRO.observe(headerSticky);
+  if(anchor) _calStickyRO.observe(anchor);
   const topbar = document.querySelector(".topbar");
   if(topbar) _calStickyRO.observe(topbar);
+  const sidebar = document.querySelector(".sidebar");
+  if(sidebar) _calStickyRO.observe(sidebar);
 }
-window.addEventListener("resize", ()=>{ if(document.getElementById("calHeaderSticky")) updateCalendarStickyOffsets(); });
+window.addEventListener("resize", ()=>{ if(document.getElementById("calHeaderSticky")) pinCalendarHeader(); });
+// Compatibilidad: por si queda alguna llamada vieja al nombre anterior.
+function updateCalendarStickyOffsets(){ pinCalendarHeader(); }
 function renderCalStats(range){
   const wrap = document.getElementById("calStatsPanel");
   if(!wrap) return;
@@ -7954,6 +7987,8 @@ function renderCalendar(){
   calLastRenderedRange = { start: range.start, end: range.end, mode: calState.mode };
 }
 function renderCalMonth(list){
+  const dayRowMount = document.getElementById("calDayRowMount");
+  if(dayRowMount) dayRowMount.innerHTML = ""; // la vista Mes no usa fila de días LUN/MAR...
   const anchor = calState.anchor;
   const y = anchor.getFullYear(), m = anchor.getMonth();
   document.getElementById("calTitle").textContent = `${MONTH_LABELS[m]} ${y}`;
@@ -8106,12 +8141,16 @@ function renderCalHourGrid(daysArr, list){
       `</div></div>`;
   }
 
-  document.getElementById("calBody").innerHTML = `
-    <div class="calmod-wrap">
+  const dayRowMount = document.getElementById("calDayRowMount");
+  if(dayRowMount){
+    dayRowMount.innerHTML = `
       <div class="calmod-header">
         <div class="calmod-header-gutter">${daysArr.length>1?`<div class="calmod-tz-label">${currentTimezoneLabel()}</div>`:""}</div>
         <div class="calmod-header-days">${headDays}</div>
-      </div>
+      </div>`;
+  }
+  document.getElementById("calBody").innerHTML = `
+    <div class="calmod-wrap">
       ${modalityBar}
       <div class="calmod-scroll" id="calmodScroll">
         <div class="calmod-body" style="height:${24*CAL_HOUR_PX}px;">
