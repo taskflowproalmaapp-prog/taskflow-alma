@@ -283,6 +283,16 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .view-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap;position:sticky;top:64px;z-index:45;background:var(--bg);padding-top:6px;padding-bottom:10px;}
 .view-header h1{font-size:22px;}
 .view-header p{margin:4px 0 0;color:var(--text-muted);font-size:13px;}
+/* Bloque fijo reutilizable (título + barra de filtros) para las vistas de
+   lista: Mis tareas, Memoria de Alma, Proyectos, Kanban, Cronograma,
+   Matriz, Reportes, Configuración. Mismo mecanismo que en Calendario:
+   position:fixed controlado por JS (ver pinActiveViewHeader), no sticky —
+   así no depende de que ningún contenedor padre tenga overflow/transform
+   "limpios". El .view-header individual pierde su propio sticky porque
+   ahora vive dentro de este bloque, que ya se encarga de todo el grupo. */
+.view-sticky-header{position:fixed;z-index:40;background:var(--bg);box-sizing:border-box;}
+.view-sticky-header .view-header{position:static;top:auto;margin-bottom:10px;padding-top:0;}
+.view-sticky-spacer{display:block;}
 
 /* ===== Cards / grid ===== */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
@@ -583,11 +593,13 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;
   background:var(--surface);border:1px solid var(--border);padding:12px 14px;border-radius:var(--radius);
 }
-/* botón "Filtros" para plegar en móvil — oculto en escritorio */
-.filters-toggle{display:none;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--text);
-  background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;padding:9px 13px;cursor:pointer;width:100%;justify-content:center;}
+/* Botón "⚙ Filtros" para plegar/desplegar — igual que en Mis tareas y
+   Kanban, ahora también en escritorio (antes solo se plegaba en móvil). */
+.filters-toggle{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--text);
+  background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;padding:9px 13px;cursor:pointer;}
 .filters-toggle .ft-badge{background:var(--accent);color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;}
-.filters-inner{display:contents;} /* en escritorio, no cambia el layout flex del contenedor */
+.filters-inner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.filters-inner.collapsed{display:none;}
 .filters-bar select, .filters-bar .fbtn{
   padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-alt);
   font-size:12.5px;color:var(--text);outline:none;
@@ -834,11 +846,10 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
   /* Reportes: paneles con scroll propio si una tabla interna fuera ancha */
   #view-reportes .panel{overflow-x:auto;}
 
-  /* --- Filtros plegables en móvil --- */
-  .filters-toggle{display:flex;}
+  /* --- Filtros plegables: en móvil además se apilan a lo ancho --- */
+  .filters-toggle{width:100%;justify-content:center;}
   .filters-bar{flex-direction:column;align-items:stretch;padding:10px;gap:10px;}
-  .filters-inner{display:flex;flex-direction:column;gap:9px;}
-  .filters-inner.collapsed{display:none;}
+  .filters-inner{flex-direction:column;gap:9px;}
   .filters-inner select{width:100%;}
   .filters-inner .fchip{justify-content:center;}
 
@@ -1860,44 +1871,53 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
     <!-- ---------- PROYECTOS ---------- -->
     <section class="view hidden" id="view-projects">
-      <div class="view-header">
-        <div>
-          <h1>Proyectos y temas</h1>
-          <p>Trabajo, familia, salud, hogar, estudios — todo lo que te importa.</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Proyectos y temas</h1>
+            <p>Trabajo, familia, salud, hogar, estudios — todo lo que te importa.</p>
+          </div>
+          <button class="btn btn-primary" id="newProjectBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+            Nuevo proyecto o tema
+          </button>
         </div>
-        <button class="btn btn-primary" id="newProjectBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-          Nuevo proyecto o tema
-        </button>
+        <div class="filters-bar" id="projectFiltersBar"></div>
       </div>
-      <div class="filters-bar" id="projectFiltersBar"></div>
+      <div class="view-sticky-spacer"></div>
       <div class="projects-grid" id="projectsGrid"></div>
     </section>
 
     <!-- ---------- NOTAS DEL DÍA (sticky note / libreta) ---------- -->
     <section class="view hidden" id="view-notas">
-      <div class="view-header">
-        <div>
-          <h1>Memoria de Alma</h1>
-          <p>Anota lo que se te ocurra durante el día. Al cerrar la hoja, Alma lo guarda y lo convierte en tareas.</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" id="notasHistoryBtn" title="Ver histórico de hojas">📚 Histórico</button>
-          <button class="btn btn-ghost" id="notasCustomizeBtn" title="Personalizar mi libreta">🎨 Personalizar</button>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Memoria de Alma</h1>
+            <p>Anota lo que se te ocurra durante el día. Al cerrar la hoja, Alma lo guarda y lo convierte en tareas.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" id="notasHistoryBtn" title="Ver histórico de hojas">📚 Histórico</button>
+            <button class="btn btn-ghost" id="notasCustomizeBtn" title="Personalizar mi libreta">🎨 Personalizar</button>
+          </div>
         </div>
       </div>
+      <div class="view-sticky-spacer"></div>
       <div id="notasContainer"></div>
     </section>
 
     <!-- ---------- MIS TAREAS (lista) ---------- -->
     <section class="view hidden" id="view-mytasks">
-      <div class="view-header">
-        <div>
-          <h1>Mis tareas</h1>
-          <p>Todas las tareas — filtra, ordena y busca en segundos</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Mis tareas</h1>
+            <p>Todas las tareas — filtra, ordena y busca en segundos</p>
+          </div>
         </div>
+        <div id="taskFiltersBarNew"></div>
       </div>
-      <div id="taskFiltersBarNew"></div>
+      <div class="view-sticky-spacer"></div>
       <div id="bulkActionsBar" class="hidden"></div>
       <div id="taskGroupsWrap">
         <div class="empty-state hidden" id="taskEmptyState">
@@ -1909,13 +1929,16 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
     <!-- ---------- KANBAN ---------- -->
     <section class="view hidden" id="view-kanban">
-      <div class="view-header">
-        <div>
-          <h1>Tablero Kanban</h1>
-          <p>Arrastra las tarjetas para actualizar el estado de cada tarea</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Tablero Kanban</h1>
+            <p>Arrastra las tarjetas para actualizar el estado de cada tarea</p>
+          </div>
         </div>
+        <div id="kanbanFiltersBarNew"></div>
       </div>
-      <div id="kanbanFiltersBarNew"></div>
+      <div class="view-sticky-spacer"></div>
       <div class="kanban-board" id="kanbanBoard"></div>
     </section>
 
@@ -1969,25 +1992,31 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
     <!-- ---------- CRONOGRAMA (GANTT) ---------- -->
     <section class="view hidden" id="view-gantt">
-      <div class="view-header">
-        <div>
-          <h1>Cronograma</h1>
-          <p>Línea de tiempo tipo Gantt de las tareas por proyecto</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Cronograma</h1>
+            <p>Línea de tiempo tipo Gantt de las tareas por proyecto</p>
+          </div>
         </div>
+        <div class="filters-bar" id="ganttFiltersBar"></div>
       </div>
-      <div class="filters-bar" id="ganttFiltersBar"></div>
+      <div class="view-sticky-spacer"></div>
       <div class="gantt-wrap" id="ganttWrap"></div>
     </section>
 
     <!-- ---------- MATRIZ DE PRIORIDADES ---------- -->
     <section class="view hidden" id="view-matrix">
-      <div class="view-header">
-        <div>
-          <h1>Matriz de prioridades</h1>
-          <p>Organiza tus tareas según urgencia e importancia (matriz de Eisenhower)</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Matriz de prioridades</h1>
+            <p>Organiza tus tareas según urgencia e importancia (matriz de Eisenhower)</p>
+          </div>
         </div>
+        <div class="filters-bar" id="matrixFiltersBar"></div>
       </div>
-      <div class="filters-bar" id="matrixFiltersBar"></div>
+      <div class="view-sticky-spacer"></div>
       <div class="matrix-grid" id="matrixGrid"></div>
     </section>
 
@@ -2012,12 +2041,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
     <!-- ---------- REPORTES ---------- -->
     <section class="view hidden" id="view-reportes">
-      <div class="view-header">
-        <div>
-          <h1>Reportes</h1>
-          <p>Cumplimiento, productividad y distribución del trabajo</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Reportes</h1>
+            <p>Cumplimiento, productividad y distribución del trabajo</p>
+          </div>
         </div>
       </div>
+      <div class="view-sticky-spacer"></div>
       <div class="dash-grid-2">
         <div class="panel"><div class="panel-title">Cumplimiento por proyecto</div><div id="rpProjectCompletion"></div></div>
         <div class="panel"><div class="panel-title">Cumplimiento por responsable</div><div id="rpOwnerCompletion"></div></div>
@@ -2068,12 +2100,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
     </section>
 
     <section class="view hidden" id="view-configuracion">
-      <div class="view-header">
-        <div>
-          <h1>Configuración</h1>
-          <p>Personaliza TaskFlow Pro y administra tus datos</p>
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Configuración</h1>
+            <p>Personaliza TaskFlow Pro y administra tus datos</p>
+          </div>
         </div>
       </div>
+      <div class="view-sticky-spacer"></div>
 
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">👤 Mi cuenta</div>
@@ -3680,7 +3715,7 @@ document.getElementById("globalSearch").addEventListener("input", e=>{
  * Filtros compartidos (tareas)
  * ---------------------------------------------------------------------- */
 const taskFilterState = { project:"", owner:"", status:"", priority:"", tag:"", quick:"", taskType:"", sort:"dueDate", search:"", showFilters:false };
-let filtersCollapsed = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width:700px)").matches);
+let filtersCollapsed = true; // colapsado por defecto en cualquier tamaño de pantalla, como en Mis tareas/Kanban
 let selectedTaskIds = new Set();
 let taskListPage = 1;
 const TASK_PAGE_SIZE = 50;
@@ -4848,11 +4883,20 @@ function renderProjectFiltersBar(){
   const el = document.getElementById("projectFiltersBar");
   const statusOptions = PROJECT_STATUSES.map(s=>`<option value="${s.id}" ${projectFilter.status===s.id?"selected":""}>${s.label}</option>`).join("");
   const ownerOptions = DB.responsables.map(r=>`<option value="${r.id}" ${projectFilter.owner===r.id?"selected":""}>${esc(r.name)}</option>`).join("");
+  const activeCount = ["status","owner"].filter(k=>projectFilter[k]).length;
   el.innerHTML = `
+    <button type="button" class="filters-toggle" data-filters-toggle>⚙ Filtros${activeCount?` <span class="ft-badge">${activeCount}</span>`:""}</button>
+    <div class="filters-inner${filtersCollapsed?' collapsed':''}">
     <select data-pf="status"><option value="">Todos los estados</option>${statusOptions}</select>
     <select data-pf="owner"><option value="">Todos los responsables</option>${ownerOptions}</select>
     <span class="filters-clear" id="clearProjFilters">Limpiar filtros</span>
+    </div>
   `;
+  const toggleBtn = el.querySelector("[data-filters-toggle]");
+  if(toggleBtn) toggleBtn.addEventListener("click", ()=>{
+    filtersCollapsed = !filtersCollapsed;
+    el.querySelector(".filters-inner").classList.toggle("collapsed", filtersCollapsed);
+  });
   el.querySelectorAll("select[data-pf]").forEach(sel=>sel.addEventListener("change", ()=>{ projectFilter[sel.dataset.pf]=sel.value; render(); }));
   document.getElementById("clearProjFilters").addEventListener("click", ()=>{ projectFilter.status=""; projectFilter.owner=""; render(); });
 }
@@ -5288,28 +5332,34 @@ function renderTaskFiltersSimple(contId, onChange){
   if(!cont) return;
   const activeCount = ["project","owner","status","priority","tag","taskType"].filter(k=>taskFilterState[k]).length;
   const projs = DB.projects.filter(p=>!p.archived);
+  // Ojo: este mismo HTML se usa en más de una vista a la vez (Mis tareas Y
+  // Kanban), y ambas quedan en el DOM aunque una esté oculta. Por eso todo
+  // se busca DENTRO de "cont" (cont.querySelector) y nunca con
+  // document.getElementById — si no, un clic en el botón de Kanban podía
+  // terminar afectando por error al de Mis tareas (o viceversa), porque
+  // getElementById siempre agarra la primera coincidencia del documento.
   cont.innerHTML = `
     <div class="tk-filters">
       <div class="tk-search">
         <span>🔍</span>
-        <input type="text" id="tkSearchInput" placeholder="Buscar tarea…" value="${esc(taskFilterState.search||"")}">
+        <input type="text" class="tkSearchInput" placeholder="Buscar tarea…" value="${esc(taskFilterState.search||"")}">
       </div>
-      <button class="tk-filters-btn ${taskFilterState.showFilters?'open':''}" id="tkFiltersToggle">⚙️ Filtros${activeCount?` <span class="tk-fbadge">${activeCount}</span>`:""}</button>
+      <button class="tk-filters-btn ${taskFilterState.showFilters?'open':''}" type="button">⚙️ Filtros${activeCount?` <span class="tk-fbadge">${activeCount}</span>`:""}</button>
     </div>
-    <div class="tk-filters-panel ${taskFilterState.showFilters?'':'hidden'}" id="tkFiltersPanel">
-      <select id="tkfProject"><option value="">Todos los proyectos</option>${projs.map(p=>`<option value="${p.id}" ${taskFilterState.project===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
-      <select id="tkfOwner"><option value="">Todos los responsables</option>${DB.responsables.map(r=>`<option value="${r.id}" ${taskFilterState.owner===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}</select>
-      <select id="tkfStatus"><option value="">Todos los estados</option>${TASK_STATUSES.map(s=>`<option value="${s.id}" ${taskFilterState.status===s.id?"selected":""}>${esc(s.label)}</option>`).join("")}</select>
-      <select id="tkfPriority"><option value="">Todas las prioridades</option>${PRIORITIES.map(p=>`<option value="${p.id}" ${taskFilterState.priority===p.id?"selected":""}>${esc(p.label)}</option>`).join("")}</select>
-      <select id="tkfType"><option value="">Personal y trabajo</option><option value="personal" ${taskFilterState.taskType==="personal"?"selected":""}>Solo personal</option><option value="laboral" ${taskFilterState.taskType==="laboral"?"selected":""}>Solo trabajo</option></select>
-      ${activeCount?`<button class="tk-clear" id="tkClearFilters">Limpiar</button>`:""}
+    <div class="tk-filters-panel ${taskFilterState.showFilters?'':'hidden'}">
+      <select data-tkf="project"><option value="">Todos los proyectos</option>${projs.map(p=>`<option value="${p.id}" ${taskFilterState.project===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
+      <select data-tkf="owner"><option value="">Todos los responsables</option>${DB.responsables.map(r=>`<option value="${r.id}" ${taskFilterState.owner===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}</select>
+      <select data-tkf="status"><option value="">Todos los estados</option>${TASK_STATUSES.map(s=>`<option value="${s.id}" ${taskFilterState.status===s.id?"selected":""}>${esc(s.label)}</option>`).join("")}</select>
+      <select data-tkf="priority"><option value="">Todas las prioridades</option>${PRIORITIES.map(p=>`<option value="${p.id}" ${taskFilterState.priority===p.id?"selected":""}>${esc(p.label)}</option>`).join("")}</select>
+      <select data-tkf="taskType"><option value="">Personal y trabajo</option><option value="personal" ${taskFilterState.taskType==="personal"?"selected":""}>Solo personal</option><option value="laboral" ${taskFilterState.taskType==="laboral"?"selected":""}>Solo trabajo</option></select>
+      ${activeCount?`<button class="tk-clear" type="button">Limpiar</button>`:""}
     </div>`;
-  const si = document.getElementById("tkSearchInput");
-  si.addEventListener("input", ()=>{ taskFilterState.search = si.value; onChange(); const el=document.getElementById("tkSearchInput"); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } });
-  document.getElementById("tkFiltersToggle").addEventListener("click", ()=>{ taskFilterState.showFilters=!taskFilterState.showFilters; renderTaskFiltersSimple(contId, onChange); });
-  const bind = (id, key)=>{ const el=document.getElementById(id); if(el) el.addEventListener("change",()=>{ taskFilterState[key]=el.value; onChange(); }); };
-  bind("tkfProject","project"); bind("tkfOwner","owner"); bind("tkfStatus","status"); bind("tkfPriority","priority"); bind("tkfType","taskType");
-  const clr = document.getElementById("tkClearFilters");
+  const si = cont.querySelector(".tkSearchInput");
+  si.addEventListener("input", ()=>{ taskFilterState.search = si.value; onChange(); const el=cont.querySelector(".tkSearchInput"); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } });
+  cont.querySelector(".tk-filters-btn").addEventListener("click", ()=>{ taskFilterState.showFilters=!taskFilterState.showFilters; renderTaskFiltersSimple(contId, onChange); });
+  const bind = (key)=>{ const el=cont.querySelector(`[data-tkf="${key}"]`); if(el) el.addEventListener("change",()=>{ taskFilterState[key]=el.value; onChange(); }); };
+  bind("project"); bind("owner"); bind("status"); bind("priority"); bind("taskType");
+  const clr = cont.querySelector(".tk-clear");
   if(clr) clr.addEventListener("click", ()=>{ Object.assign(taskFilterState,{project:"",owner:"",status:"",priority:"",tag:"",taskType:""}); renderTaskFiltersSimple(contId, onChange); onChange(); });
 }
 function taskTimeGroup(t){
@@ -7940,6 +7990,52 @@ function ensureCalendarStickyObserver(){
 window.addEventListener("resize", ()=>{ if(document.getElementById("calHeaderSticky")) pinCalendarHeader(); });
 // Compatibilidad: por si queda alguna llamada vieja al nombre anterior.
 function updateCalendarStickyOffsets(){ pinCalendarHeader(); }
+
+/* ---------------------------------------------------------------------- *
+ * BLOQUE FIJO GENÉRICO para el resto de las vistas (Mis tareas, Memoria de
+ * Alma, Proyectos, Kanban, Cronograma, Matriz, Reportes, Configuración).
+ * Mismo mecanismo que en Calendario (position:fixed por JS, no sticky por
+ * CSS), pero genérico: agarra el ".view-sticky-header" de la vista que esté
+ * visible en ese momento, sea cual sea.
+ * ---------------------------------------------------------------------- */
+function pinActiveViewHeader(){
+  const activeHeader = document.querySelector(".view:not(.hidden) .view-sticky-header");
+  // limpia cualquier bloque de OTRA vista que haya quedado con estilos inline
+  document.querySelectorAll(".view-sticky-header").forEach(h=>{
+    if(h!==activeHeader){ h.style.position=""; h.style.top=""; h.style.left=""; h.style.width=""; }
+  });
+  document.querySelectorAll(".view-sticky-spacer").forEach(s=>{
+    if(!activeHeader || s!==activeHeader.nextElementSibling) s.style.height="";
+  });
+  if(!activeHeader) return;
+  const view = activeHeader.closest(".view");
+  const spacer = activeHeader.nextElementSibling;
+  if(!view) return;
+  const topbar = document.querySelector(".topbar");
+  const topbarH = topbar ? topbar.getBoundingClientRect().height : 0;
+  const cs = getComputedStyle(view);
+  const padL = parseFloat(cs.paddingLeft)||0;
+  const padR = parseFloat(cs.paddingRight)||0;
+  const viewRect = view.getBoundingClientRect();
+  activeHeader.style.position = "fixed";
+  activeHeader.style.top = topbarH + "px";
+  activeHeader.style.left = (viewRect.left + padL) + "px";
+  activeHeader.style.width = (viewRect.width - padL - padR) + "px";
+  const h = activeHeader.getBoundingClientRect().height;
+  if(spacer && spacer.classList.contains("view-sticky-spacer")) spacer.style.height = h + "px";
+}
+let _viewHeaderRO = null;
+function ensureViewHeaderObserver(){
+  if(typeof ResizeObserver==="undefined") return;
+  if(_viewHeaderRO) _viewHeaderRO.disconnect();
+  _viewHeaderRO = new ResizeObserver(()=> pinActiveViewHeader());
+  document.querySelectorAll(".view-sticky-header").forEach(h=>_viewHeaderRO.observe(h));
+  const topbar = document.querySelector(".topbar");
+  if(topbar) _viewHeaderRO.observe(topbar);
+  const sidebar = document.querySelector(".sidebar");
+  if(sidebar) _viewHeaderRO.observe(sidebar);
+}
+window.addEventListener("resize", ()=>{ try{ pinActiveViewHeader(); }catch(e){} });
 function renderCalStats(range){
   const wrap = document.getElementById("calStatsPanel");
   if(!wrap) return;
@@ -10319,6 +10415,7 @@ function render(){
   if(fn){
     try{ fn(); }catch(e){ console.error("render:"+activeView, e); notifyUnexpectedError(); }
   }
+  try{ pinActiveViewHeader(); ensureViewHeaderObserver(); }catch(e){ console.error("pinActiveViewHeader",e); }
   try{ renderAlmaCloud(activeView); }catch(e){ console.error("renderAlmaCloud",e); }
 }
 
