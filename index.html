@@ -137,6 +137,7 @@ body.cal-fullscreen .sidebar{display:none;}
 body.cal-fullscreen .topbar{display:none;}
 body.cal-fullscreen .main{padding:0;}
 body.cal-fullscreen #view-calendar{padding:14px 18px;}
+body.cal-fullscreen .view-header{display:none;}
 body.cal-fullscreen .cal-toolbar{padding-top:2px;}
 .cal-fab-fullscreen{
   position:fixed;right:22px;bottom:22px;z-index:60;width:52px;height:52px;border-radius:50%;border:none;
@@ -236,7 +237,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   display:flex;align-items:center;gap:16px;
   padding:14px 26px;background:var(--surface);
   border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:20;
+  position:sticky;top:0;z-index:50;
 }
 @media (max-width:900px){.topbar{top:0;}}
 .search-box{
@@ -279,7 +280,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 
 .view{padding:22px 26px 60px;max-width:1400px;margin:0 auto;}
-.view-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+.view-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap;position:sticky;top:64px;z-index:45;background:var(--bg);padding-top:6px;padding-bottom:10px;}
 .view-header h1{font-size:22px;}
 .view-header p{margin:4px 0 0;color:var(--text-muted);font-size:13px;}
 
@@ -1326,7 +1327,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 
 /* Vista mes */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
-.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;position:sticky;top:var(--cal-sticky-offset, 128px);z-index:25;background:var(--cal-bg);padding-top:4px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;position:sticky;top:var(--cal-sticky-offset, 128px);z-index:30;background:var(--cal-bg);padding-top:4px;}
 body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .cal-cell{
   background:var(--cal-card);border:1px solid var(--cal-line);border-radius:16px;min-height:114px;
@@ -1346,9 +1347,9 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
 /* Vista semana / día — grilla horaria de 24h */
 .calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;}
-.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:25;border-radius:16px 16px 0 0;}
+.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:30;border-radius:16px 16px 0 0;}
 body.cal-fullscreen .calmod-header{top:var(--cal-sticky-offset, 64px);}
-#calStickyTop{position:sticky;top:64px;z-index:24;background:var(--bg);padding-top:2px;}
+#calStickyTop{position:sticky;top:64px;z-index:40;background:var(--bg);padding-top:2px;}
 body.cal-fullscreen #calStickyTop{top:0;}
 .calmod-header-gutter{width:60px;flex:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
 .calmod-tz-label{font-size:9.5px;color:var(--cal-text-soft);font-weight:600;font-family:var(--font-mono);}
@@ -7870,13 +7871,15 @@ function computeCalendarStats(range){
 // días quedan pegados justo debajo, sin adivinar un número de píxeles fijo.
 function updateCalendarStickyOffsets(){
   const topbar = document.querySelector(".topbar");
+  const viewHeader = document.querySelector("#view-calendar .view-header");
   const stickyTop = document.getElementById("calStickyTop");
   if(!stickyTop) return;
   const fullscreen = document.body.classList.contains("cal-fullscreen");
   const topbarH = (!fullscreen && topbar) ? topbar.getBoundingClientRect().height : 0;
-  stickyTop.style.top = topbarH + "px";
+  const viewHeaderH = viewHeader ? viewHeader.getBoundingClientRect().height : 0; // ya es 0 si está oculto en pantalla completa
+  stickyTop.style.top = (topbarH + viewHeaderH) + "px";
   const stickyTopH = stickyTop.getBoundingClientRect().height;
-  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + stickyTopH) + "px");
+  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + viewHeaderH + stickyTopH) + "px");
 }
 function renderCalStats(range){
   const wrap = document.getElementById("calStatsPanel");
