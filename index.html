@@ -5727,6 +5727,7 @@ function renderKanban(){
  * RENDER: Calendario (mensual, semanal y diario)
  * ---------------------------------------------------------------------- */
 const calState = { mode:"week", anchor:new Date() };
+let calLastRenderedRange = null; // recuerda qué rango se dibujó, para no resetear el scroll si vuelve a dibujar el MISMO rango (ej. cuando llegan datos de Google Calendar)
 const CAL_HOUR_PX = 60;
 function getDowLabels(){
   const base = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -7902,6 +7903,9 @@ function renderCalStats(range){
 }
 function renderCalendar(){
   const range = calendarViewRange();
+  const scrollElBefore = document.getElementById("calmodScroll");
+  const preservedScrollTop = scrollElBefore ? scrollElBefore.scrollTop : null;
+  const sameRangeAsBefore = !!(calLastRenderedRange && calLastRenderedRange.start===range.start && calLastRenderedRange.end===range.end && calLastRenderedRange.mode===calState.mode);
   refreshGoogleEventsForRange(range.start, range.end); // async: si trae datos nuevos, vuelve a llamar a renderCalendar()
   renderCalStats(range);
   renderFiltersBar("calendarFiltersBar", {showSort:false});
@@ -7913,7 +7917,15 @@ function renderCalendar(){
   if(calState.mode==="month") renderCalMonth(list);
   else if(calState.mode==="day") renderCalDay(list);
   else renderCalWeek(list);
-  setTimeout(updateCalendarStickyOffsets, 0);
+  updateCalendarStickyOffsets();
+  // si es el MISMO rango que ya estabas viendo (ej. se acaba de actualizar solo
+  // porque llegaron tus reuniones de Google Calendar), respetamos dónde tenías
+  // el scroll en vez de saltar de nuevo a "la hora actual".
+  if(sameRangeAsBefore && preservedScrollTop!=null){
+    const scrollElAfter = document.getElementById("calmodScroll");
+    if(scrollElAfter) scrollElAfter.scrollTop = preservedScrollTop;
+  }
+  calLastRenderedRange = { start: range.start, end: range.end, mode: calState.mode };
 }
 function renderCalMonth(list){
   const anchor = calState.anchor;
@@ -8146,7 +8158,7 @@ document.getElementById("calFullscreenBtn").addEventListener("click", ()=>{
   btn.textContent = isFull ? "✕" : "⛶";
   btn.classList.toggle("is-exit", isFull);
   btn.title = isFull ? "Salir de vista completa" : "Ver el calendario a pantalla completa";
-  setTimeout(updateCalendarStickyOffsets, 0);
+  updateCalendarStickyOffsets();
 });
 document.getElementById("calModeWeek").addEventListener("click", ()=>{ calState.mode="week"; render(); });
 document.getElementById("calModeDay").addEventListener("click", ()=>{ calState.mode="day"; render(); });
