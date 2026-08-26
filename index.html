@@ -1326,7 +1326,8 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 
 /* Vista mes */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
-.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;position:sticky;top:64px;z-index:25;background:var(--cal-bg);padding-top:4px;}
+body.cal-fullscreen .cal-dow{top:0;}
 .cal-cell{
   background:var(--cal-card);border:1px solid var(--cal-line);border-radius:16px;min-height:114px;
   padding:10px;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 2px rgba(30,41,59,.04);
@@ -1345,7 +1346,8 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 
 /* Vista semana / día — grilla horaria de 24h */
 .calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;overflow:hidden;}
-.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);}
+.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:64px;z-index:25;}
+body.cal-fullscreen .calmod-header{top:0;}
 .calmod-header-gutter{width:60px;flex:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
 .calmod-tz-label{font-size:9.5px;color:var(--cal-text-soft);font-weight:600;font-family:var(--font-mono);}
 .calmod-header-days{flex:1;display:flex;}
@@ -5938,7 +5940,7 @@ function busySlotsForDate(iso, taskType){
       busy.push([s,e]);
     }
   });
-  if(iso===TODAY()) getDemoEventsToday().forEach(ev=>busy.push([timeToMinutes(ev.startTime), timeToMinutes(ev.endTime)]));
+  getGoogleEventsForDate(iso).forEach(ev=>busy.push([timeToMinutes(ev.startTime), timeToMinutes(ev.endTime)]));
 
   const date = new Date(iso+"T00:00:00");
   const dow = dowNameFor(date);
@@ -7070,7 +7072,7 @@ function finishAlmaManual(){
 }
 /* ---- Modo IA: guarda datos, calcula peso y muestra horarios inteligentes ---- */
 let almaIaSuggestState = null; // {tid, urgency, shown} para "ver más"
-function finishAlmaIA(){
+async function finishAlmaIA(){
   const st = almaFormState;
   const t = byId(DB.tasks, st.tid);
   if(!t){ closeGenericModal(); return; }
@@ -7086,6 +7088,14 @@ function finishAlmaIA(){
   recomputeAll(); saveDB();
   enrichTaskWithAI(t.id);
   almaIaSuggestState = { tid: t.id, urgency: d.urgency||"week", daysShown: 3, selectedDay: null, aiReason:null, aiBestSlot:null, aiOrder:null };
+  // Antes de sugerir horarios, hay que traer tus reuniones REALES de Google
+  // Calendar para todo el rango relevante — si no, "día libre" podría estar
+  // mal (mostrando como libre un día que en realidad tienes lleno de reuniones).
+  const modalBody = document.getElementById("genericModalBody");
+  if(modalBody) modalBody.innerHTML = `<div class="alma-form ia"><div class="af-head"><div class="af-orb"></div><div><div class="af-name">Alma</div><div class="af-sub">revisando tu calendario real...</div></div></div></div>`;
+  const horizonEnd = t.dueDate || (()=>{ const d2=new Date(); d2.setDate(d2.getDate()+30); return isoOf(d2); })();
+  await refreshGoogleEventsForRange(TODAY(), horizonEnd);
+  if(!almaIaSuggestState || almaIaSuggestState.tid!==t.id) return; // se cerró mientras esperábamos
   renderAlmaIaSuggestions();
   // Intentar la capa IA en segundo plano (si está disponible). Si responde, reordena
   // los días y guarda la hora destacada con su razón, luego refresca. Si falla, se
@@ -7897,11 +7907,25 @@ function renderCalMonth(list){
     const iso = isoOf(d);
     const outside = d.getMonth()!==m;
     const dayTasks = tasksDueOn(iso, list);
-    const shown = dayTasks.slice(0,3);
+    const dayEvents = getGoogleEventsForDate(iso);
+    const combined = [
+      ...dayTasks.map(t=>({type:"task", t, time:t.dueTime||"23:59"})),
+      ...dayEvents.map(ev=>({type:"event", ev, time:ev.startTime})),
+    ].sort((a,b)=>a.time.localeCompare(b.time));
+    const shown = combined.slice(0,3);
+    const extra = combined.length - shown.length;
     html += `<div class="cal-cell ${outside?'outside':''} ${iso===todayIso?'is-today':''}">
       <div class="cal-daynum">${d.getDate()}</div>
-      ${shown.map(t=>{ const c=calEventColors(t); return `<div class="cal-task" data-task-id="${t.id}" style="background:${c.bg};color:${c.text};border-left-color:${c.border};">${esc(t.title)}</div>`; }).join("")}
-      ${dayTasks.length>3?`<div class="cal-more" data-more-iso="${iso}">+${dayTasks.length-3} más</div>`:""}
+      ${shown.map(it=>{
+        if(it.type==="task"){
+          const c=calEventColors(it.t);
+          return `<div class="cal-task" data-task-id="${it.t.id}" style="background:${c.bg};color:${c.text};border-left-color:${c.border};">${esc(it.t.title)}</div>`;
+        }
+        const ec = CAL_TYPE_COLORS.laboral;
+        const fin = isEventFinished({date:it.ev.date, endTime:it.ev.endTime});
+        return `<div class="cal-task cal-gevent" ${it.ev.id?`data-gcal-id="${esc(it.ev.id)}" data-gcal-calid="${esc(it.ev.calendarId)}"`:""} style="background:${fin?'color-mix(in srgb, #5B9BD5 20%, #fff)':ec.grad};color:${fin?'#3A5A70':ec.text};border-left-color:${ec.solid};">🗓️ ${esc(it.ev.title)}</div>`;
+      }).join("")}
+      ${extra>0?`<div class="cal-more" data-more-iso="${iso}">+${extra} más</div>`:""}
     </div>`;
   }
   html += `</div>`;
@@ -7911,6 +7935,15 @@ function renderCalMonth(list){
     el.addEventListener("click", (e)=>{ e.stopPropagation(); openCalTaskActionCloud(el, el.dataset.taskId); });
     const t = byId(list, el.dataset.taskId) || byId(DB.tasks, el.dataset.taskId);
     if(t) bindCalTooltip(el, t);
+  });
+  body.querySelectorAll("[data-gcal-id]").forEach(el=>{
+    el.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const found = findCachedGoogleEvent(el.dataset.gcalCalid, el.dataset.gcalId);
+      if(found) openGCalEventModal(found);
+    });
+    const found = findCachedGoogleEvent(el.dataset.gcalCalid, el.dataset.gcalId);
+    if(found) bindGCalTooltip(el, found, isEventFinished({date:found.date, endTime:found.endTime}));
   });
   body.querySelectorAll("[data-more-iso]").forEach(el=>el.addEventListener("click", ()=>{
     taskFilterState.quick=""; searchQuery=""; document.getElementById("globalSearch").value="";
