@@ -7035,6 +7035,12 @@ function finishAlmaManual(){
   const t = byId(DB.tasks, st.tid);
   if(!t){ closeGenericModal(); return; }
   const d = st.data;
+  // si eligió a mano una fecha posterior a la fecha límite, avisamos antes de
+  // guardar — puede ser intencional, pero no debe pasar sin que se den cuenta.
+  if(d.execDate && d.dueDate && d.execDate > d.dueDate){
+    const ok = confirm(`⚠️ Ojo: elegiste hacerla el ${fmtDate(d.execDate)}, pero vence el ${fmtDate(d.dueDate)} — quedará vencida. ¿Deseas continuar igual?`);
+    if(!ok) return; // no se cierra el modal, para que puedan corregir la fecha
+  }
   t.taskType = d.taskType || t.taskType;
   if(d.projectId) t.projectId = d.projectId;
   t.requestedBy = d.requestedBy || "";
@@ -7455,6 +7461,9 @@ function almaIaDayCandidates(t, urgency, howMany){
   const startFrom = 0;
   const pool = [];
   for(let d=startFrom; d<=horizon; d++){
+    // nunca proponer un día posterior a la fecha límite — esto es una regla dura,
+    // no una preferencia: si vence en 5 días, jamás se ofrece el día 6 en adelante.
+    if(daysToDue!==null && d>daysToDue) continue;
     const dd = new Date(); dd.setDate(dd.getDate()+d); dd.setHours(0,0,0,0);
     const iso = isoOf(dd);
     if(freeSlotsForDate(iso, durMin, t.taskType, t.title).length===0) continue;
@@ -7654,6 +7663,7 @@ Responde SOLO con JSON válido, sin texto adicional:
 - Todas las fechas deben ser iguales o posteriores a hoy.
 - MUY IMPORTANTE: si sugieres una hora para HOY (${TODAY()}), debe ser al menos 45 minutos POSTERIOR a la hora actual (${nowHHMM}). Nunca sugieras una hora de hoy que ya pasó. Si hoy ya no queda tiempo razonable, sugiere mañana u otro día.
 - Evita proponer horas fuera de sentido común (por ejemplo, de madrugada) salvo que la propia tarea lo sugiera.
+${t.dueDate?`- REGLA DURA, sin excepciones: esta tarea vence el ${t.dueDate}. NUNCA sugieras una fecha posterior a esa — como máximo, el mismo día del vencimiento.`:""}
 Responde solo el JSON.`;
     const raw = await askAI(prompt);
     const cleaned = raw.replace(/```json|```/g,"").trim();
@@ -7679,6 +7689,9 @@ function renderAISuggestions(tid, parsed){
       const m = timeToMinutes(s.hora||"00:00");
       if(m < nowMin + 30) return false; // hora de hoy ya pasada o demasiado justa
     }
+    // red de seguridad: jamás mostrar una sugerencia posterior a la fecha límite,
+    // aunque la IA se haya equivocado.
+    if(t0 && t0.dueDate && s.fecha > t0.dueDate) return false;
     return true;
   });
   aiBox.innerHTML = `
@@ -8779,6 +8792,12 @@ document.getElementById("saveTaskBtn").addEventListener("click", ()=>{
   if(!title.value.trim()){ markFieldError(title,"El título es obligatorio."); ok=false; }
   if(!due.value){ markFieldError(due,"La fecha de vencimiento es obligatoria."); ok=false; }
   if(!ok){ toast("Revisa los campos obligatorios del formulario.","error"); return; }
+
+  const startDateVal = document.getElementById("tf_start").value;
+  if(startDateVal && due.value && startDateVal > due.value){
+    const ok2 = confirm(`⚠️ Ojo: la fecha de ejecución (${fmtDate(startDateVal)}) es posterior al vencimiento (${fmtDate(due.value)}) — quedará vencida. ¿Deseas continuar igual?`);
+    if(!ok2) return;
+  }
 
   const subtasks = Array.from(document.getElementById("tf_subtasks").querySelectorAll(".subtask-row")).map(row=>({
     id: row.dataset.sid,
