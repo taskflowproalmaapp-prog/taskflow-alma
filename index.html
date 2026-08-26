@@ -1345,8 +1345,8 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .cal-more{font-size:10.5px;color:var(--cal-text-soft);cursor:pointer;font-weight:700;padding:2px 4px;}
 
 /* Vista semana / día — grilla horaria de 24h */
-.calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;overflow:hidden;}
-.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:25;}
+.calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;}
+.calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:25;border-radius:16px 16px 0 0;}
 body.cal-fullscreen .calmod-header{top:var(--cal-sticky-offset, 64px);}
 #calStickyTop{position:sticky;top:64px;z-index:24;background:var(--bg);padding-top:2px;}
 body.cal-fullscreen #calStickyTop{top:0;}
@@ -1358,7 +1358,7 @@ body.cal-fullscreen #calStickyTop{top:0;}
 .calmod-day-head .dnum{font-size:22px;font-weight:700;font-family:var(--font-display);color:var(--cal-title);margin-top:3px;line-height:1;}
 .calmod-day-head.is-today .dname{color:#E8447A;}
 .calmod-day-head.is-today .dnum{color:#fff;background:linear-gradient(135deg,#FF7A45,#E8447A);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:4px auto 0;font-size:17px;box-shadow:0 3px 10px rgba(232,68,122,.35);}
-.calmod-scroll{max-height:640px;overflow-y:auto;}
+.calmod-scroll{max-height:640px;overflow-y:auto;border-radius:0 0 16px 16px;}
 .calmod-body{display:flex;position:relative;}
 .calmod-gutter{width:60px;flex:none;position:relative;}
 .calmod-hour-label{position:absolute;right:10px;transform:translateY(-50%);font-size:11px;color:var(--cal-text-soft);font-weight:500;font-family:var(--font-mono);white-space:nowrap;}
