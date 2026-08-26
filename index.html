@@ -1349,8 +1349,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .calmod-wrap{background:var(--cal-bg);border:1px solid var(--cal-line);border-radius:16px;}
 .calmod-header{display:flex;border-bottom:1px solid var(--cal-line);background:var(--cal-card);position:sticky;top:var(--cal-sticky-offset, 128px);z-index:30;border-radius:16px 16px 0 0;}
 body.cal-fullscreen .calmod-header{top:var(--cal-sticky-offset, 64px);}
-#calStickyTop{position:sticky;top:64px;z-index:40;background:var(--bg);padding-top:2px;}
-body.cal-fullscreen #calStickyTop{top:0;}
+/* Todo el bloque superior del calendario (título + toolbar + "tu semana en
+   números") es UNA sola pieza fija — así no hay dos capas "sticky" separadas
+   peleando por su alto/margen mientras se hace scroll (eso era lo que
+   causaba el salto/achicamiento visual). */
+#calHeaderSticky{position:sticky;top:64px;z-index:40;background:var(--bg);}
+body.cal-fullscreen #calHeaderSticky{top:0;}
+#view-calendar .view-header{position:static;top:auto;margin-bottom:14px;padding-top:0;}
+#calStickyTop{padding-top:2px;}
 .calmod-header-gutter{width:60px;flex:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
 .calmod-tz-label{font-size:9.5px;color:var(--cal-text-soft);font-weight:600;font-family:var(--font-mono);}
 .calmod-header-days{flex:1;display:flex;}
@@ -1906,12 +1912,6 @@ body.cal-fullscreen #calStickyTop{top:0;}
 
     <!-- ---------- CALENDARIO ---------- -->
     <section class="view hidden" id="view-calendar">
-      <div class="view-header">
-        <div>
-          <h1>Calendario</h1>
-          <p>Visualiza tus vencimientos por mes o por semana</p>
-        </div>
-      </div>
       <div class="filters-bar hidden" id="calendarFiltersBar"></div>
       <div class="panel hidden" id="calQueuePanel" style="margin-bottom:16px;">
         <div class="panel-title-row">
@@ -1921,21 +1921,29 @@ body.cal-fullscreen #calStickyTop{top:0;}
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 10px;">Tareas que todavía no tienen un día y hora para hacerlas — aunque sepas para cuándo deben estar listas.</p>
         <div id="calQueueList"></div>
       </div>
-      <div id="calStickyTop">
-        <div class="cal-toolbar">
-          <div class="cal-nav">
-            <button class="icon-btn" id="calPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-            <button class="btn btn-ghost btn-sm" id="calToday">Hoy</button>
-            <button class="icon-btn" id="calNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
-          </div>
-          <h2 id="calTitle"></h2>
-          <div class="cal-toggle">
-            <button data-calmode="week" id="calModeWeek">Semana</button>
-            <button data-calmode="day" id="calModeDay">Día</button>
-            <button data-calmode="month" id="calModeMonth">Mes</button>
+      <div id="calHeaderSticky">
+        <div class="view-header">
+          <div>
+            <h1>Calendario</h1>
+            <p>Visualiza tus vencimientos por mes o por semana</p>
           </div>
         </div>
-        <div class="panel" id="calStatsPanel" style="margin-bottom:0;"></div>
+        <div id="calStickyTop">
+          <div class="cal-toolbar">
+            <div class="cal-nav">
+              <button class="icon-btn" id="calPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+              <button class="btn btn-ghost btn-sm" id="calToday">Hoy</button>
+              <button class="icon-btn" id="calNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+            </div>
+            <h2 id="calTitle"></h2>
+            <div class="cal-toggle">
+              <button data-calmode="week" id="calModeWeek">Semana</button>
+              <button data-calmode="day" id="calModeDay">Día</button>
+              <button data-calmode="month" id="calModeMonth">Mes</button>
+            </div>
+          </div>
+          <div class="panel" id="calStatsPanel" style="margin-bottom:0;"></div>
+        </div>
       </div>
       <button class="cal-fab-fullscreen" id="calFullscreenBtn" title="Ver el calendario a pantalla completa">⛶</button>
       <div id="calBody"></div>
@@ -7868,20 +7876,37 @@ function computeCalendarStats(range){
   return {meetWork, meetPersonal, meetOther, taskWork, taskPersonal};
 }
 // Calcula cuánto espacio ocupa de verdad la barra superior + el bloque fijo
-// (fecha/vista + estadísticas), y se lo pasa al CSS — así los títulos de los
-// días quedan pegados justo debajo, sin adivinar un número de píxeles fijo.
+// completo del calendario (título + fecha/vista + "tu semana en números"),
+// y se lo pasa al CSS — así la fila de días (LUN, MAR...) queda pegada justo
+// debajo, sin adivinar un número de píxeles fijo. Todo el bloque de arriba
+// (#calHeaderSticky) es UNA sola pieza "sticky", así que aquí solo hay un
+// alto que medir — nada de capas independientes que puedan desalinearse
+// entre sí mientras se hace scroll.
 function updateCalendarStickyOffsets(){
   const topbar = document.querySelector(".topbar");
-  const viewHeader = document.querySelector("#view-calendar .view-header");
-  const stickyTop = document.getElementById("calStickyTop");
-  if(!stickyTop) return;
+  const headerSticky = document.getElementById("calHeaderSticky");
+  if(!headerSticky) return;
   const fullscreen = document.body.classList.contains("cal-fullscreen");
   const topbarH = (!fullscreen && topbar) ? topbar.getBoundingClientRect().height : 0;
-  const viewHeaderH = viewHeader ? viewHeader.getBoundingClientRect().height : 0; // ya es 0 si está oculto en pantalla completa
-  stickyTop.style.top = (topbarH + viewHeaderH) + "px";
-  const stickyTopH = stickyTop.getBoundingClientRect().height;
-  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + viewHeaderH + stickyTopH) + "px");
+  headerSticky.style.top = topbarH + "px";
+  const headerStickyH = headerSticky.getBoundingClientRect().height;
+  document.documentElement.style.setProperty("--cal-sticky-offset", (topbarH + headerStickyH) + "px");
 }
+let _calStickyRO = null;
+// Se re-mide solo (sin esperar a que llegues a tocar algo) cada vez que el
+// bloque fijo cambia de alto de verdad: llegan las reuniones de Google
+// Calendar, cambia el ancho de ventana, o el texto de "Tu semana en
+// números" pasa a otra línea. Así el offset nunca queda con un valor viejo.
+function ensureCalendarStickyObserver(){
+  const headerSticky = document.getElementById("calHeaderSticky");
+  if(!headerSticky || typeof ResizeObserver==="undefined") return;
+  if(_calStickyRO) _calStickyRO.disconnect();
+  _calStickyRO = new ResizeObserver(()=> updateCalendarStickyOffsets());
+  _calStickyRO.observe(headerSticky);
+  const topbar = document.querySelector(".topbar");
+  if(topbar) _calStickyRO.observe(topbar);
+}
+window.addEventListener("resize", ()=>{ if(document.getElementById("calHeaderSticky")) updateCalendarStickyOffsets(); });
 function renderCalStats(range){
   const wrap = document.getElementById("calStatsPanel");
   if(!wrap) return;
@@ -7918,6 +7943,7 @@ function renderCalendar(){
   else if(calState.mode==="day") renderCalDay(list);
   else renderCalWeek(list);
   updateCalendarStickyOffsets();
+  ensureCalendarStickyObserver();
   // si es el MISMO rango que ya estabas viendo (ej. se acaba de actualizar solo
   // porque llegaron tus reuniones de Google Calendar), respetamos dónde tenías
   // el scroll en vez de saltar de nuevo a "la hora actual".
