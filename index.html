@@ -838,7 +838,8 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
   #matrixGrid.matrix-grid{grid-template-columns:1fr;grid-template-rows:auto;min-height:0;}
   #matrixGrid .matrix-quad{min-height:180px;}
   /* Kanban: columnas más angostas y scroll horizontal con snap */
-  #view-kanban .kanban-board{grid-auto-columns:minmax(240px,82vw);scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+  #view-kanban .kanban-board, #view-kanban .kanban-board-header{grid-auto-columns:minmax(240px,82vw);}
+  #view-kanban .kanban-board{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
   #view-kanban .kanban-col{scroll-snap-align:start;}
   /* Gantt: etiqueta más angosta para ver la línea de tiempo */
   #ganttWrap .gantt-row{grid-template-columns:120px 1fr;}
@@ -915,6 +916,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .tk-done .tk-title{text-decoration:line-through;}
 .tk-ctx{font-size:12px;color:var(--text-muted);margin-top:3px;}
 .tk-avatar{width:24px;height:24px;border-radius:50%;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;}
+.tk-avatar-empty{background:transparent!important;visibility:hidden;}
 .tk-reag{background:none;border:none;cursor:pointer;font-size:13px;opacity:.55;padding:3px 5px;border-radius:7px;flex:none;}
 .tk-reag:hover{opacity:1;background:color-mix(in srgb,var(--accent) 12%,transparent);}
 .tk-status{border:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex:none;font-size:11.5px;padding:5px 11px;border-radius:8px;}
@@ -955,9 +957,17 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .empty-state svg{width:48px;height:48px;color:var(--text-faint);margin-bottom:12px;}
 
 /* ===== Kanban ===== */
-.kanban-board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(270px,1fr);gap:14px;overflow-x:auto;overflow-y:clip;padding-bottom:10px;}
+.kanban-scroll{overflow-x:auto;overflow-y:clip;padding-bottom:10px;}
+/* Mismo mecanismo que el Gantt: position:fixed por JS (ver
+   pinKanbanHeader), no sticky — .kanban-scroll necesita scroll horizontal
+   real para las columnas, así que replicamos el mismo "mask + inner" para
+   seguir ese scroll a mano. */
+.kanban-board-header-mask{overflow:hidden;position:relative;z-index:40;}
+.kanban-board-header-spacer{display:block;}
+.kanban-board-header{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(270px,1fr);gap:14px;background:var(--bg);padding-bottom:8px;will-change:transform;}
+.kanban-board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(270px,1fr);gap:14px;}
 .kanban-col{background:var(--surface-alt);border-radius:var(--radius-lg);padding:14px;min-height:200px;display:flex;flex-direction:column;}
-.kanban-col-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:2px 4px;position:sticky;top:var(--view-sticky-offset, 140px);z-index:5;background:var(--surface-alt);}
+.kanban-col-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-lg);background:var(--surface-alt);}
 .kanban-col-head .dot{width:10px;height:10px;border-radius:50%;}
 .kanban-col-head b{font-size:14px;font-family:var(--font-display);font-weight:700;}
 .kanban-count{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--text-muted);background:var(--surface);border-radius:20px;padding:2px 10px;font-family:var(--font-mono);}
@@ -1453,7 +1463,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   box-shadow:var(--shadow-sm);cursor:pointer;
 }
 .gantt-bar .gbar-progress{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.3);border-radius:6px 0 0 6px;}
-.gantt-header{display:grid;grid-template-columns:220px 1fr;border-bottom:1px solid var(--border);position:sticky;top:var(--view-sticky-offset, 140px);background:var(--surface);z-index:5;}
+/* La cabecera vive con position:fixed (controlado por JS, ver
+   pinGanttHeader) en vez de sticky — .gantt-wrap necesita scroll
+   horizontal real para la línea de tiempo, y eso complica bastante que el
+   sticky nativo se enganche de forma confiable. El "mask" recorta el ancho
+   visible y "inner" es lo que se desplaza para seguir el scroll. */
+.gantt-header{display:grid;grid-template-columns:220px 1fr;border-bottom:1px solid var(--border);background:var(--surface);z-index:40;box-sizing:border-box;box-shadow:0 2px 6px rgba(30,41,59,.05);}
+.gantt-header-spacer{display:block;}
+.gantt-header-mask{overflow:hidden;position:relative;}
+.gantt-header-inner{will-change:transform;}
 .gantt-header-track{position:relative;display:grid;}
 .gantt-header-track > div{border-left:1px solid var(--border);padding:8px 4px;font-size:10.6px;color:var(--text-muted);text-align:center;font-family:var(--font-mono);}
 .gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);z-index:1;}
@@ -1948,7 +1966,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <div id="kanbanFiltersBarNew"></div>
       </div>
       <div class="view-sticky-spacer"></div>
-      <div class="kanban-board" id="kanbanBoard"></div>
+      <div class="kanban-scroll" id="kanbanScroll">
+        <div class="kanban-board-header-mask">
+          <div class="kanban-board-header" id="kanbanBoardHeader"></div>
+        </div>
+        <div class="kanban-board-header-spacer"></div>
+        <div class="kanban-board" id="kanbanBoard"></div>
+      </div>
     </section>
 
     <!-- ---------- CALENDARIO ---------- -->
@@ -5415,7 +5439,7 @@ function taskCardHTML(t){
       <div class="tk-title t-title-click" data-open-task="${t.id}">${done?"✓ ":""}${taskTypeBadge(t)} ${esc(t.title)}${hasIncompleteDependencies(t)?` <span class="dep-badge" title="Bloqueada por dependencias">🔒</span>`:""}</div>
       ${ctx?`<div class="tk-ctx">${esc(ctx)}</div>`:""}
     </div>
-    ${owner?`<span class="tk-avatar" style="background:${owner.color}" title="${esc(owner.name)}">${initials(owner.name)}</span>`:""}
+    <span class="tk-avatar${owner?"":" tk-avatar-empty"}" ${owner?`style="background:${owner.color}" title="${esc(owner.name)}"`:""}>${owner?initials(owner.name):""}</span>
     ${!done?`<button type="button" class="tk-update-btn" data-quick-update="${t.id}" title="Agregar actualización">💬 Actualizar</button>`:""}
     ${Array.isArray(t.updates)&&t.updates.length?`<button type="button" class="tk-update-info" data-update-info="${t.id}" title="Ver última actualización">🕓</button>`:""}
     ${canReag?`<button class="tk-reag" data-reag="${t.id}" title="Reagendar">🔄</button>`:""}
@@ -5755,15 +5779,57 @@ function toggleTaskTimer(tid){
 /* ---------------------------------------------------------------------- *
  * RENDER: Kanban
  * ---------------------------------------------------------------------- */
+// Misma idea que en Gantt: la fila de cabeceras de columna del Kanban usa
+// position:fixed calculado por JS (no sticky), porque .kanban-scroll
+// necesita su propio scroll horizontal real para las columnas.
+function pinKanbanHeader(){
+  const scroller = document.getElementById("kanbanScroll");
+  const mask = scroller ? scroller.querySelector(".kanban-board-header-mask") : null;
+  const header = mask ? mask.querySelector(".kanban-board-header") : null;
+  const spacer = scroller ? scroller.querySelector(".kanban-board-header-spacer") : null;
+  if(!scroller || !mask || !header) return;
+  const view = document.getElementById("view-kanban");
+  if(!view || view.classList.contains("hidden")){
+    mask.style.position = ""; mask.style.top = ""; mask.style.left = ""; mask.style.width = "";
+    if(spacer) spacer.style.height = "";
+    return;
+  }
+  const offsetVar = getComputedStyle(document.documentElement).getPropertyValue("--view-sticky-offset");
+  const topOffset = parseFloat(offsetVar) || 140;
+  const rect = scroller.getBoundingClientRect();
+  mask.style.position = "fixed";
+  mask.style.top = topOffset + "px";
+  mask.style.left = rect.left + "px";
+  mask.style.width = rect.width + "px";
+  const h = mask.getBoundingClientRect().height;
+  if(spacer) spacer.style.height = h + "px";
+  // el ancho real del header debe igualar el del tablero completo (no el
+  // ancho visible), si no los "fr" de la grilla se repartirían distinto y
+  // las columnas de la cabecera quedarían desalineadas con las de abajo.
+  const board = document.getElementById("kanbanBoard");
+  if(board) header.style.width = board.getBoundingClientRect().width + "px";
+  syncKanbanHeaderScroll();
+}
+function syncKanbanHeaderScroll(){
+  const scroller = document.getElementById("kanbanScroll");
+  const header = scroller ? scroller.querySelector(".kanban-board-header") : null;
+  if(header && scroller) header.style.transform = "translateX(" + (-scroller.scrollLeft) + "px)";
+}
 function renderKanban(){
   renderTaskFiltersSimple("kanbanFiltersBarNew", renderKanban);
   const list = DB.tasks.filter(matchesTaskFilters);
+  const boardHeader = document.getElementById("kanbanBoardHeader");
   const board = document.getElementById("kanbanBoard");
+  if(boardHeader){
+    boardHeader.innerHTML = TASK_STATUSES.map(col=>{
+      const items = list.filter(t=>t.status===col.id);
+      return `<div class="kanban-col-head"><span class="dot" style="background:${col.color}"></span><b>${col.label}</b><span class="kanban-count">${items.length}</span></div>`;
+    }).join("");
+  }
   board.innerHTML = TASK_STATUSES.map(col=>{
     const items = list.filter(t=>t.status===col.id);
     return `
     <div class="kanban-col" data-status="${col.id}">
-      <div class="kanban-col-head"><span class="dot" style="background:${col.color}"></span><b>${col.label}</b><span class="kanban-count">${items.length}</span></div>
       <div class="kanban-cards" data-dropzone="${col.id}">
         ${items.map(t=>{
           const p = byId(DB.projects,t.projectId);
@@ -5812,6 +5878,7 @@ function renderKanban(){
       }
     });
   });
+  pinKanbanHeader();
 }
 
 /* ---------------------------------------------------------------------- *
@@ -8046,7 +8113,7 @@ let _viewHeaderRO = null;
 function ensureViewHeaderObserver(){
   if(typeof ResizeObserver==="undefined") return;
   if(_viewHeaderRO) _viewHeaderRO.disconnect();
-  _viewHeaderRO = new ResizeObserver(()=> pinActiveViewHeader());
+  _viewHeaderRO = new ResizeObserver(()=>{ pinActiveViewHeader(); try{ pinGanttHeader(); }catch(e){} try{ pinKanbanHeader(); }catch(e){} });
   document.querySelectorAll(".view-sticky-header").forEach(h=>_viewHeaderRO.observe(h));
   const topbar = document.querySelector(".topbar");
   if(topbar) _viewHeaderRO.observe(topbar);
@@ -8341,6 +8408,11 @@ document.getElementById("calFullscreenBtn").addEventListener("click", ()=>{
 });
 document.getElementById("calModeWeek").addEventListener("click", ()=>{ calState.mode="week"; render(); });
 document.getElementById("calModeDay").addEventListener("click", ()=>{ calState.mode="day"; render(); });
+// Cabecera del Gantt sincronizada con el scroll horizontal — el listener se
+// agrega UNA sola vez porque #ganttWrap nunca se reemplaza, solo su
+// contenido interno (innerHTML) cambia en cada renderGantt().
+document.getElementById("ganttWrap").addEventListener("scroll", ()=>{ try{ syncGanttHeaderScroll(); }catch(e){} });
+document.getElementById("kanbanScroll").addEventListener("scroll", ()=>{ try{ syncKanbanHeaderScroll(); }catch(e){} });
 
 /* ---------------------------------------------------------------------- *
  * RENDER: Cronograma (Gantt)
@@ -8354,6 +8426,42 @@ function hasIncompleteDependencies(t){
 function incompleteDependencyTitles(t){
   return (t.dependencies||[]).map(depId=>byId(DB.tasks,depId)).filter(d=>d && d.status!=="completada").map(d=>d.title);
 }
+// La cabecera del Gantt ("Tarea" + fechas) usa el mismo mecanismo confiable
+// que el resto de la app: position:fixed calculado por JS, no sticky (que
+// aquí es especialmente delicado porque .gantt-wrap necesita scroll
+// horizontal para la línea de tiempo). Como al volverse "fixed" pierde el
+// scroll horizontal normal de .gantt-wrap, sincronizamos su contenido a
+// mano con un transform cada vez que el usuario mueve esa barra.
+function pinGanttHeader(){
+  const wrap = document.getElementById("ganttWrap");
+  const header = wrap ? wrap.querySelector(".gantt-header") : null;
+  const spacer = wrap ? wrap.querySelector(".gantt-header-spacer") : null;
+  if(!wrap || !header){ return; }
+  const view = document.getElementById("view-gantt");
+  if(!view || view.classList.contains("hidden")){
+    header.style.position = ""; header.style.top = ""; header.style.left = ""; header.style.width = "";
+    if(spacer) spacer.style.height = "";
+    return;
+  }
+  const offsetVar = getComputedStyle(document.documentElement).getPropertyValue("--view-sticky-offset");
+  const topOffset = parseFloat(offsetVar) || 140;
+  const rect = wrap.getBoundingClientRect();
+  header.style.position = "fixed";
+  header.style.top = topOffset + "px";
+  header.style.left = rect.left + "px";
+  header.style.width = rect.width + "px";
+  const h = header.getBoundingClientRect().height;
+  if(spacer) spacer.style.height = h + "px";
+  const mask = header.querySelector(".gantt-header-mask");
+  if(mask) mask.style.width = Math.max(0, rect.width - 220) + "px"; // 220 = ancho fijo de la columna "Tarea"
+  syncGanttHeaderScroll();
+}
+function syncGanttHeaderScroll(){
+  const wrap = document.getElementById("ganttWrap");
+  const inner = wrap ? wrap.querySelector(".gantt-header-inner") : null;
+  if(inner && wrap) inner.style.transform = "translateX(" + (-wrap.scrollLeft) + "px)";
+}
+window.addEventListener("resize", ()=>{ try{ pinGanttHeader(); }catch(e){} try{ pinKanbanHeader(); }catch(e){} });
 function renderGantt(){
   renderFiltersBar("ganttFiltersBar", {showSort:false});
   const tasks = DB.tasks.filter(t=>matchesTaskFilters(t) && t.startDate && t.dueDate).slice().sort((a,b)=>(a.startDate||"").localeCompare(b.startDate||""));
@@ -8414,11 +8522,14 @@ function renderGantt(){
   document.getElementById("ganttWrap").innerHTML = `
     <div class="gantt-header">
       <div class="gantt-label">Tarea</div>
-      <div style="overflow:hidden;width:${totalWidth}px;position:relative;">
-        <div class="gantt-header-track" style="grid-auto-flow:column;width:${totalWidth}px;display:flex;">${ticks}</div>
-        <div class="gantt-today-line" style="left:${todayOffset}px;"></div>
+      <div class="gantt-header-mask">
+        <div class="gantt-header-inner" style="width:${totalWidth}px;position:relative;">
+          <div class="gantt-header-track" style="display:flex;">${ticks}</div>
+          <div class="gantt-today-line" style="left:${todayOffset}px;"></div>
+        </div>
       </div>
     </div>
+    <div class="gantt-header-spacer"></div>
     <div style="position:relative;">
       ${rows}
       <svg style="position:absolute;top:0;left:220px;width:${totalWidth}px;height:${totalHeight}px;pointer-events:none;" viewBox="0 0 ${totalWidth} ${totalHeight}">${connectors}</svg>
@@ -8427,6 +8538,7 @@ function renderGantt(){
   document.getElementById("ganttWrap").querySelectorAll(".gantt-bar").forEach(el=>{
     el.addEventListener("click", ()=>openTaskModal(el.dataset.taskId));
   });
+  pinGanttHeader();
 }
 
 /* ---------------------------------------------------------------------- *
@@ -10434,6 +10546,8 @@ function render(){
     try{ fn(); }catch(e){ console.error("render:"+activeView, e); notifyUnexpectedError(); }
   }
   try{ pinActiveViewHeader(); ensureViewHeaderObserver(); }catch(e){ console.error("pinActiveViewHeader",e); }
+  try{ pinGanttHeader(); }catch(e){ console.error("pinGanttHeader",e); }
+  try{ pinKanbanHeader(); }catch(e){ console.error("pinKanbanHeader",e); }
   try{ renderAlmaCloud(activeView); }catch(e){ console.error("renderAlmaCloud",e); }
 }
 
