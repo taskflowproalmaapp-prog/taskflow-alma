@@ -1180,7 +1180,11 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .qi-trash{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;opacity:.55;}
 .qi-trash:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);opacity:1;}
 #genericModalBackdrop{background:rgba(10,11,20,.72);backdrop-filter:blur(7px);}
-#calQueueList{max-height:320px;overflow-y:auto;padding-right:4px;}
+#calQueueList{max-height:none;padding-right:0;}
+.agendar-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:13px;padding:14px 16px;color:#fff;margin-bottom:12px;}
+.agendar-banner .ab-icon{font-size:22px;flex:none;}
+.agendar-banner .ab-title{font-size:13.5px;font-weight:700;}
+.agendar-banner .ab-sub{font-size:12px;opacity:.92;margin-top:2px;}
 #calQueueList::-webkit-scrollbar{width:8px;}
 #calQueueList::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 30%,transparent);border-radius:4px;}
 .ia-holiday-note{background:#E8F0FE;border-radius:12px;padding:11px 14px;font-size:13px;color:#2C5AA0;margin-bottom:12px;line-height:1.5;}
@@ -1614,7 +1618,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <span>Mis tareas</span>
         <span class="nav-badge" id="navMyTasksBadge">0</span>
       </li>
-      <li class="nav-item" data-view="calendar">
+      <li class="nav-item" data-view="agendar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h12v3H4zM4 4v14a2 2 0 0 0 2 2h6M13 15l3 3 5-5"/></svg>
         <span>Por agendar</span>
         <span class="nav-badge queue" id="navQueueBadge">0</span>
@@ -1975,17 +1979,25 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       </div>
     </section>
 
+    <!-- ---------- POR AGENDAR ---------- -->
+    <section class="view hidden" id="view-agendar">
+      <div class="view-sticky-header">
+        <div class="view-header">
+          <div>
+            <h1>Por agendar</h1>
+            <p>Tareas sin fecha asignada</p>
+          </div>
+        </div>
+        <div class="agendar-banner" id="agendarBanner"></div>
+        <div class="filters-bar" id="agendarFiltersBar"></div>
+      </div>
+      <div class="view-sticky-spacer"></div>
+      <div id="calQueueList"></div>
+    </section>
+
     <!-- ---------- CALENDARIO ---------- -->
     <section class="view hidden" id="view-calendar">
       <div class="filters-bar hidden" id="calendarFiltersBar"></div>
-      <div class="panel hidden" id="calQueuePanel" style="margin-bottom:16px;">
-        <div class="panel-title-row">
-          <div class="panel-title">📥 Por agendar <span class="nav-badge" id="calQueueCount">0</span></div>
-          <button class="btn btn-ghost btn-sm" id="calQueueToggle">Ocultar</button>
-        </div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 10px;">Tareas que todavía no tienen un día y hora para hacerlas — aunque sepas para cuándo deben estar listas.</p>
-        <div id="calQueueList"></div>
-      </div>
       <div id="calHeaderSticky">
         <div class="view-header">
           <div>
@@ -3673,7 +3685,7 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 /* ---------------------------------------------------------------------- *
  * Navegación entre vistas
  * ---------------------------------------------------------------------- */
-const VIEWS = ["dashboard","projects","notas","mytasks","kanban","calendar","gantt","matrix","responsables","reportes","notificaciones","usuarios","configuracion"];
+const VIEWS = ["dashboard","projects","notas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","usuarios","configuracion"];
 function showView(view){
   selectedTaskIds.clear();
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
@@ -6224,7 +6236,6 @@ function slotDayLabel(iso, date){
   const dowLabels = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
   return dowLabels[date.getDay()].charAt(0).toUpperCase()+dowLabels[date.getDay()].slice(1)+" "+date.getDate();
 }
-let calQueueCollapsed = false;
 const calSuggestOffsets = {}; // taskId -> offset de días usado en la última búsqueda (para "buscar próxima semana")
 /* ====================================================================== *
  * FORMULARIO CONVERSACIONAL DE ALMA — agendar tareas paso a paso.
@@ -7714,24 +7725,66 @@ Responde SOLO JSON válido, sin texto adicional:
     // Sin IA disponible: la tarea queda sin descripción/área automáticas. No pasa nada.
   }
 }
-function renderCalQueue(list){
-  const panel = document.getElementById("calQueuePanel");
-  // La cola "Por agendar" es una bandeja de pendientes: muestra TODAS las tareas que
-  // necesitan agendar, sin importar los filtros de la vista (así el contador coincide
-  // con el del menú lateral). Ignoramos 'list' a propósito.
-  const queue = DB.tasks.filter(t=>!t.archived && needsScheduling(t)).sort((a,b)=>{
+let agendarFilterState = { anotada:"", priority:"", showFilters:false };
+function renderAgendarFiltersBar(queueAll){
+  const el = document.getElementById("agendarFiltersBar");
+  if(!el) return;
+  const activeCount = ["anotada","priority"].filter(k=>agendarFilterState[k]).length;
+  el.innerHTML = `
+    <button type="button" class="filters-toggle" data-filters-toggle>⚙ Filtros${activeCount?` <span class="ft-badge">${activeCount}</span>`:""}</button>
+    <div class="filters-inner${agendarFilterState.showFilters?'':' collapsed'}">
+      <select data-af="anotada">
+        <option value="">Anotadas: cualquier fecha</option>
+        <option value="hoy" ${agendarFilterState.anotada==='hoy'?'selected':''}>Hoy</option>
+        <option value="semana" ${agendarFilterState.anotada==='semana'?'selected':''}>Esta semana</option>
+        <option value="vieja" ${agendarFilterState.anotada==='vieja'?'selected':''}>Hace más de 7 días</option>
+      </select>
+      <select data-af="priority">
+        <option value="">Todas las prioridades</option>
+        ${PRIORITIES.map(p=>`<option value="${p.id}" ${agendarFilterState.priority===p.id?'selected':''}>${p.label}</option>`).join("")}
+      </select>
+      ${activeCount?`<span class="filters-clear" id="agendarClearFilters">Limpiar filtros</span>`:""}
+    </div>`;
+  const toggleBtn = el.querySelector("[data-filters-toggle]");
+  if(toggleBtn) toggleBtn.addEventListener("click", ()=>{
+    agendarFilterState.showFilters = !agendarFilterState.showFilters;
+    el.querySelector(".filters-inner").classList.toggle("collapsed", !agendarFilterState.showFilters);
+  });
+  el.querySelectorAll("select[data-af]").forEach(sel=>sel.addEventListener("change", ()=>{ agendarFilterState[sel.dataset.af]=sel.value; renderPorAgendar(); }));
+  const clr = el.querySelector("#agendarClearFilters");
+  if(clr) clr.addEventListener("click", ()=>{ agendarFilterState.anotada=""; agendarFilterState.priority=""; renderPorAgendar(); });
+}
+function renderPorAgendar(){
+  // Muestra TODAS las tareas que necesitan agendar, sin importar los filtros de
+  // otras vistas (así el contador coincide con el del menú lateral).
+  const queueAll = DB.tasks.filter(t=>!t.archived && needsScheduling(t));
+  const banner = document.getElementById("agendarBanner");
+  if(banner){
+    banner.innerHTML = queueAll.length
+      ? `<span class="ab-icon">⏰</span><div><div class="ab-title">${queueAll.length} ${queueAll.length===1?'tarea está esperando':'tareas están esperando'} un horario</div><div class="ab-sub">Sin fecha, Alma no puede recordártelas ni aparecen en tu Calendario ni en "Tu semana en números". Lo importante es que nada se te pase.</div></div>`
+      : `<span class="ab-icon">🎉</span><div><div class="ab-title">Todo tiene un momento asignado</div><div class="ab-sub">No te queda ninguna tarea suelta por agendar. Así se mantiene la cabeza tranquila.</div></div>`;
+  }
+  renderAgendarFiltersBar(queueAll);
+  const now = new Date();
+  const queue = queueAll.filter(t=>{
+    if(agendarFilterState.priority && t.priority!==agendarFilterState.priority) return false;
+    if(agendarFilterState.anotada){
+      const created = t.createdAt ? new Date(t.createdAt+"T00:00:00") : null;
+      if(!created) return agendarFilterState.anotada==="vieja";
+      const days = Math.floor((now-created)/86400000);
+      if(agendarFilterState.anotada==="hoy" && days>0) return false;
+      if(agendarFilterState.anotada==="semana" && days>7) return false;
+      if(agendarFilterState.anotada==="vieja" && days<=7) return false;
+    }
+    return true;
+  }).sort((a,b)=>{
     const ao=isTaskOverdue(a), bo=isTaskOverdue(b);
     if(ao!==bo) return ao?-1:1;
     return (a.dueDate||"9999").localeCompare(b.dueDate||"9999");
   });
-  document.getElementById("calQueueCount").textContent = queue.length;
-  document.getElementById("calQueueCount").classList.toggle("alert", queue.length>0);
   const listEl = document.getElementById("calQueueList");
-
-  if(calQueueCollapsed){ listEl.classList.add("hidden"); document.getElementById("calQueueToggle").textContent="Mostrar"; }
-  else{ listEl.classList.remove("hidden"); document.getElementById("calQueueToggle").textContent="Ocultar"; }
-
-  if(!queue.length){ listEl.innerHTML = `<div class="t-sub" style="padding:6px 2px;">Todo tiene un momento asignado. 🎉</div>`; return; }
+  if(!queueAll.length){ listEl.innerHTML = ""; return; }
+  if(!queue.length){ listEl.innerHTML = `<div class="t-sub" style="padding:6px 2px;">Ninguna tarea coincide con estos filtros.</div>`; return; }
   listEl.innerHTML = `<div class="queue-list">${queue.map(t=>{
     const overdue = isTaskOverdue(t);
     return `<div class="queue-item-wrap" data-item-for="${t.id}">
@@ -7982,10 +8035,6 @@ function renderSuggestBox(tid, offsetDays, fallbackNote){
     renderSuggestBox(tid, newOffset, fallbackNote);
   });
 }
-document.getElementById("calQueueToggle").addEventListener("click", ()=>{
-  calQueueCollapsed = !calQueueCollapsed;
-  renderCalQueue(DB.tasks.filter(matchesTaskFilters));
-});
 
 function calendarViewRange(){
   if(calState.mode==="day"){ const iso=isoOf(calState.anchor); return {start:iso, end:iso}; }
@@ -8149,7 +8198,6 @@ function renderCalendar(){
   renderCalStats(range);
   renderFiltersBar("calendarFiltersBar", {showSort:false});
   const list = DB.tasks.filter(matchesTaskFilters);
-  renderCalQueue(list);
   document.getElementById("calModeMonth").classList.toggle("active", calState.mode==="month");
   document.getElementById("calModeWeek").classList.toggle("active", calState.mode==="week");
   document.getElementById("calModeDay").classList.toggle("active", calState.mode==="day");
@@ -10538,7 +10586,7 @@ function render(){
   const activeView = VIEWS.find(v=>{ const el=document.getElementById("view-"+v); return el && !el.classList.contains("hidden"); }) || "dashboard";
   const renderers = {
     dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, mytasks: renderTaskList, kanban: renderKanban,
-    calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
+    agendar: renderPorAgendar, calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
     reportes: renderReportes, notificaciones: renderNotificaciones, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
   };
   const fn = renderers[activeView];
@@ -11935,7 +11983,8 @@ const TOUR_STEPS = [
   { sel:"#view-mytasks", view:"mytasks", title:"Mis tareas", text:"Todas tus tareas en un solo lugar. Puedes iniciar/terminar el cronómetro real, cambiar el estado tocando la píldora, editar, duplicar y filtrar en segundos." },
   { sel:"#view-projects", view:"projects", title:"Proyectos y temas", text:"Agrupa tu trabajo y tu vida en proyectos o temas (Hogar, Estudios, un cliente...). Cada uno con su color, avance y fechas. Aquí creas, editas y sigues cada tema." },
   { sel:"#view-kanban", view:"kanban", title:"Kanban", text:"Tus tareas como tarjetas por estado: Pendiente, En progreso, Completada... En el computador arrastras; en el celular usas el botón '⇄ Mover'." },
-  { sel:"#view-calendar", view:"calendar", title:"Calendario y Por agendar", text:"Ve tus compromisos por mes, semana o día. Arriba, 'Por agendar' guarda las tareas sin fecha, y Alma puede sugerirte cuándo hacerlas." },
+  { sel:"#view-agendar", view:"agendar", title:"Por agendar", text:"Aquí caen las tareas que todavía no tienen día y hora. Alma puede sugerirte cuándo hacerlas, o le pones tú la fecha manualmente." },
+  { sel:"#view-calendar", view:"calendar", title:"Calendario", text:"Ve tus compromisos por mes, semana o día, mezclados con tus reuniones reales de Google Calendar." },
   { sel:"#view-gantt", view:"gantt", title:"Cronograma", text:"Una línea de tiempo tipo Gantt: ves cómo se distribuyen tus tareas y proyectos en los días, ideal para planificar plazos." },
   { sel:"#view-matrix", view:"matrix", title:"Matriz de prioridades", text:"Organiza según urgencia e importancia (Eisenhower). Te ayuda a decidir qué hacer ya, qué agendar, qué delegar y qué soltar." },
   { sel:"#view-responsables", view:"responsables", title:"Personas", text:"Las personas de tu vida y trabajo: a quién le pediste algo o con quién compartes tareas. Guardas su relación o rol." },
