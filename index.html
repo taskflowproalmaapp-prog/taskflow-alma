@@ -2890,6 +2890,51 @@ async function apiGCalAction(action, payload){
   if(!res.ok) throw new Error(data.error || "No se pudo actualizar la reunión.");
   return data;
 }
+// Crea, mueve o borra en Google Calendar el "reflejo" de una tarea de
+// TaskFlow cuando le pones, le cambias o le quitas fecha+hora. Si la
+// persona no conectó Google Calendar, no hace nada (fallo silencioso: la
+// tarea igual queda agendada dentro de TaskFlow).
+async function syncTaskToGoogleCalendar(t){
+  try{
+    const status = await apiGCalList("status", {});
+    if(!status.connected) return;
+
+    if(!t.startDate || !t.executionTime){
+      // Se le quitó la fecha/hora: si tenía un evento reflejo, lo borramos.
+      if(t.googleEventId){
+        try{ await apiGCalAction("delete", { calendarId: t.googleCalendarId||"primary", eventId: t.googleEventId }); }
+        catch(e){ console.error("syncTaskToGoogleCalendar delete", e); }
+        t.googleEventId = ""; t.googleCalendarId = "";
+        saveDB();
+      }
+      return;
+    }
+
+    const offsetHours = (DB.config && typeof DB.config.utcOffsetHours==="number") ? DB.config.utcOffsetHours : -4;
+    const endTime = addHoursToTime(t.executionTime, Math.max(0.5, t.estimatedTime||0.5));
+    const toUtcIso = (dateStr, timeStr)=> new Date(Date.parse(dateStr+"T"+timeStr+":00Z") - offsetHours*3600000).toISOString();
+    const startIso = toUtcIso(t.startDate, t.executionTime);
+    const endIso = toUtcIso(t.startDate, endTime);
+    const proj = byId(DB.projects, t.projectId);
+    const summary = (proj?`[${proj.name}] `:"") + t.title;
+    const description = "Creado automáticamente por TaskFlow Pro (Alma). Editar la fecha/hora desde TaskFlow para mantenerlo sincronizado.";
+
+    if(t.googleEventId){
+      await apiGCalAction("update", { calendarId: t.googleCalendarId||"primary", eventId: t.googleEventId, summary, startIso, endIso });
+    }else{
+      const res = await apiGCalAction("create", { summary, description, startIso, endIso });
+      if(res && res.eventId){
+        t.googleEventId = res.eventId;
+        t.googleCalendarId = res.calendarId || "primary";
+        saveDB();
+      }
+    }
+  }catch(e){
+    console.error("syncTaskToGoogleCalendar", e);
+    // No interrumpimos el flujo de agendar la tarea por un fallo de Google:
+    // la tarea queda agendada en TaskFlow igual, solo no se reflejó afuera.
+  }
+}
 function refreshAfterGCalChange(){
   googleEventsRangeCache = { start:null, end:null, byDate:{} };
   if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashAgenda();
@@ -3517,6 +3562,9 @@ function moveToTrash(type, item){
   if(!DB.trash) DB.trash = [];
   DB.trash.unshift({ id: uid("tr"), type, data: JSON.parse(JSON.stringify(item)), deletedAt: new Date().toISOString() });
   if(DB.trash.length > 300) DB.trash.length = 300;
+  if(type==="task" && item.googleEventId){
+    apiGCalAction("delete", { calendarId: item.googleCalendarId||"primary", eventId: item.googleEventId }).catch(e=>console.error("moveToTrash gcal delete",e));
+  }
 }
 function restoreFromTrash(trashId){
   const entry = DB.trash.find(x=>x.id===trashId);
@@ -6609,6 +6657,7 @@ function reagendarTask(tid){
   t.startDate = ""; t.executionTime = "";
   t.updatedAt = TODAY();
   saveDB();
+  syncTaskToGoogleCalendar(t); // borra el evento viejo; el nuevo se crea al terminar de reagendar
   // cerrar cualquier modal abierto (por si viene de la tarea abierta)
   if(typeof closeModal==="function"){ try{ closeModal("taskModalBackdrop"); }catch(e){} }
   askAlmaScheduleMode(tid, t.title);
@@ -7199,6 +7248,7 @@ function finishAlmaActivity(){
   t.updatedAt = TODAY();
   logActivity("task_updated", `Agendaste la actividad "${t.title}".`);
   recomputeAll(); saveDB(); closeGenericModal(); render();
+  syncTaskToGoogleCalendar(t);
   if(d.execDate){
     toast(`📅 Listo — agendé "${t.title}"${d.execDate?` el ${fmtDate(d.execDate)}`:""}${d.execTime?` a las ${d.execTime}`:""}.`,"success");
     const hol = holidayName(d.execDate);
@@ -7235,6 +7285,7 @@ function finishAlmaManual(){
   t.updatedAt = TODAY();
   logActivity("task_updated", `Agendaste "${t.title}" con ayuda de Alma.`);
   recomputeAll(); saveDB(); closeGenericModal(); render();
+  syncTaskToGoogleCalendar(t);
   if(d.execDate){
     toast(`✨ Listo — agendé "${t.title}" para el ${fmtDate(d.execDate)}${d.execTime?` a las ${d.execTime}`:""}.`,"success");
     const hol = holidayName(d.execDate);
@@ -7501,6 +7552,7 @@ function renderAlmaIaHours(){
     t.startDate = diso; t.executionTime = hhmm; t.updatedAt = TODAY();
     logActivity("task_updated", `Agendaste "${t.title}" para ${fmtDate(diso)} a las ${hhmm} (sugerido por Alma).`);
     recomputeAll(); saveDB(); closeGenericModal(); render();
+    syncTaskToGoogleCalendar(t);
     toast(`✨ Agendé "${t.title}" para ${slotDayLabel(diso,new Date(diso+"T00:00:00"))} a las ${minutesTo12h(timeToMinutes(hhmm))}.`,"success");
   }));
   const back = document.getElementById("afBackToDays");
@@ -7945,6 +7997,7 @@ function renderAISuggestions(tid, parsed){
       t.startDate = iso; t.executionTime = hhmm; t.updatedAt = TODAY();
       logActivity("task_updated", `Se agendó "${t.title}" para ${fmtDate(iso)} a las ${hhmm} (sugerido por IA).`);
       recomputeAll(); saveDB(); render();
+      syncTaskToGoogleCalendar(t);
       toast(`Agendado para ${slotDayLabel(iso,new Date(iso+"T00:00:00"))} a las ${minutesTo12h(timeToMinutes(hhmm))}.`,"success");
     });
   });
@@ -8003,6 +8056,7 @@ function renderQuickTimeRangePicker(container, tid, iso){
     t.startDate = iso; t.executionTime = startVal; t.estimatedTime = durHours; t.updatedAt = TODAY();
     logActivity("task_updated", `Se agendó "${t.title}" el ${fmtDate(iso)} de ${startVal} a ${endVal} (${durHours}h).`);
     recomputeAll(); saveDB(); render();
+    syncTaskToGoogleCalendar(t);
     toast(`Agendado el ${fmtDate(iso)}, de ${minutesTo12h(timeToMinutes(startVal))} a ${minutesTo12h(timeToMinutes(endVal))} — ${durHours}h en total.`,"success");
   });
 }
@@ -8026,6 +8080,7 @@ function renderSuggestBox(tid, offsetDays, fallbackNote){
       t.startDate = iso; t.executionTime = hhmm; t.updatedAt = TODAY();
       logActivity("task_updated", `Se agendó "${t.title}" para ${fmtDate(iso)} a las ${hhmm}.`);
       recomputeAll(); saveDB(); render();
+      syncTaskToGoogleCalendar(t);
       toast(`Agendado para ${slotDayLabel(iso,new Date(iso+"T00:00:00"))} a las ${minutesTo12h(timeToMinutes(hhmm))}.`,"success");
     });
   });
@@ -9267,10 +9322,12 @@ document.getElementById("saveTaskBtn").addEventListener("click", ()=>{
     else if(wasCompleted) data.subtasks.forEach(s=>{ s.done = false; }); // evita que el estado quede "atascado" en completada
   }
 
+  let savedTask;
   if(editingTaskId){
     const existing = byId(DB.tasks,editingTaskId);
     const prevStatus = existing.status, prevOwner = existing.owner, prevCommentCount = (existing.comments||[]).length;
     Object.assign(existing, data);
+    savedTask = existing;
     if(data.status !== prevStatus){
       logActivity(data.status==="completada"?"task_completed":"status_change", `"${existing.title}" pasó de ${labelOf(TASK_STATUSES,prevStatus)} a ${labelOf(TASK_STATUSES,data.status)}`);
     }
@@ -9288,10 +9345,12 @@ document.getElementById("saveTaskBtn").addEventListener("click", ()=>{
   }else{
     const newTask = Object.assign({id:uid("t"), createdAt:TODAY(), archived:false, progress:0}, data);
     DB.tasks.push(newTask);
+    savedTask = newTask;
     logActivity("task_created", `Tarea creada: "${newTask.title}"`);
     toast("Tarea creada correctamente.","success");
   }
   recomputeAll(); saveDB(); closeModal("taskModalBackdrop"); render();
+  syncTaskToGoogleCalendar(savedTask);
 });
 
 /* ---------------------------------------------------------------------- *
@@ -10852,6 +10911,7 @@ function applyDayPlan(){
     p.t.startDate = TODAY();
     p.t.executionTime = minutesToHHMM(p.start);
     p.t.updatedAt = TODAY();
+    syncTaskToGoogleCalendar(p.t);
     n++;
   });
   logActivity("task_updated", `Se organizó el día: ${n} tarea(s) agendada(s) para hoy.`);
@@ -10987,7 +11047,7 @@ function applyLightenPlan(){
   let n=0;
   plan.canWait.filter(t=>!plan.removed.has(t.id)).forEach(t=>{
     t.dueDate = tomorrow;
-    if(t.executionTime){ t.executionTime = ""; t.startDate = ""; } // quita el bloque de hoy
+    if(t.executionTime){ t.executionTime = ""; t.startDate = ""; syncTaskToGoogleCalendar(t); } // quita el bloque de hoy
     t.updatedAt = TODAY();
     n++;
   });
