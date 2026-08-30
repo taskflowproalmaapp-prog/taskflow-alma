@@ -5737,12 +5737,14 @@ function openCalTaskActionCloud(anchorEl, taskId){
   if(typeof closeUpdateInfoPopover==="function") closeUpdateInfoPopover();
   const t = byId(DB.tasks, taskId);
   if(!t) return;
+  const st = byId(TASK_STATUSES, t.status) || TASK_STATUSES[0];
   const pop = document.createElement("div");
   pop.className = "update-info-cloud";
   pop.dataset.forTid = taskId;
   pop.innerHTML = `
     <div class="uic-arrow"></div>
     <div class="uic-head"><b>${esc(t.title)}</b></div>
+    <button type="button" class="status-pill status-pill-btn" id="calCloudStatus" style="margin-top:8px;background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color};align-self:flex-start;" title="Cambiar estado">${st.label} <span style="font-size:9px;opacity:.7;">▾</span></button>
     <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
       <button type="button" class="btn btn-ghost btn-sm" id="calCloudEdit" style="justify-content:flex-start;">✏️ Ver / editar tarea completa</button>
       <button type="button" class="btn btn-ghost btn-sm" id="calCloudHide" style="justify-content:flex-start;">🙈 Ocultar del calendario</button>
@@ -5756,7 +5758,7 @@ function openCalTaskActionCloud(anchorEl, taskId){
   left = Math.max(10, Math.min(left, window.innerWidth - popW - 10));
   pop.style.left = left + "px";
   pop.style.width = popW + "px";
-  const popHEstimate = 150;
+  const popHEstimate = 190;
   if(r.top - popHEstimate > 8){
     pop.style.top = (r.top - popHEstimate - 10) + "px";
     pop.classList.add("uic-above");
@@ -5771,6 +5773,11 @@ function openCalTaskActionCloud(anchorEl, taskId){
   setTimeout(()=>document.addEventListener("click", onOutsideClickCloseCalTaskCloud, true), 0);
 
   document.getElementById("calCloudEdit").addEventListener("click", ()=>{ closeCalTaskActionCloud(); openTaskModal(taskId); });
+  document.getElementById("calCloudStatus").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    openStatusMenu(e.currentTarget, taskId);
+    closeCalTaskActionCloud();
+  });
   document.getElementById("calCloudHide").addEventListener("click", ()=>{
     t.hiddenFromCalendar = true; saveDB(); closeCalTaskActionCloud();
     toast(`"${t.title}" ya no se muestra en el calendario (sigue existiendo en tus tareas).`,"info");
