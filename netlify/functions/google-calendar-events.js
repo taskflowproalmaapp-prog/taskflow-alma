@@ -60,6 +60,10 @@ exports.handler = async function (event) {
       const data = await resp.json();
       (data.items || []).forEach((ev) => {
         if (ev.status === "cancelled") return;
+        // Este evento lo creó TaskFlow (es el reflejo de una tarea agendada) —
+        // no lo devolvemos: la tarea ya se pinta sola en el Calendario, y si
+        // también trajéramos su reflejo de Google se vería duplicada.
+        if (ev.extendedProperties && ev.extendedProperties.private && ev.extendedProperties.private.taskflowOrigin === "true") return;
         allEvents.push({
           id: ev.id,
           calendarId: calId,
