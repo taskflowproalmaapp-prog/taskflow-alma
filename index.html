@@ -3185,9 +3185,11 @@ const PRIORITIES = [
 const TASK_STATUSES = [
   {id:"pendiente", label:"Pendiente", color:"var(--text-faint)"},
   {id:"en_progreso", label:"En progreso", color:"var(--info)"},
+  {id:"parcial", label:"Parcial — la retomo otro día", color:"var(--p-alta)"},
   {id:"bloqueada", label:"Bloqueada", color:"var(--danger)"},
   {id:"en_revision", label:"En revisión", color:"var(--warning)"},
   {id:"completada", label:"Completada", color:"var(--success)"},
+  {id:"cancelada", label:"Cancelada", color:"var(--text-faint)"},
 ];
 const PROJECT_STATUSES = [
   {id:"planificacion", label:"Planificación", color:"var(--text-faint)"},
@@ -3547,11 +3549,11 @@ function seedData(){
  * Cálculos derivados: avance de proyecto, tareas atrasadas, etc.
  * ---------------------------------------------------------------------- */
 function isTaskOverdue(t){
-  if(t.status==="completada") return false;
+  if(t.status==="completada" || t.status==="cancelada") return false;
   if(!t.dueDate) return false;
   return t.dueDate < TODAY();
 }
-function isTaskToday(t){ return t.dueDate === TODAY() && t.status!=="completada"; }
+function isTaskToday(t){ return t.dueDate === TODAY() && (t.status!=="completada"&&t.status!=="cancelada") && t.status!=="cancelada"; }
 
 function logActivity(type, text){
   if(!DB.activityLog) DB.activityLog = [];
@@ -3627,7 +3629,7 @@ function recomputeAll(){
     const pts = DB.tasks.filter(t=>t.projectId===p.id && !t.archived);
     p.totalTasks = pts.length;
     p.completedTasks = pts.filter(t=>t.status==="completada").length;
-    p.pendingTasks = pts.filter(t=>t.status!=="completada").length;
+    p.pendingTasks = pts.filter(t=>(t.status!=="completada"&&t.status!=="cancelada")).length;
     p.overdueTasks = pts.filter(isTaskOverdue).length;
     p.progress = pts.length ? Math.round((p.completedTasks/pts.length)*100) : 0;
   });
@@ -3833,7 +3835,7 @@ function matchesTaskFilters(t){
     const d = daysDiff(t.dueDate);
     if(d===null || d<0 || d>7) return false;
   }
-  if(taskFilterState.quick==="completed" && t.status!=="completada") return false;
+  if(taskFilterState.quick==="completed" && (t.status!=="completada"&&t.status!=="cancelada")) return false;
   if(taskFilterState.quick==="unassigned" && t.owner) return false;
   return true;
 }
@@ -3968,7 +3970,7 @@ function computeKpis(period){
   const prevStart = isoDaysAgo(2*w-1), prevEnd = isoDaysAgo(w);
   const tasks = DB.tasks.filter(t=>!t.archived);
 
-  const pendingNow = tasks.filter(t=>t.status!=="completada").length;
+  const pendingNow = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada")).length;
   const createdCur = countBetween(tasks,"createdAt",curStart,curEnd);
   const createdPrev = countBetween(tasks,"createdAt",prevStart,prevEnd);
   const completedTasks = tasks.filter(t=>t.status==="completada");
@@ -3979,8 +3981,8 @@ function computeKpis(period){
   const activeProjectsNow = DB.projects.filter(p=>!p.archived && p.status==="activo").length;
   const activeProjectsCreatedCur = DB.projects.filter(p=>!p.archived && p.createdAt>=curStart && p.createdAt<=curEnd).length;
   const activeProjectsCreatedPrev = DB.projects.filter(p=>!p.archived && p.createdAt>=prevStart && p.createdAt<=prevEnd).length;
-  const dueInCur = tasks.filter(t=>t.dueDate && t.dueDate>=curStart && t.dueDate<=curEnd);
-  const dueInPrev = tasks.filter(t=>t.dueDate && t.dueDate>=prevStart && t.dueDate<=prevEnd);
+  const dueInCur = tasks.filter(t=>t.status!=="cancelada" && t.dueDate && t.dueDate>=curStart && t.dueDate<=curEnd);
+  const dueInPrev = tasks.filter(t=>t.status!=="cancelada" && t.dueDate && t.dueDate>=prevStart && t.dueDate<=prevEnd);
   const complianceCur = dueInCur.length ? Math.round((dueInCur.filter(t=>t.status==="completada").length/dueInCur.length)*100) : null;
   const compliancePrev = dueInPrev.length ? Math.round((dueInPrev.filter(t=>t.status==="completada").length/dueInPrev.length)*100) : null;
   const overallCompletionAllTime = tasks.length ? Math.round((completedTasks.length/tasks.length)*100) : 0;
@@ -4041,7 +4043,7 @@ function renderDashHeader(){
     avatarInitial.textContent = (name||"U").charAt(0).toUpperCase();
   }
 
-  const todayTasks = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && isTaskToday(t));
+  const todayTasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskToday(t));
   const personalToday = todayTasks.filter(t=>t.taskType==="personal");
   const demoEventsToday = getDemoEventsToday();
   const totalToday = todayTasks.length + demoEventsToday.length;
@@ -4149,8 +4151,8 @@ function renderDashAttentionBar(){
   const periodLabel = dashPeriod==="week"?"esta semana" : dashPeriod==="month"?"este mes" : "para hoy";
   const dueInPeriod = dashPeriod==="today"
     ? tasks.filter(isTaskToday)
-    : tasks.filter(t=>t.status!=="completada" && inDashPeriod(t.dueDate));
-  const personalPending = tasks.filter(t=>t.taskType==="personal" && t.status!=="completada");
+    : tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && inDashPeriod(t.dueDate));
+  const personalPending = tasks.filter(t=>t.taskType==="personal" && (t.status!=="completada"&&t.status!=="cancelada"));
   const unscheduled = tasks.filter(needsScheduling);
 
   const pills = [
@@ -4201,8 +4203,8 @@ function renderDashMotiva(){
   const name = (DB.config.alma&&DB.config.alma.userPreferredName)||DB.config.userName||"";
   const nm = name ? `, ${name}` : "";
   const today = TODAY();
-  const todayTasks = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && (t.startDate===today || (t.dueDate===today)));
-  const overdue = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && isTaskOverdue(t)).length;
+  const todayTasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && (t.startDate===today || (t.dueDate===today)));
+  const overdue = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskOverdue(t)).length;
   const wb = wellbeingSummary();
   const lowEnergy = wb && ((wb.energy && wb.energy<=2) || (wb.mood && wb.mood<=2));
   const heavy = todayTasks.length>=6 || overdue>=4;
@@ -4225,7 +4227,7 @@ function renderDashMotiva(){
 }
 function renderDashMiDia(){
   const wrap = document.getElementById("dashMiDia");
-  const tasks = DB.tasks.filter(t=>!t.archived && t.status!=="completada");
+  const tasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada"));
   const used = new Set();
   const picks = [];
 
@@ -4329,10 +4331,10 @@ function renderDashAgenda(){
   const wrap = document.getElementById("dashAgendaDia");
   refreshGoogleEventsForToday(); // se actualiza solo (async); si trae datos nuevos, vuelve a llamar a renderDashAgenda()
   // incluimos completadas que estaban agendadas hoy, para que queden tachadas (como libreta)
-  const allTasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada" || t.startDate===TODAY()));
+  const allTasks = DB.tasks.filter(t=>!t.archived && ((t.status!=="completada"&&t.status!=="cancelada") || t.startDate===TODAY()));
   const scheduledToday = allTasks.filter(t=>t.startDate===TODAY() && t.executionTime);
   const scheduledIds = new Set(scheduledToday.map(t=>t.id));
-  const dueTodayOnly = allTasks.filter(t=>isTaskToday(t) && t.status!=="completada" && !scheduledIds.has(t.id));
+  const dueTodayOnly = allTasks.filter(t=>isTaskToday(t) && (t.status!=="completada"&&t.status!=="cancelada") && !scheduledIds.has(t.id));
   const events = getDemoEventsToday();
 
   // rutinas de hoy (gimnasio, iglesia, etc.)
@@ -4455,7 +4457,7 @@ function renderDashEquilibrio(){
   });
   // además, tareas de hoy con estimación pero SIN hora fija: cuentan para la carga mental
   const unscheduledEstMin = tasksToday
-    .filter(t=>t.status!=="completada" && !t.executionTime)
+    .filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && !t.executionTime)
     .reduce((s,t)=>s+Math.max(30, Math.round((t.estimatedTime||1)*60)), 0);
 
   const dayWindowMin = 10*60; // ventana razonable de día activo para compromisos
@@ -4514,7 +4516,7 @@ function computeDayAchievement(){
   // tareas de HOY: por fecha de vencimiento hoy (incluye completadas, que isTaskToday excluye)
   const isDueToday = (t)=> !t.archived && t.dueDate===iso;
   const tasksDone = DB.tasks.filter(t=>isDueToday(t) && t.status==="completada").length;
-  const tasksActive = DB.tasks.filter(t=>isDueToday(t) && t.status!=="completada").length;
+  const tasksActive = DB.tasks.filter(t=>isDueToday(t) && (t.status!=="completada"&&t.status!=="cancelada")).length;
   const done = meetingsFinished + tasksDone;
   const total = done + meetingsPending + tasksActive;
   return {meetingsFinished, meetingsPending, tasksDone, tasksActive, done, total, meetingHoursTotal, meetingHoursDone};
@@ -4580,7 +4582,7 @@ function renderDashLifeBalance(){
   const wrap = document.getElementById("dashLifeBalance");
   if(!wrap) return;
   const areas = DB.config.lifeAreas || DEFAULT_LIFE_AREAS;
-  const active = DB.tasks.filter(t=>!t.archived && t.status!=="completada");
+  const active = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada"));
   const counts = {};
   areas.forEach(a=>counts[a.id]=0);
   let assigned = 0;
@@ -4624,7 +4626,7 @@ function renderDashLifeBalance(){
 /* D. Prioridades de hoy */
 function rankTasksForToday(tasks){
   const prioRank = {alta:0, media:1, baja:2};
-  return tasks.filter(t=>t.status!=="completada").map(t=>{
+  return tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada")).map(t=>{
     let score = 100;
     if(isTaskOverdue(t)) score -= 50;
     if(t.status==="bloqueada") score -= 20;
@@ -4744,7 +4746,7 @@ function renderDashProjectStatus(){
 
 /* G. Carga del equipo */
 function computeWorkloadCapacity(r){
-  const tasks = DB.tasks.filter(t=>!t.archived && t.owner===r.id && t.status!=="completada");
+  const tasks = DB.tasks.filter(t=>!t.archived && t.owner===r.id && (t.status!=="completada"&&t.status!=="cancelada"));
   const weight = {critica:3, alta:2, media:1, baja:0.5};
   const score = tasks.reduce((s,t)=>s+(weight[t.priority]||1), 0);
   let level = "Disponible", cls="success";
@@ -4814,7 +4816,7 @@ function renderDashStatusPanels(){
 
 /* I. Próximos vencimientos (agrupados) */
 function renderDashTimeline(){
-  const tasks = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && t.dueDate);
+  const tasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && t.dueDate);
   const groups = {
     "Vencidas": tasks.filter(isTaskOverdue),
     "Hoy": tasks.filter(isTaskToday),
@@ -4881,7 +4883,7 @@ function renderDashRecommendations(){
   const recs = [];
 
   // recordatorios humanos primero — tono cercano, sin culpa
-  const todayTasks = tasks.filter(t=>t.status!=="completada" && isTaskToday(t));
+  const todayTasks = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && isTaskToday(t));
   const importantPersonalToday = todayTasks.find(t=>t.taskType==="personal" && t.priority==="alta");
   if(importantPersonalToday) recs.push({icon:"⭐", color:"var(--type-personal)", text:`Marcaste como importante "${importantPersonalToday.title}". ¿Quieres hacerlo hoy?`, isEmoji:true});
 
@@ -4893,11 +4895,11 @@ function renderDashRecommendations(){
   const laboralTodayCount = todayTasks.filter(t=>t.taskType!=="personal").length + events.filter(ev=>!/almuerzo|familia/i.test(ev.title)).length;
   if(laboralTodayCount>=5) recs.push({icon:"🌿", color:"var(--info)", text:"Llevas varios compromisos laborales seguidos hoy. Revisa si necesitas una pausa.", isEmoji:true});
 
-  const personalPendingCount = tasks.filter(t=>t.taskType==="personal" && t.status!=="completada").length;
+  const personalPendingCount = tasks.filter(t=>t.taskType==="personal" && (t.status!=="completada"&&t.status!=="cancelada")).length;
   if(personalPendingCount===0 && tasks.length>0) recs.push({icon:"💛", color:"var(--type-personal)", text:"Todavía tienes espacio para agregar algo personal a tu semana.", isEmoji:true});
 
   // recordatorios de gestión — mismo motor de siempre, tono suavizado
-  const urgentSoon = tasks.filter(t=>t.status!=="completada" && t.priority==="alta" && t.dueDate && daysDiff(t.dueDate)!==null && daysDiff(t.dueDate)<=7 && daysDiff(t.dueDate)>=0);
+  const urgentSoon = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && t.priority==="alta" && t.dueDate && daysDiff(t.dueDate)!==null && daysDiff(t.dueDate)<=7 && daysDiff(t.dueDate)>=0);
   if(urgentSoon.length) recs.push({icon:iconAlert(), color:"var(--danger)", text:`Conviene priorizar ${urgentSoon.length} tarea(s) urgente(s) que vencen esta semana.`});
 
   if(DB.responsables.length>1){
@@ -4910,7 +4912,7 @@ function renderDashRecommendations(){
   const blockedAtRiskProjects = DB.projects.filter(p=>!p.archived && DB.tasks.some(t=>t.projectId===p.id && t.status==="bloqueada"));
   blockedAtRiskProjects.slice(0,1).forEach(p=>recs.push({icon:iconFlag(), color:"var(--danger)", text:`El tema "${p.name}" tiene tareas bloqueadas y podría atrasarse.`}));
 
-  const unassignedCount = tasks.filter(t=>!t.owner && t.status!=="completada" && t.taskType!=="personal").length;
+  const unassignedCount = tasks.filter(t=>!t.owner && (t.status!=="completada"&&t.status!=="cancelada") && t.taskType!=="personal").length;
   if(unassignedCount>0) recs.push({icon:iconClipboard(), color:"var(--info)", text:`Tienes ${unassignedCount} tarea(s) laboral(es) sin responsable.`});
 
   const wrap = document.getElementById("dashRecommendations");
@@ -5586,10 +5588,16 @@ function openStatusMenu(btn, tid){
   menu.querySelectorAll("[data-status]").forEach(item=>{
     item.addEventListener("click", (e)=>{
       e.stopPropagation();
+      menu.remove();
+      if(item.dataset.status === "parcial"){
+        // "Parcial" necesita saber CUÁNDO se retoma — no es un cambio de
+        // estado directo, abre la pregunta primero.
+        openContinueTaskPrompt(t);
+        return;
+      }
       applyManualStatusChange(t, item.dataset.status);
       logActivity("task_updated", `Estado de "${t.title}" cambiado a ${labelOf(TASK_STATUSES, item.dataset.status)}.`);
       recomputeAll(); saveDB(); render();
-      menu.remove();
     });
   });
   // cerrar al hacer clic fuera
@@ -5609,6 +5617,45 @@ function applyManualStatusChange(t, newStatus){
   if(newStatus === "completada" && !wasCompleted && t.recurring && t.recurring.enabled){
     regenerateRecurringTask(t);
   }
+}
+// Estado "Parcial": la tarea no se terminó ese día, pero tampoco está
+// bloqueada ni cancelada — se sigue haciendo otro día. Pregunta cuándo, sin
+// tocar la fecha límite (dueDate), y agenda ese nuevo momento igual que
+// cualquier otro agendamiento (queda en el Calendario y se sincroniza con
+// Google). Se puede repetir tantas veces como haga falta hasta que la
+// persona le ponga un estado final (Completada o Cancelada).
+function openContinueTaskPrompt(t){
+  const tomorrow = (()=>{ const d=new Date(); d.setDate(d.getDate()+1); return toLocalISODate(d); })();
+  const suggestedDate = (t.startDate && t.startDate > TODAY()) ? t.startDate : tomorrow;
+  const html = `
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px;">Quedó a medias — cuéntame cuándo la vas a seguir. Tu fecha límite${t.dueDate?` (${fmtDate(t.dueDate)})`:""} no cambia, solo actualizo cuándo la retomas.</p>
+    <div class="form-field"><label>¿Qué día la sigues?</label><input type="date" id="contDate" value="${suggestedDate}" min="${TODAY()}"></div>
+    <div class="form-field"><label>Horario <span style="font-weight:400;color:var(--text-faint);">(opcional)</span></label><input type="time" id="contTime" value="${t.executionTime||""}"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button type="button" class="btn btn-ghost" data-close="genericModalBackdrop">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="contSaveBtn">Guardar y agendar</button>
+    </div>`;
+  openGenericModal(`Retomar "${t.title}"`, html);
+  document.getElementById("genericModalBody").querySelector('[data-close="genericModalBackdrop"]').addEventListener("click", closeGenericModal);
+  document.getElementById("contSaveBtn").addEventListener("click", ()=>{
+    const d = document.getElementById("contDate").value;
+    const tm = document.getElementById("contTime").value;
+    if(!d){ toast("Elige un día para seguir con la tarea.","error"); return; }
+    if(t.dueDate && d > t.dueDate){
+      const ok = confirm(`⚠️ Ojo: el ${fmtDate(d)} es DESPUÉS de tu fecha límite (${fmtDate(t.dueDate)}) — quedará vencida. ¿Continuar igual?`);
+      if(!ok) return;
+    }
+    const before = t.startDate ? `${fmtDate(t.startDate)}${t.executionTime?` a las ${t.executionTime}`:""}` : "sin fecha";
+    t.status = "parcial";
+    t.startDate = d; t.executionTime = tm || "";
+    t.updatedAt = TODAY();
+    if(!Array.isArray(t.updates)) t.updates = [];
+    t.updates.unshift({ id: uid("upd"), text:`Quedó parcial (era ${before}) — la retoma el ${fmtDate(d)}${tm?` a las ${tm}`:""}.`, at:new Date().toISOString(), status:"parcial" });
+    logActivity("task_updated", `"${t.title}" quedó parcial — se retoma el ${fmtDate(d)}.`);
+    recomputeAll(); saveDB(); closeGenericModal(); render();
+    syncTaskToGoogleCalendar(t);
+    toast(`Anotado 💪 — retomas "${t.title}" el ${fmtDate(d)}${tm?` a las ${tm}`:""}.`,"success");
+  });
 }
 function advanceDate(dateStr, frequency){
   const d = new Date((dateStr||TODAY())+"T00:00:00");
@@ -6153,9 +6200,9 @@ function bindGCalTooltip(el, ev, finished){
   el.addEventListener("mouseleave", ()=>{ if(calTooltipEl) calTooltipEl.classList.remove("show"); });
 }
 
-function isUnscheduled(t){ return t.status!=="completada" && !t.executionTime; }
+function isUnscheduled(t){ return (t.status!=="completada"&&t.status!=="cancelada") && !t.executionTime; }
 function needsScheduling(t){
-  if(t.status==="completada") return false;
+  if(t.status==="completada" || t.status==="cancelada") return false;
   if(!t.executionTime) return true;
   if(isTaskOverdue(t)) return true;
   return false;
@@ -6165,7 +6212,7 @@ function dowNameFor(date){ return DOW_ORDER[(date.getDay()+6)%7]; }
 function busySlotsForDate(iso, taskType){
   const busy = [];
   DB.tasks.forEach(t=>{
-    if(t.status!=="completada" && t.startDate===iso && t.executionTime){
+    if((t.status!=="completada"&&t.status!=="cancelada") && t.startDate===iso && t.executionTime){
       const s = timeToMinutes(t.executionTime);
       const e = s + Math.max(30, Math.round((t.estimatedTime||1)*60));
       busy.push([s,e]);
@@ -8672,7 +8719,7 @@ function computeQuadrant(t){
 }
 function renderMatrix(){
   renderFiltersBar("matrixFiltersBar", {showSort:false});
-  const list = DB.tasks.filter(t=>matchesTaskFilters(t) && t.status!=="completada");
+  const list = DB.tasks.filter(t=>matchesTaskFilters(t) && (t.status!=="completada"&&t.status!=="cancelada"));
   const grid = document.getElementById("matrixGrid");
   grid.innerHTML = MATRIX_QUADS.map(q=>{
     const items = list.filter(t=>computeQuadrant(t)===q.id);
@@ -9366,10 +9413,10 @@ document.getElementById("saveTaskBtn").addEventListener("click", ()=>{
 function responsableStats(r){
   const tasks = DB.tasks.filter(t=>!t.archived && t.owner===r.id);
   const projectsAssigned = DB.projects.filter(p=>!p.archived && (p.owner===r.id || (p.participants||[]).includes(r.id)));
-  const pending = tasks.filter(t=>t.status!=="completada").length;
+  const pending = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada")).length;
   const overdue = tasks.filter(isTaskOverdue).length;
   const completionPct = tasks.length ? Math.round((tasks.filter(t=>t.status==="completada").length/tasks.length)*100) : 0;
-  const workloadHours = tasks.filter(t=>t.status!=="completada").reduce((s,t)=>s+(t.estimatedTime||0),0);
+  const workloadHours = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada")).reduce((s,t)=>s+(t.estimatedTime||0),0);
   return {tasksTotal:tasks.length, projectsAssigned, pending, overdue, completionPct, workloadHours};
 }
 function renderResponsables(){
@@ -9679,13 +9726,13 @@ document.querySelectorAll("[data-aiquick]").forEach(btn=>{
         <p style="font-size:13px;">Tienes <b>${today.length}</b> tarea(s) para hoy y <b>${overdue.length}</b> atrasada(s).</p>
         <ul class="activity-list">${today.concat(overdue).slice(0,8).map(t=>`<li class="activity-item">${esc(t.title)}</li>`).join("") || '<li class="activity-item">Sin pendientes urgentes.</li>'}</ul></div>`;
     } else if(kind==="weekly"){
-      const inWeek = tasks.filter(t=>{const d=daysDiff(t.dueDate); return d!==null && d>=0 && d<=7 && t.status!=="completada";});
+      const inWeek = tasks.filter(t=>{const d=daysDiff(t.dueDate); return d!==null && d>=0 && d<=7 && (t.status!=="completada"&&t.status!=="cancelada");});
       const completedWeek = tasks.filter(t=>t.status==="completada" && daysDiff(t.updatedAt)!==null && daysDiff(t.updatedAt)>=-7 && daysDiff(t.updatedAt)<=0);
       out.innerHTML = `<div class="panel" style="margin-top:12px;"><div class="panel-title">Resumen semanal</div>
         <p style="font-size:13px;">Vencen <b>${inWeek.length}</b> tarea(s) esta semana. Completaste <b>${completedWeek.length}</b> en los últimos 7 días.</p></div>`;
     } else if(kind==="top3"){
       const prioRank={critica:0,alta:1,media:2,baja:3};
-      const top = tasks.filter(t=>t.status!=="completada" && t.dueDate && daysDiff(t.dueDate)<=3)
+      const top = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && t.dueDate && daysDiff(t.dueDate)<=3)
         .sort((a,b)=>(prioRank[a.priority]-prioRank[b.priority]) || (a.dueDate||"").localeCompare(b.dueDate||"")).slice(0,3);
       out.innerHTML = `<div class="panel" style="margin-top:12px;"><div class="panel-title">Las 3 tareas más importantes de hoy</div>
         <ul class="activity-list">${top.map((t,i)=>`<li class="activity-item"><b>${i+1}.</b> ${esc(t.title)} <span class="t-sub">(${labelOf(PRIORITIES,t.priority)})</span></li>`).join("") || '<li class="activity-item">No hay tareas urgentes por ahora.</li>'}</ul></div>`;
@@ -10610,7 +10657,7 @@ function handleEmailPasteEvent(e, resultBoxId){
 function computeNotifications(){
   const tasks = DB.tasks.filter(t=>!t.archived);
   const leadDays = (DB.config.reminderLeadDays!=null) ? DB.config.reminderLeadDays : 3;
-  const dueSoon = tasks.filter(t=>t.status!=="completada" && t.dueDate && !isTaskOverdue(t) && daysDiff(t.dueDate)!==null && daysDiff(t.dueDate)<=leadDays && daysDiff(t.dueDate)>=0);
+  const dueSoon = tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && t.dueDate && !isTaskOverdue(t) && daysDiff(t.dueDate)!==null && daysDiff(t.dueDate)<=leadDays && daysDiff(t.dueDate)>=0);
   const overdue = tasks.filter(isTaskOverdue);
   const blocked = tasks.filter(t=>t.status==="bloqueada");
   const atRiskProjects = DB.projects.filter(p=>!p.archived && p.status==="en_riesgo");
@@ -10620,14 +10667,14 @@ function computeNotifications(){
       if(!m.done && m.date){ const d = daysDiff(m.date); if(d!==null && d>=0 && d<=7) upcomingMilestones.push({project:p, milestone:m}); }
     });
   });
-  const unassigned = tasks.filter(t=>!t.owner && t.status!=="completada");
+  const unassigned = tasks.filter(t=>!t.owner && (t.status!=="completada"&&t.status!=="cancelada"));
   const overloaded = DB.responsables.map(r=>({
-    responsable:r, count: tasks.filter(t=>t.owner===r.id && t.status!=="completada").length,
+    responsable:r, count: tasks.filter(t=>t.owner===r.id && (t.status!=="completada"&&t.status!=="cancelada")).length,
   })).filter(x=>x.count>=5);
   return {dueSoon, overdue, blocked, atRiskProjects, upcomingMilestones, unassigned, overloaded};
 }
 function renderSidebarCounters(){
-  const mine = DB.tasks.filter(t=>!t.archived && t.status!=="completada").length;
+  const mine = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada")).length;
   const badge = document.getElementById("navMyTasksBadge");
   badge.textContent = mine;
   badge.classList.toggle("alert", DB.tasks.some(isTaskOverdue));
@@ -10831,7 +10878,7 @@ function planCandidates(){
   const t0 = TODAY();
   const daysUntil = (iso)=>{ if(!iso) return 99; return Math.round((new Date(iso+"T00:00:00")-new Date(t0+"T00:00:00"))/86400000); };
   return DB.tasks
-    .filter(t=>!t.archived && t.status!=="completada" && !t.executionTime)
+    .filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && !t.executionTime)
     .filter(t=>{ const d=daysUntil(t.dueDate); return d<=2; }) // vence hoy, pronto o atrasada
     .sort((a,b)=>{
       // primero lo crítico/urgente y de alta prioridad
@@ -10979,7 +11026,7 @@ document.getElementById("dashMoreBtn").addEventListener("click", ()=>{
  * ---------------------------------------------------------------------- */
 let currentLightenPlan = null; // {essential:[t], canWait:[t], protectedTask:t|null}
 function buildLightenPlan(){
-  const todayTasks = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && (isTaskToday(t) || isTaskOverdue(t)));
+  const todayTasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && (isTaskToday(t) || isTaskOverdue(t)));
   // esencial: vencidas o de hoy con prioridad alta (máx 3)
   const essential = todayTasks.filter(t=>isTaskOverdue(t) || t.priority==="alta")
     .sort((a,b)=>{
@@ -11072,7 +11119,7 @@ document.getElementById("dashLightenBtn").addEventListener("click", openLightenD
  * Sin culpa. Reglas locales, acciones inmediatas.
  * ---------------------------------------------------------------------- */
 function overdueTasks(){
-  return DB.tasks.filter(t=>!t.archived && t.status!=="completada" && isTaskOverdue(t))
+  return DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskOverdue(t))
     .sort((a,b)=>(a.dueDate||"").localeCompare(b.dueDate||""));
 }
 function openCatchUp(){
@@ -11184,7 +11231,7 @@ function buildWeeklyReview(){
 
   // completadas en los últimos 7 días (por updatedAt o dueDate como respaldo)
   const completed = DB.tasks.filter(t=>{
-    if(t.status!=="completada") return false;
+    if((t.status!=="completada"&&t.status!=="cancelada")) return false;
     const ref = (t.updatedAt||t.dueDate||"").slice(0,10);
     return ref>=weekAgoIso && ref<=todayIso;
   });
@@ -11203,7 +11250,7 @@ function buildWeeklyReview(){
   const topAreas = areas.map(a=>({a, c:areaCounts[a.id]})).filter(x=>x.c>0).sort((x,y)=>y.c-x.c).slice(0,3);
 
   // pendientes sin terminar (vencidas)
-  const pending = DB.tasks.filter(t=>!t.archived && t.status!=="completada" && isTaskOverdue(t));
+  const pending = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskOverdue(t));
 
   return {completed, weekWb, moodCounts, topAreas, pending};
 }
