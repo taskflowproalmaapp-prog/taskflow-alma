@@ -239,7 +239,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:50;
 }
-@media (max-width:900px){.topbar{top:0;}}
+@media (max-width:900px){.topbar{top:var(--mobile-topbar-h, 62px);}}
 .search-box{
   flex:1;max-width:440px;position:relative;
 }
@@ -842,7 +842,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
   #view-kanban .kanban-board{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
   #view-kanban .kanban-col{scroll-snap-align:start;}
   /* Gantt: etiqueta más angosta para ver la línea de tiempo */
-  #ganttWrap .gantt-row{grid-template-columns:120px 1fr;}
+  #ganttWrap .gantt-row, #ganttWrap .gantt-header{grid-template-columns:120px 1fr;}
   #ganttWrap .gantt-label{font-size:11.5px;padding:8px 9px;}
   /* Reportes: paneles con scroll propio si una tabla interna fuera ancha */
   #view-reportes .panel{overflow-x:auto;}
@@ -884,7 +884,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .timer-btn{color:var(--success);}
 .timer-btn.running{background:color-mix(in srgb, var(--danger) 16%, transparent);border-color:var(--danger);color:var(--danger);animation:timerPulse 1.6s ease-in-out infinite;}
 .status-pill-btn:hover{filter:brightness(0.95);}
-.status-menu-pop{position:absolute;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(30,25,70,.22);padding:5px;min-width:170px;}
+.status-menu-pop{position:absolute;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(30,25,70,.22);padding:5px;min-width:170px;max-height:80vh;overflow-y:auto;}
 .status-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text);border-radius:7px;text-align:left;}
 .status-menu-item:hover{background:var(--surface-alt);}
 .status-menu-item.current{font-weight:700;}
@@ -1185,6 +1185,11 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .agendar-banner .ab-icon{font-size:22px;flex:none;}
 .agendar-banner .ab-title{font-size:13.5px;font-weight:700;}
 .agendar-banner .ab-sub{font-size:12px;opacity:.92;margin-top:2px;}
+@media (max-width:520px){
+  .agendar-banner{padding:13px 14px;}
+  .agendar-banner .ab-icon{font-size:19px;}
+  .agendar-banner .ab-sub{font-size:11.5px;}
+}
 #calQueueList::-webkit-scrollbar{width:8px;}
 #calQueueList::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 30%,transparent);border-radius:4px;}
 .ia-holiday-note{background:#E8F0FE;border-radius:12px;padding:11px 14px;font-size:13px;color:#2C5AA0;margin-bottom:12px;line-height:1.5;}
@@ -5583,8 +5588,17 @@ function openStatusMenu(btn, tid){
     </button>`).join("");
   document.body.appendChild(menu);
   const r = btn.getBoundingClientRect();
-  menu.style.top = (r.bottom + window.scrollY + 4) + "px";
-  menu.style.left = (r.left + window.scrollX) + "px";
+  const menuW = 190;
+  const left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - menuW - 8));
+  menu.style.left = left + "px";
+  menu.style.minWidth = menuW + "px";
+  // 7 estados ya no son tan bajitos — si no cabe abajo, lo abrimos hacia arriba
+  const menuHEstimate = TASK_STATUSES.length * 34 + 10;
+  if(r.bottom + menuHEstimate > window.innerHeight && r.top > menuHEstimate){
+    menu.style.top = (r.top + window.scrollY - menuHEstimate - 4) + "px";
+  }else{
+    menu.style.top = (r.bottom + window.scrollY + 4) + "px";
+  }
   menu.querySelectorAll("[data-status]").forEach(item=>{
     item.addEventListener("click", (e)=>{
       e.stopPropagation();
@@ -8192,14 +8206,30 @@ function computeCalendarStats(range){
 // mano su ancho/posición (para que quede alineado con el resto de la
 // columna central) y reservarle el espacio en el flujo normal con
 // #calHeaderSpacer, para que el contenido de abajo no salte hacia arriba.
+// Cuánto espacio ocupa de verdad lo que queda "pegado" arriba del todo.
+// En escritorio es solo la barra de búsqueda (.topbar). En celular hay
+// ADEMÁS la barra angosta con el botón ☰ (.mobile-topbar) encima de esa —
+// las dos están pegadas, una debajo de la otra, así que hay que sumarlas
+// para que nuestros bloques fijos (calendario, encabezados de vista,
+// Gantt, Kanban) no queden tapados debajo de ellas en el celular.
+function getStickyTopOffset(){
+  if(document.body.classList.contains("cal-fullscreen")) return 0;
+  const topbar = document.querySelector(".topbar");
+  const mobileTopbar = document.querySelector(".mobile-topbar");
+  let h = topbar ? topbar.getBoundingClientRect().height : 0;
+  if(mobileTopbar && getComputedStyle(mobileTopbar).display !== "none"){
+    const mh = mobileTopbar.getBoundingClientRect().height;
+    document.documentElement.style.setProperty("--mobile-topbar-h", mh + "px");
+    h += mh;
+  }
+  return h;
+}
 function pinCalendarHeader(){
   const headerSticky = document.getElementById("calHeaderSticky");
   const spacer = document.getElementById("calHeaderSpacer");
   const anchor = document.getElementById("calBody"); // misma columna que el contenido de abajo
   if(!headerSticky || !anchor) return;
-  const fullscreen = document.body.classList.contains("cal-fullscreen");
-  const topbar = document.querySelector(".topbar");
-  const topbarH = (!fullscreen && topbar) ? topbar.getBoundingClientRect().height : 0;
+  const topbarH = getStickyTopOffset();
   const rect = anchor.getBoundingClientRect();
   headerSticky.style.top = topbarH + "px";
   headerSticky.style.left = rect.left + "px";
@@ -8251,8 +8281,7 @@ function pinActiveViewHeader(){
   const view = activeHeader.closest(".view");
   const spacer = activeHeader.nextElementSibling;
   if(!view) return;
-  const topbar = document.querySelector(".topbar");
-  const topbarH = topbar ? topbar.getBoundingClientRect().height : 0;
+  const topbarH = getStickyTopOffset();
   const cs = getComputedStyle(view);
   const padL = parseFloat(cs.paddingLeft)||0;
   const padR = parseFloat(cs.paddingRight)||0;
@@ -8610,7 +8639,11 @@ function pinGanttHeader(){
   const h = header.getBoundingClientRect().height;
   if(spacer) spacer.style.height = h + "px";
   const mask = header.querySelector(".gantt-header-mask");
-  if(mask) mask.style.width = Math.max(0, rect.width - 220) + "px"; // 220 = ancho fijo de la columna "Tarea"
+  if(mask){
+    const labelEl = header.querySelector(".gantt-label");
+    const labelW = labelEl ? labelEl.getBoundingClientRect().width : 220;
+    mask.style.width = Math.max(0, rect.width - labelW) + "px";
+  }
   syncGanttHeaderScroll();
 }
 function syncGanttHeaderScroll(){
