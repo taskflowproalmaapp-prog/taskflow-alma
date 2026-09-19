@@ -2357,7 +2357,22 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <label class="checkbox-line"><input type="checkbox" id="cf_email_unassigned"> Tareas sin responsable</label>
           <label class="checkbox-line"><input type="checkbox" id="cf_email_overloaded"> Sobrecarga de trabajo</label>
           <label class="checkbox-line"><input type="checkbox" id="cf_email_dailySummary"> Resumen diario</label>
-          <label class="checkbox-line"><input type="checkbox" id="cf_email_weeklyReport"> 🌱 Resumen semanal (domingo por la tarde)</label>
+          <label class="checkbox-line"><input type="checkbox" id="cf_email_weeklyReport"> 🌱 Resumen semanal</label>
+        </div>
+        <div id="cf_weeklyReportWhen" class="hidden" style="margin-top:12px;padding:12px 14px;background:var(--surface-alt);border-radius:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="form-field" style="margin:0;">
+            <label>Día</label>
+            <select id="cf_weeklyReportDow">
+              <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
+              <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option>
+              <option value="0">Domingo</option>
+            </select>
+          </div>
+          <div class="form-field" style="margin:0;">
+            <label>Hora</label>
+            <input type="time" id="cf_weeklyReportHour" value="18:00">
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="cf_weeklyReportTestBtn">🧪 Enviarme un resumen de prueba ahora</button>
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--text-faint);">Se enviarían a: <b id="cf_emailNotifTarget">—</b> (configura tu correo arriba, en "Correo electrónico")</div>
       </div>
@@ -11510,6 +11525,38 @@ function renderConfiguracion(){
   ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary","weeklyReport"].forEach(key=>{
     document.getElementById("cf_email_"+key).checked = !!emailPrefs[key];
   });
+  document.getElementById("cf_weeklyReportDow").value = c.weeklyReportDow!=null ? String(c.weeklyReportDow) : "0";
+  document.getElementById("cf_weeklyReportHour").value = c.weeklyReportHour || "18:00";
+  document.getElementById("cf_weeklyReportWhen").classList.toggle("hidden", !emailPrefs.weeklyReport);
+  const weeklyCb = document.getElementById("cf_email_weeklyReport");
+  if(weeklyCb && !weeklyCb.dataset.bound){
+    weeklyCb.dataset.bound = "1";
+    weeklyCb.addEventListener("change", ()=>{
+      document.getElementById("cf_weeklyReportWhen").classList.toggle("hidden", !weeklyCb.checked);
+    });
+  }
+  const testBtn = document.getElementById("cf_weeklyReportTestBtn");
+  if(testBtn && !testBtn.dataset.bound){
+    testBtn.dataset.bound = "1";
+    testBtn.addEventListener("click", async ()=>{
+      if(!DB.config.userEmail){ toast("Primero pon tu correo en \"Mi perfil\" (arriba) y guarda la página.","error"); return; }
+      testBtn.disabled = true; testBtn.textContent = "Enviando…";
+      try{
+        await apiData("save", { data: DB }); // sincroniza YA, sin esperar el debounce, para que la prueba use tus datos más recientes
+        const res = await fetch("/.netlify/functions/send-weekly-report", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ test: true, token: getAuthToken() })
+        });
+        const data = await res.json();
+        if(res.ok && data.ok) toast(`✅ Te mandé un resumen de prueba a ${data.sentTo || DB.config.userEmail}. Revisa tu correo (y spam la primera vez).`,"success");
+        else toast("No se pudo enviar: " + (data.error || "error desconocido"),"error");
+      }catch(e){
+        toast("No se pudo conectar con el servidor para mandar la prueba.","error");
+      }
+      testBtn.disabled = false; testBtn.textContent = "🧪 Enviarme un resumen de prueba ahora";
+    });
+  }
   document.getElementById("cf_emailNotifTarget").textContent = c.userEmail || "sin correo configurado";
 
   // Mi perfil de vida
@@ -11887,6 +11934,8 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary","weeklyReport"].forEach(key=>{
     DB.config.emailNotifications[key] = document.getElementById("cf_email_"+key).checked;
   });
+  DB.config.weeklyReportDow = parseInt(document.getElementById("cf_weeklyReportDow").value, 10);
+  DB.config.weeklyReportHour = document.getElementById("cf_weeklyReportHour").value || "18:00";
   const newTheme = document.getElementById("cf_theme").value;
 
   const cl = {priorities:{}, taskStatuses:{}, projectStatuses:{}};
