@@ -6970,6 +6970,7 @@ function setupUpdateHoldMic(container, tid){
     btn.classList.remove("holding");
     if(lockHintEl) lockHintEl.classList.remove("show");
     if(confirmBar) confirmBar.classList.add("show");
+    hintEl.textContent = "🎙️ Escuchando sola — toca el micrófono de nuevo para terminar y enviar.";
   };
 
   const finishRecording = ()=>{
@@ -7002,7 +7003,12 @@ function setupUpdateHoldMic(container, tid){
 
   const onDown = (e)=>{
     if(e) e.preventDefault();
-    if(held) return;
+    if(held){
+      // Ya estaba grabando "sola" (modo toque rápido / deslizado): un segundo
+      // toque en el mismo botón la cierra y la envía, en vez de no hacer nada.
+      if(locked) finishRecording();
+      return;
+    }
     pointerStartY = e.touches ? e.touches[0].clientY : e.clientY;
     pointerStartTime = Date.now();
     beginRecording();
@@ -10133,6 +10139,7 @@ function setupHoldMic(container){
     btn.classList.remove("holding");
     if(lockHintEl) lockHintEl.classList.remove("show");
     if(confirmBar) confirmBar.classList.add("show");
+    hintEl.textContent = "🎙️ Escuchando sola — toca el micrófono de nuevo para terminar y enviar.";
   };
 
   const finishRecording = ()=>{
@@ -10165,7 +10172,12 @@ function setupHoldMic(container){
 
   const onDown = (e)=>{
     if(e) e.preventDefault();
-    if(held) return;
+    if(held){
+      // Ya estaba grabando "sola" (modo toque rápido / deslizado): un segundo
+      // toque en el mismo botón la cierra y la envía, en vez de no hacer nada.
+      if(locked) finishRecording();
+      return;
+    }
     pointerStartY = e.touches ? e.touches[0].clientY : e.clientY;
     pointerStartTime = Date.now();
     beginRecording();
