@@ -2346,7 +2346,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">📧 Notificaciones por correo</div>
         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 12px;">
-          Elige qué avisos te gustaría recibir por correo, además de verlos en la app. <b>Esta función se activará cuando conectemos TaskFlow Pro a un servidor propio (Supabase)</b> — por ahora tu preferencia queda guardada y lista para cuando esté disponible.
+          Elige qué avisos te gustaría recibir por correo, además de verlos en la app.
         </p>
         <div class="form-grid">
           <label class="checkbox-line"><input type="checkbox" id="cf_email_dueSoon"> Tareas próximas a vencer</label>
@@ -2357,6 +2357,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <label class="checkbox-line"><input type="checkbox" id="cf_email_unassigned"> Tareas sin responsable</label>
           <label class="checkbox-line"><input type="checkbox" id="cf_email_overloaded"> Sobrecarga de trabajo</label>
           <label class="checkbox-line"><input type="checkbox" id="cf_email_dailySummary"> Resumen diario</label>
+          <label class="checkbox-line"><input type="checkbox" id="cf_email_weeklyReport"> 🌱 Resumen semanal (domingo por la tarde)</label>
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--text-faint);">Se enviarían a: <b id="cf_emailNotifTarget">—</b> (configura tu correo arriba, en "Correo electrónico")</div>
       </div>
@@ -11506,7 +11507,7 @@ function renderConfiguracion(){
     pushDisableBtn.addEventListener("click", async ()=>{ await disablePushNotifications(); refreshPushUI(); });
   }
   const emailPrefs = c.emailNotifications || {};
-  ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary"].forEach(key=>{
+  ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary","weeklyReport"].forEach(key=>{
     document.getElementById("cf_email_"+key).checked = !!emailPrefs[key];
   });
   document.getElementById("cf_emailNotifTarget").textContent = c.userEmail || "sin correo configurado";
@@ -11883,7 +11884,7 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   DB.config.pushAlertHoursBefore = parseInt(document.getElementById("cf_pushHoursBefore").value, 10) || 3;
   DB.config.utcOffsetHours = parseInt(document.getElementById("cf_utcOffset").value, 10);
   DB.config.emailNotifications = {};
-  ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary"].forEach(key=>{
+  ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary","weeklyReport"].forEach(key=>{
     DB.config.emailNotifications[key] = document.getElementById("cf_email_"+key).checked;
   });
   const newTheme = document.getElementById("cf_theme").value;

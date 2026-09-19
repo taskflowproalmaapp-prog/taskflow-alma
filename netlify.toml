@@ -17,3 +17,10 @@
 # eligió cada persona), y manda un aviso puntual para esa tarea.
 [functions."send-activity-alerts"]
   schedule = "*/15 * * * *"
+
+# Función programada: una vez a la semana (domingo ~18:00 UTC, ~2pm Chile),
+# le manda a cada persona que activó "Resumen semanal" en Configuración un
+# correo con cómo le fue: completadas, atrasadas, y qué se le quedó
+# "parcial" repetidamente. Ajustable si prefieres otro día/hora.
+[functions."send-weekly-report"]
+  schedule = "0 18 * * 0"
