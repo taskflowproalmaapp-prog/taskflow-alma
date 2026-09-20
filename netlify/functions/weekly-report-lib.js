@@ -219,100 +219,146 @@ function buildEmailHtml(content, stats, meetingStats) {
   const { completedThisWeek, overdueNow, partialNow, unscheduledNow, taskHoursThisWeek, repeatedPartials } = stats;
 
   const meetPct = meetingStats
-    ? Math.max(4, Math.min(100, Math.round((meetingStats.totalHours / Math.max(0.1, meetingStats.totalHours + taskHoursThisWeek)) * 100)))
+    ? Math.max(4, Math.min(96, Math.round((meetingStats.totalHours / Math.max(0.1, meetingStats.totalHours + taskHoursThisWeek)) * 100)))
     : 0;
+  const restPct = 100 - meetPct;
 
+  // Barra "reuniones vs. tareas" hecha con celdas de tabla (dos <td> lado a
+  // lado cuyo ancho en % representa la proporción) — el truco de "gap" con
+  // flexbox no se ve en la mayoría de los clientes de correo.
   const balanceBlock = meetingStats ? `
-      <div style="margin-top:22px;background:#1A1025;border-radius:18px;padding:22px;">
-        <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:14px;">⏱️ Reuniones vs. tareas esta semana</div>
-        <div style="display:flex;height:18px;border-radius:9px;overflow:hidden;background:rgba(255,255,255,.12);">
-          <div style="width:${meetPct}%;background:linear-gradient(90deg,#FF7A45,#F0447A);"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;color:#fff;margin-top:12px;font-weight:700;">
-          <span>🗓️ ${meetingStats.totalHours}h en reuniones</span>
-          <span>✅ ${taskHoursThisWeek}h en tareas</span>
-        </div>
-        <div style="font-size:12.5px;color:#B8A9CE;margin-top:8px;">${escHtml(insight)}</div>
-      </div>` : `
-      <div style="margin-top:22px;background:#FAF7F5;border-radius:18px;padding:20px;">
-        <div style="font-weight:800;color:#1A1025;font-size:14.5px;margin-bottom:6px;">💡 Lo que Alma detectó</div>
-        <div style="font-size:13.5px;color:#5C4A3E;line-height:1.55;">${escHtml(insight)}</div>
-      </div>`;
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;background-color:#1A1025;border-radius:18px;">
+        <tr><td style="padding:22px;">
+          <div style="font-weight:bold;color:#ffffff;font-size:16px;margin-bottom:14px;font-family:Arial,Helvetica,sans-serif;">⏱️ Reuniones vs. tareas esta semana</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" height="16" style="border-radius:8px;overflow:hidden;">
+            <tr>
+              <td width="${meetPct}%" bgcolor="#FF7A45" style="background-color:#FF7A45;font-size:1px;line-height:16px;">&nbsp;</td>
+              <td width="${restPct}%" bgcolor="#3A2E4D" style="background-color:#3A2E4D;font-size:1px;line-height:16px;">&nbsp;</td>
+            </tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+            <tr>
+              <td align="left" style="font-size:14px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">🗓️ ${meetingStats.totalHours}h en reuniones</td>
+              <td align="right" style="font-size:14px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">✅ ${taskHoursThisWeek}h en tareas</td>
+            </tr>
+          </table>
+          <div style="font-size:12.5px;color:#B8A9CE;margin-top:8px;font-family:Arial,Helvetica,sans-serif;">${escHtml(insight)}</div>
+        </td></tr>
+      </table>` : `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;background-color:#FAF7F5;border-radius:18px;">
+        <tr><td style="padding:20px;">
+          <div style="font-weight:bold;color:#1A1025;font-size:14.5px;margin-bottom:6px;font-family:Arial,Helvetica,sans-serif;">💡 Lo que Alma detectó</div>
+          <div style="font-size:13.5px;color:#5C4A3E;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">${escHtml(insight)}</div>
+        </td></tr>
+      </table>`;
 
   const decisionsBlock = repeatedPartials.length ? `
       <div style="margin-top:24px;">
-        <div style="font-weight:900;color:#1A1025;font-size:17px;margin-bottom:14px;">🔁 Pendientes que merecen una decisión</div>
+        <div style="font-weight:bold;color:#1A1025;font-size:17px;margin-bottom:14px;font-family:Arial,Helvetica,sans-serif;">🔁 Pendientes que merecen una decisión</div>
         ${repeatedPartials.map(p => `
-        <div style="display:flex;align-items:center;gap:12px;padding:14px;background:#FAF7F5;border-radius:12px;margin-bottom:8px;">
-          <span style="width:10px;height:10px;border-radius:50%;background:#FF7A45;flex:none;"></span>
-          <span style="font-size:14px;color:#1A1025;font-weight:600;">${escHtml(p.title)}<br><span style="color:#A99C91;font-weight:400;font-size:12.5px;">Quedó "parcial" ${p.hits} veces</span></span>
-        </div>`).join("")}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAF7F5;border-radius:12px;margin-bottom:8px;">
+          <tr>
+            <td width="24" style="padding:14px 0 14px 14px;" valign="top">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="10" height="10"><tr><td bgcolor="#FF7A45" style="background-color:#FF7A45;border-radius:5px;font-size:1px;line-height:10px;width:10px;height:10px;">&nbsp;</td></tr></table>
+            </td>
+            <td style="padding:14px 14px 14px 10px;font-family:Arial,Helvetica,sans-serif;">
+              <span style="font-size:14px;color:#1A1025;font-weight:bold;">${escHtml(p.title)}</span><br>
+              <span style="color:#A99C91;font-weight:normal;font-size:12.5px;">Quedó "parcial" ${p.hits} veces</span>
+            </td>
+          </tr>
+        </table>`).join("")}
       </div>` : "";
 
+  // Insignia de "victoria de la semana": un círculo simple (tabla redonda de
+  // ancho/alto fijo con border-radius), sin conic-gradient — esa propiedad
+  // no la soportan Gmail/Outlook y por eso se veía descuadrada.
+  const badge = `
+    <table role="presentation" cellpadding="0" cellspacing="0" width="72" height="72" style="background-color:#FF7A45;border-radius:36px;">
+      <tr><td align="center" valign="middle" style="width:72px;height:72px;border-radius:36px;">
+        <div style="font-size:26px;font-weight:bold;color:#ffffff;line-height:1.1;font-family:Arial,Helvetica,sans-serif;">${completedThisWeek}</div>
+        <div style="font-size:9px;color:#FFE1D0;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">completadas</div>
+      </td></tr>
+    </table>`;
+
   return `
-  <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:580px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;margin:0 auto;background-color:#ffffff;border-radius:20px;font-family:Arial,Helvetica,sans-serif;">
 
     <!-- HERO -->
-    <div style="background:linear-gradient(135deg,#FF7A45 0%,#F0447A 55%,#8B5CF6 100%);padding:40px 32px 36px;color:#fff;">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.95;">✨ TASKFLOW PRO · TU RESUMEN SEMANAL</div>
-      <div style="font-size:30px;font-weight:900;margin-top:14px;line-height:1.18;letter-spacing:-.4px;">${escHtml(headline)}</div>
-      <div style="font-size:15px;opacity:.95;margin-top:14px;line-height:1.55;max-width:460px;">${escHtml(body)}</div>
-    </div>
+    <tr>
+      <td bgcolor="#F0447A" style="background-color:#F0447A;background-image:linear-gradient(135deg,#FF7A45 0%,#F0447A 55%,#8B5CF6 100%);border-radius:20px 20px 0 0;padding:36px 30px;color:#ffffff;">
+        <div style="font-size:12px;font-weight:bold;letter-spacing:1px;color:#ffffff;">✨ TASKFLOW PRO · TU RESUMEN SEMANAL</div>
+        <div style="font-size:26px;font-weight:bold;margin-top:14px;line-height:1.28;color:#ffffff;">${escHtml(headline)}</div>
+        <div style="font-size:14.5px;margin-top:12px;line-height:1.55;color:#ffffff;">${escHtml(body)}</div>
+      </td>
+    </tr>
 
-    <div style="padding:32px 28px 8px;">
+    <tr>
+      <td style="padding:28px 26px 8px;">
 
-      <!-- VICTORIA -->
-      <div style="background:linear-gradient(135deg,#FFF3EC,#FFE8F0);border-radius:18px;padding:24px;display:flex;align-items:center;gap:20px;">
-        <div style="width:92px;height:92px;border-radius:50%;background:conic-gradient(#FF7A45 0% ${Math.min(100,completedThisWeek*7)}%, #FFDDD0 ${Math.min(100,completedThisWeek*7)}% 100%);display:flex;align-items:center;justify-content:center;flex:none;">
-          <div style="width:72px;height:72px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-            <div style="font-size:28px;font-weight:900;color:#1A1025;line-height:1;">${completedThisWeek}</div>
-            <div style="font-size:9.5px;color:#8A7C6E;font-weight:700;">completadas</div>
-          </div>
+        <!-- VICTORIA -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#FFF0E8" style="background-color:#FFF0E8;border-radius:18px;">
+          <tr>
+            <td width="92" style="padding:20px;" valign="middle">${badge}</td>
+            <td style="padding:20px 20px 20px 0;" valign="middle">
+              <div style="font-size:11px;font-weight:bold;color:#E8447A;letter-spacing:.5px;">🏆 TU VICTORIA DE LA SEMANA</div>
+              <div style="font-size:15px;font-weight:bold;color:#1A1025;margin-top:6px;line-height:1.35;">${escHtml((suggestion.split(".")[0] || "Seguiste avanzando esta semana").trim())}.</div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- STATS: tabla de 3 columnas con celdas espaciadoras (nada de "gap") -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;">
+          <tr>
+            <td width="32%" bgcolor="#FFEDED" style="background-color:#FFEDED;border-radius:14px;padding:16px 8px;text-align:center;">
+              <div style="font-size:26px;font-weight:bold;color:#E5484D;">${overdueNow}</div>
+              <div style="font-size:11px;color:#B33338;font-weight:bold;margin-top:2px;">Atrasadas</div>
+            </td>
+            <td width="2%"></td>
+            <td width="32%" bgcolor="#FFF4E8" style="background-color:#FFF4E8;border-radius:14px;padding:16px 8px;text-align:center;">
+              <div style="font-size:26px;font-weight:bold;color:#E8602A;">${partialNow}</div>
+              <div style="font-size:11px;color:#B3491E;font-weight:bold;margin-top:2px;">Parciales</div>
+            </td>
+            <td width="2%"></td>
+            <td width="32%" bgcolor="#F1EEFC" style="background-color:#F1EEFC;border-radius:14px;padding:16px 8px;text-align:center;">
+              <div style="font-size:26px;font-weight:bold;color:#7C5CD9;">${unscheduledNow}</div>
+              <div style="font-size:11px;color:#564689;font-weight:bold;margin-top:2px;">Sin agendar</div>
+            </td>
+          </tr>
+        </table>
+
+        ${balanceBlock}
+
+        <!-- SUGERENCIA -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#FFF0EA" style="background-color:#FFF0EA;border-radius:18px;margin-top:20px;">
+          <tr><td style="padding:22px;">
+            <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+              <td width="26" valign="middle">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="24" height="24" bgcolor="#FF7A45" style="background-color:#FF7A45;border-radius:12px;">
+                  <tr><td align="center" valign="middle" style="color:#ffffff;font-size:15px;font-weight:bold;">+</td></tr>
+                </table>
+              </td>
+              <td style="padding-left:8px;font-weight:bold;color:#1A1025;font-size:15px;" valign="middle">Una mejora simple para tu próxima semana</td>
+            </tr></table>
+            <div style="font-size:14px;color:#5C4A3E;line-height:1.6;margin-top:10px;">${escHtml(suggestion)}</div>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+              <tr><td bgcolor="#1A1025" style="background-color:#1A1025;border-radius:12px;">
+                <a href="${SITE_URL}" style="display:block;padding:13px 24px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">${escHtml(cta)} →</a>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+
+        ${decisionsBlock}
+
+        <div style="text-align:center;margin-top:30px;padding-bottom:28px;">
+          <div style="font-size:20px;">🌱</div>
+          <p style="font-size:14px;color:#5C4A3E;font-weight:bold;margin-top:8px;">Alma te ayuda a recordar, priorizar y cerrar.</p>
+          <p style="font-size:13px;color:#A99C91;margin-top:2px;">Tú sigues tomando las decisiones.</p>
+          <p style="font-size:11px;color:#C9BEB2;margin-top:18px;">¿No quieres recibir este correo? Desactívalo en TaskFlow Pro → Configuración → Notificaciones por correo.</p>
         </div>
-        <div>
-          <div style="font-size:11.5px;font-weight:900;color:#E8447A;letter-spacing:.06em;">🏆 TU VICTORIA DE LA SEMANA</div>
-          <div style="font-size:16px;font-weight:800;color:#1A1025;margin-top:6px;line-height:1.3;">${escHtml(suggestion.split(".")[0] || "Seguiste avanzando esta semana.")}</div>
-        </div>
-      </div>
-
-      <!-- STATS -->
-      <div style="display:flex;gap:12px;margin-top:20px;">
-        <div style="flex:1;background:#FFEDED;border-radius:16px;padding:18px 14px;text-align:center;">
-          <div style="font-size:30px;font-weight:900;color:#E5484D;">${overdueNow}</div>
-          <div style="font-size:12px;color:#B33338;font-weight:700;margin-top:2px;">Atrasadas</div>
-        </div>
-        <div style="flex:1;background:#FFF4E8;border-radius:16px;padding:18px 14px;text-align:center;">
-          <div style="font-size:30px;font-weight:900;color:#E8602A;">${partialNow}</div>
-          <div style="font-size:12px;color:#B3491E;font-weight:700;margin-top:2px;">Parciales</div>
-        </div>
-        <div style="flex:1;background:#F1EEFC;border-radius:16px;padding:18px 14px;text-align:center;">
-          <div style="font-size:30px;font-weight:900;color:#7C5CD9;">${unscheduledNow}</div>
-          <div style="font-size:12px;color:#564689;font-weight:700;margin-top:2px;">Sin agendar</div>
-        </div>
-      </div>
-
-      ${balanceBlock}
-
-      <!-- SUGERENCIA -->
-      <div style="margin-top:20px;background:linear-gradient(135deg,#FFF3EC,#FFE4EC);border-radius:18px;padding:22px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="width:28px;height:28px;border-radius:50%;background:#FF7A45;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;">+</span>
-          <span style="font-weight:900;color:#1A1025;font-size:16px;">Una mejora simple para tu próxima semana</span>
-        </div>
-        <div style="font-size:14px;color:#5C4A3E;line-height:1.6;">${escHtml(suggestion)}</div>
-        <a href="${SITE_URL}" style="display:inline-block;margin-top:16px;background:#1A1025;color:#fff;text-decoration:none;font-size:14.5px;font-weight:800;padding:14px 26px;border-radius:12px;">${escHtml(cta)} →</a>
-      </div>
-
-      ${decisionsBlock}
-
-      <div style="text-align:center;margin-top:32px;padding-bottom:30px;">
-        <div style="font-size:20px;">🌱</div>
-        <p style="font-size:14px;color:#5C4A3E;font-weight:700;margin-top:8px;">Alma te ayuda a recordar, priorizar y cerrar.</p>
-        <p style="font-size:13px;color:#A99C91;margin-top:2px;">Tú sigues tomando las decisiones.</p>
-        <p style="font-size:11px;color:#C9BEB2;margin-top:18px;">¿No quieres recibir este correo? Desactívalo en TaskFlow Pro → Configuración → Notificaciones por correo.</p>
-      </div>
-    </div>
-  </div>`;
+      </td>
+    </tr>
+  </table>`;
 }
 
 async function sendReportEmail(toEmail, html) {
