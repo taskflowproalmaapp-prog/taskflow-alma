@@ -10,27 +10,29 @@
    Paleta: navy profundo (sidebar) + teal (progreso/foco) + violeta (acento)
    Tipografía: Sora (display) / Inter (UI) / JetBrains Mono (datos, fechas)
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root{
-  --bg:#FAF7F5;
+  --bg:#F8F4F1;
   --surface:#FFFFFF;
-  --surface-alt:#F6EFEA;
-  --border:#EDE2DA;
-  --text:#2A2019;
-  --text-muted:#7C6E64;
+  --surface-alt:#F4EEEA;
+  --border:#EADFD9;
+  --text:#2B1B2E;
+  --text-muted:#826F78;
   --text-faint:#A99C91;
-  --sidebar-bg:#2B1830;
+  --sidebar-bg:#2B1634;
   --sidebar-text:#D9C7DC;
-  --sidebar-text-dim:#8D7690;
-  --sidebar-active:#3D2247;
-  --accent:#FF7A45;
+  --sidebar-text-dim:#9A87A0;
+  --sidebar-active:#472552;
+  --accent:#FF6B45;
   --accent-dark:#E8602A;
-  --accent-2:#E8447A;
-  --warning:#F0A020;
-  --danger:#E5484D;
-  --success:#1FAE7A;
-  --info:#3E8BFF;
+  --accent-2:#ED3F7C;
+  --accent-3:#8157EF;
+  --gradient-impulso:linear-gradient(125deg,#FF6B45 0%,#ED3F7C 52%,#8157EF 100%);
+  --warning:#E7A117;
+  --danger:#E74C5B;
+  --success:#20AD7A;
+  --info:#3F7DF2;
   --p-alta:#F0793C;
   --p-media:#F0B429;
   --p-baja:#9C8C82;
@@ -38,21 +40,21 @@
   --type-laboral:#4C6FEA;
   --radius-sm:8px;
   --radius:12px;
-  --radius-lg:18px;
-  --shadow-sm:0 1px 2px rgba(40,24,16,.06);
-  --shadow:0 2px 8px rgba(40,24,16,.06), 0 8px 24px rgba(40,24,16,.07);
-  --shadow-lg:0 12px 40px rgba(40,24,16,.18);
-  --font-display:'Sora',sans-serif;
-  --font-body:'Inter',sans-serif;
+  --radius-lg:16px;
+  --shadow-sm:0 1px 2px rgba(70,40,55,.08);
+  --shadow:0 2px 8px rgba(70,40,55,.06), 0 8px 24px rgba(70,40,55,.07);
+  --shadow-lg:0 12px 40px rgba(70,40,55,.18);
+  --font-display:'Manrope',sans-serif;
+  --font-body:'DM Sans',sans-serif;
   --font-mono:'JetBrains Mono',monospace;
 }
 [data-theme="dark"]{
-  --bg:#1A1114;
-  --surface:#241820;
-  --surface-alt:#2E1E28;
-  --border:#3D2A34;
-  --text:#F5E9E4;
-  --text-muted:#C4A8A2;
+  --bg:#18131B;
+  --surface:#251D29;
+  --surface-alt:#302536;
+  --border:#4A3A4D;
+  --text:#FFF7FB;
+  --text-muted:#C9B9C5;
   --text-faint:#87696F;
   --sidebar-bg:#150C11;
   --sidebar-text:#CBAFCF;
@@ -61,6 +63,7 @@
   --accent:#FF8F5C;
   --accent-dark:#E8712F;
   --accent-2:#F0659A;
+  --accent-3:#9A7CF0;
   --type-personal:#4FC9A0;
   --type-laboral:#7C93FF;
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
@@ -180,6 +183,10 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--sidebar-text-dim);
   padding:16px 10px 6px;font-weight:600;
 }
+.config-group-label{
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2);
+  font-weight:500;margin:26px 2px 10px;padding-top:16px;border-top:1px solid var(--border);
+}
 .nav-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
 .nav-item{
   display:flex;align-items:center;gap:10px;
@@ -193,7 +200,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .nav-item.active{background:var(--sidebar-active);color:#fff;}
 .nav-item.active::before{
   content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:3px;border-radius:3px;
-  background:linear-gradient(180deg,var(--accent),var(--accent-2));
+  background:var(--accent);
 }
 .nav-item.soon{opacity:.45;cursor:default;}
 .nav-item.soon:hover{background:transparent;color:var(--sidebar-text);}
@@ -265,13 +272,13 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .icon-btn svg{width:17px;height:17px;}
 .btn{
   display:inline-flex;align-items:center;gap:7px;
-  padding:9px 15px;border-radius:9px;border:1px solid transparent;
-  font-size:13.5px;font-weight:600;transition:filter .15s ease, transform .05s ease;
-  white-space:nowrap;
+  padding:9px 15px;border-radius:12px;border:1px solid transparent;
+  font-size:13.5px;font-weight:500;transition:filter .15s ease, transform .05s ease;
+  white-space:nowrap;font-family:var(--font-body);
 }
 .btn:active{transform:scale(.98);}
 .btn svg{width:15px;height:15px;}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;}
+.btn-primary{background:var(--gradient-impulso);color:#fff;}
 .btn-primary:hover{filter:brightness(1.07);}
 .btn-ghost{background:var(--surface-alt);color:var(--text);border-color:var(--border);}
 .btn-ghost:hover{background:var(--border);}
@@ -310,10 +317,10 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .stat-trend{position:absolute;right:16px;top:16px;font-size:11px;font-weight:700;padding:3px 7px;border-radius:20px;}
 
 .panel{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
   padding:18px;box-shadow:var(--shadow-sm);
 }
-.panel-title{font-size:14.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:between;gap:8px;font-family:var(--font-display);}
+.panel-title{font-size:14.5px;font-weight:500;margin-bottom:14px;display:flex;align-items:center;justify-content:between;gap:8px;font-family:var(--font-display);}
 .dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px;}
 .dash-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media (max-width:1000px){.dash-grid,.dash-grid-2{grid-template-columns:1fr;}}
@@ -359,6 +366,41 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
   padding:24px 28px;margin-bottom:18px;box-shadow:var(--shadow-sm);
 }
+/* Encabezado "hero": degradado Impulso, texto blanco encima (regla obligatoria
+   de contraste — nunca texto oscuro sobre el degradado). */
+.dash-header-hero{
+  background:var(--gradient-impulso);border:none;color:#fff;
+}
+.dash-header-hero .dash-header-text h1,
+.dash-header-hero .dash-header-text p,
+.dash-header-hero .dash-meta-row{color:#fff;}
+.dash-header-hero .dash-meta-row{opacity:.85;}
+.dash-header-hero .dash-avatar{background:rgba(255,255,255,.22);box-shadow:none;}
+.dash-header-hero .period-toggle{border-color:rgba(255,255,255,.4);}
+.dash-header-hero .period-toggle button{background:transparent;color:#fff;opacity:.85;}
+.dash-header-hero .period-toggle button.active{background:rgba(255,255,255,.25);opacity:1;}
+.dash-header-hero .btn-ghost{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.3);}
+.dash-header-hero .btn-ghost:hover{background:rgba(255,255,255,.26);}
+.dash-header-hero .btn-primary{background:#fff;color:var(--accent-2);}
+
+/* Impulso del día: insignia circular + titular corto */
+.dash-impulso-card{display:flex;align-items:center;gap:16px;}
+.dash-impulso-badge{
+  width:56px;height:56px;border-radius:50%;flex:none;
+  background:color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color:var(--accent-dark);font-family:var(--font-display);font-weight:500;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+}
+.dash-impulso-eyebrow{font-size:11px;font-weight:500;letter-spacing:.04em;color:var(--accent-2);text-transform:uppercase;}
+.dash-impulso-headline{font-family:var(--font-display);font-weight:500;font-size:15px;color:var(--text);margin-top:3px;}
+
+/* Alma dice: fondo suave violeta, para distinguirla como "una sola voz" */
+.dash-alma-card{background:color-mix(in srgb, var(--accent-3) 6%, var(--surface));}
+
+/* Equipo y proyectos: segundo nivel, visualmente más discreto */
+.dash-secondary-level{opacity:.92;}
+.dash-secondary-level .panel-title{font-size:13px;color:var(--text-muted);}
+
 .dash-greeting-row{display:flex;align-items:center;gap:12px;}
 .dash-avatar{
   width:46px;height:46px;border-radius:50%;flex-shrink:0;cursor:pointer;position:relative;overflow:hidden;
@@ -442,7 +484,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 }
 .queue-item:last-child{border-bottom:none;}
 .queue-item .qi-main{flex:1;min-width:0;}
-.queue-item .qi-title{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.queue-item .qi-title{font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-display);}
 .queue-item .qi-meta{font-size:11.2px;color:var(--text-muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px;}
 .qi-actions{display:flex;gap:6px;flex:none;}
 .qi-btn{padding:6px 10px;font-size:11.5px;white-space:nowrap;}
@@ -568,7 +610,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 /* ===== Projects ===== */
 .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
 .project-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
   padding:18px;box-shadow:var(--shadow-sm);position:relative;display:flex;flex-direction:column;gap:12px;
   border-top:3px solid var(--card-color,var(--accent));
 }
@@ -577,8 +619,9 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .project-ring svg{width:52px;height:52px;transform:rotate(-90deg);}
 .project-ring-bg{fill:none;stroke:var(--surface-alt);stroke-width:5;}
 .project-ring-fg{fill:none;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .4s ease;}
-.project-ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-mono);}
-.project-name{font-size:15px;font-weight:700;font-family:var(--font-display);}
+.project-ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;font-family:var(--font-mono);}
+.project-name{font-size:15px;font-weight:500;font-family:var(--font-display);}
+.project-meta-line{font-size:12.3px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .project-desc{font-size:12.3px;color:var(--text-muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .project-meta{display:flex;flex-wrap:wrap;gap:6px;}
 .tag{font-size:10.8px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--surface-alt);color:var(--text-muted);}
@@ -907,12 +950,12 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .tk-group-count{font-size:11px;font-weight:700;padding:1px 9px;border-radius:20px;}
 .tk-group-caret{margin-left:auto;color:var(--text-faint);font-size:12px;}
 .tk-group-body{display:flex;flex-direction:column;gap:8px;}
-.tk-card{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-left:4px solid #C9C2CF;border-radius:13px;padding:13px 16px;transition:box-shadow .12s,transform .12s;}
+.tk-card{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-left:4px solid #C9C2CF;border-radius:16px;padding:13px 16px;transition:box-shadow .12s,transform .12s;}
 .tk-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.06);}
 .tk-done{opacity:.68;}
 .tk-check{width:16px;height:16px;flex:none;cursor:pointer;accent-color:var(--accent);}
 .tk-body{flex:1;min-width:0;}
-.tk-title{font-size:14.5px;font-weight:700;color:var(--text);cursor:pointer;transition:color .12s;}
+.tk-title{font-size:14.5px;font-weight:500;color:var(--text);cursor:pointer;transition:color .12s;font-family:var(--font-display);}
 .tk-title:hover{color:var(--accent);}
 .tk-done .tk-title{text-decoration:line-through;}
 .tk-ctx{font-size:12px;color:var(--text-muted);margin-top:3px;}
@@ -970,20 +1013,20 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .kanban-col{background:var(--surface-alt);border-radius:var(--radius-lg);padding:14px;min-height:200px;display:flex;flex-direction:column;}
 .kanban-col-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-lg);background:var(--surface-alt);}
 .kanban-col-head .dot{width:10px;height:10px;border-radius:50%;}
-.kanban-col-head b{font-size:14px;font-family:var(--font-display);font-weight:700;}
-.kanban-count{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--text-muted);background:var(--surface);border-radius:20px;padding:2px 10px;font-family:var(--font-mono);}
+.kanban-col-head b{font-size:14px;font-family:var(--font-display);font-weight:500;}
+.kanban-count{margin-left:auto;font-size:11.5px;font-weight:500;color:var(--text-muted);background:var(--surface);border-radius:20px;padding:2px 10px;font-family:var(--font-mono);}
 .kanban-cards{display:flex;flex-direction:column;gap:8px;min-height:60px;flex:1;}
 .kanban-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px 15px;cursor:grab;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 15px;cursor:grab;
   box-shadow:var(--shadow-sm);border-left:4px solid var(--card-p,var(--accent));transition:box-shadow .12s,transform .12s;
 }
 .kanban-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
 .kanban-card.dragging{opacity:.4;}
 .kc-move-btn{display:none;margin-top:9px;width:100%;justify-content:center;align-items:center;gap:5px;
-  font-size:12px;font-weight:700;color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size:12px;font-weight:500;color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);
   border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);border-radius:9px;padding:8px;cursor:pointer;}
 .kc-move-btn:hover{background:color-mix(in srgb, var(--accent) 16%, transparent);}
-.kanban-card .kc-title{font-size:14px;font-weight:700;margin-bottom:8px;line-height:1.35;color:var(--text);}
+.kanban-card .kc-title{font-size:14px;font-weight:500;margin-bottom:8px;line-height:1.35;color:var(--text);font-family:var(--font-display);}
 .kanban-card .kc-meta{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-muted);flex-wrap:wrap;}
 .kanban-col.drag-over{outline:2px dashed var(--accent);outline-offset:-4px;}
 
@@ -1013,7 +1056,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .sticky-book-cover-only{border-radius:22px 22px 0 0;box-shadow:none;margin-bottom:0;}
 .sticky-book-paper-only{border-radius:0 0 22px 22px;margin-top:0;}
 .sticky-cover{padding:32px 40px;}
-.sticky-cover .sc-title{font-family:var(--font-display);font-weight:700;font-size:32px;outline:none;letter-spacing:-.3px;}
+.sticky-cover .sc-title{font-family:var(--font-display);font-weight:500;font-size:32px;outline:none;letter-spacing:-.3px;}
 .sticky-cover .sc-date{font-size:17px;opacity:.95;margin-top:9px;}
 .sticky-paper{padding:26px 40px 36px;min-height:480px;}
 .sticky-paper.ruled{background-image:repeating-linear-gradient(transparent,transparent 35px,color-mix(in srgb,var(--ink) 12%,transparent) 36px)!important;background-attachment:local;}
@@ -1182,7 +1225,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .qi-trash:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);opacity:1;}
 #genericModalBackdrop{background:rgba(10,11,20,.72);backdrop-filter:blur(7px);}
 #calQueueList{max-height:none;padding-right:0;}
-.agendar-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:13px;padding:14px 16px;color:#fff;margin-bottom:12px;}
+.agendar-banner{display:flex;align-items:center;gap:12px;background:var(--gradient-impulso);border-radius:16px;padding:14px 16px;color:#fff;margin-bottom:12px;}
 .agendar-banner .ab-icon{font-size:22px;flex:none;}
 .agendar-banner .ab-title{font-size:13.5px;font-weight:700;}
 .agendar-banner .ab-sub{font-size:12px;opacity:.92;margin-top:2px;}
@@ -1353,9 +1396,9 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 }
 #view-calendar .view-header h1, #view-calendar .view-header p{ font-family:var(--font-body); }
 .cal-toolbar{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
-.cal-toolbar h2{font-size:18px;min-width:180px;color:var(--cal-title);font-family:var(--font-display);font-weight:700;}
+.cal-toolbar h2{font-size:18px;min-width:180px;color:var(--cal-title);font-family:var(--font-display);font-weight:500;}
 .cal-toggle{display:flex;border:1px solid var(--cal-line);border-radius:12px;overflow:hidden;background:var(--cal-card);}
-.cal-toggle button{padding:11px 24px;border:none;background:transparent;color:var(--cal-text-soft);font-size:14.5px;font-weight:700;cursor:pointer;transition:background 180ms ease,color 180ms ease;}
+.cal-toggle button{padding:11px 24px;border:none;background:transparent;color:var(--cal-text-soft);font-size:14.5px;font-weight:500;cursor:pointer;transition:background 180ms ease,color 180ms ease;}
 .cal-toggle button.active{background:var(--accent);color:#fff;}
 .cal-nav{display:flex;gap:8px;}
 .cal-nav .icon-btn{border-color:var(--cal-line);background:var(--cal-card);color:var(--cal-text);}
@@ -1373,7 +1416,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .cal-cell:hover{box-shadow:0 6px 18px rgba(30,41,59,.08);}
 .cal-cell.outside{opacity:.4;}
 .cal-cell.is-today{border-color:var(--cal-now);box-shadow:0 0 0 2px rgba(249,115,22,.16);}
-.cal-daynum{font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--cal-title);}
+.cal-daynum{font-size:16px;font-weight:500;font-family:var(--font-display);color:var(--cal-title);}
 .cal-task{
   font-size:11px;padding:4px 8px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
   font-weight:700;border-left:3px solid; transition:transform 150ms ease;
@@ -1407,9 +1450,9 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .calmod-header-days{flex:1;display:flex;}
 .calmod-day-head{flex:1;text-align:center;padding:14px 4px;border-left:1px solid var(--cal-line);}
 .calmod-day-head .dname{font-size:11px;font-weight:700;color:var(--cal-day-label);text-transform:uppercase;letter-spacing:.06em;}
-.calmod-day-head .dnum{font-size:22px;font-weight:700;font-family:var(--font-display);color:var(--cal-title);margin-top:3px;line-height:1;}
-.calmod-day-head.is-today .dname{color:#E8447A;}
-.calmod-day-head.is-today .dnum{color:#fff;background:linear-gradient(135deg,#FF7A45,#E8447A);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:4px auto 0;font-size:17px;box-shadow:0 3px 10px rgba(232,68,122,.35);}
+.calmod-day-head .dnum{font-size:22px;font-weight:500;font-family:var(--font-display);color:var(--cal-title);margin-top:3px;line-height:1;}
+.calmod-day-head.is-today .dname{color:var(--accent-2);}
+.calmod-day-head.is-today .dnum{color:#fff;background:var(--gradient-impulso);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:4px auto 0;font-size:17px;box-shadow:0 3px 10px rgba(232,68,122,.35);}
 .calmod-scroll{max-height:640px;overflow-y:auto;border-radius:0 0 16px 16px;}
 .calmod-body{display:flex;position:relative;}
 .calmod-gutter{width:60px;flex:none;position:relative;}
@@ -1423,14 +1466,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .calmod-modality-gutter{width:56px;flex:none;}
 .calmod-modality-days{flex:1;display:flex;}
 .calmod-modality-cell{flex:1;text-align:center;padding:6px 4px;font-size:11.5px;font-weight:600;border-left:1px solid var(--cal-line);}
-.calmod-overdue-ring{box-shadow:0 0 0 2px #D64545 inset;}
+.calmod-overdue-ring{box-shadow:0 0 0 2px var(--danger) inset;}
 .calmod-event{
   position:absolute;border-radius:8px;padding:3px 7px;overflow:hidden;cursor:pointer;
   border-left:3px solid; box-shadow:0 1px 2px rgba(30,41,59,.06); z-index:2;
   transition:transform 180ms ease, box-shadow 180ms ease;
 }
 .calmod-event:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(30,41,59,.16);z-index:20;}
-.calmod-event .ce-title{font-size:11.5px;font-weight:700;white-space:normal;overflow:hidden;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.calmod-event .ce-title{font-size:11.5px;font-weight:500;white-space:normal;overflow:hidden;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .calmod-event .ce-time{font-size:10px;opacity:.92;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
 .calmod-event .ce-tag{font-size:8.6px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block;margin-top:3px;background:rgba(255,255,255,.55);}
 .calmod-event.compact .ce-time,.calmod-event.compact .ce-tag{display:none;}
@@ -1463,13 +1506,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .gantt-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;overflow-y:clip;box-shadow:var(--shadow-sm);}
 .gantt-row{display:grid;grid-template-columns:220px 1fr;border-bottom:1px solid var(--border);min-height:42px;}
 .gantt-row:last-child{border-bottom:none;}
-.gantt-label{padding:10px 12px;font-size:12.4px;font-weight:600;display:flex;align-items:center;gap:8px;border-right:1px solid var(--border);position:sticky;left:0;background:var(--surface);}
+.gantt-label{padding:10px 12px;font-size:12.4px;font-weight:500;display:flex;align-items:center;gap:8px;border-right:1px solid var(--border);position:sticky;left:0;background:var(--surface);font-family:var(--font-display);}
 .gantt-track{position:relative;min-height:40px;}
 .gantt-grid-lines{position:absolute;inset:0;display:grid;}
 .gantt-grid-lines > div{border-left:1px solid var(--border);}
 .gantt-bar{
-  position:absolute;top:8px;height:24px;border-radius:6px;background:var(--accent);
-  display:flex;align-items:center;padding:0 8px;font-size:10.6px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;
+  position:absolute;top:8px;height:24px;border-radius:8px;background:var(--accent);
+  display:flex;align-items:center;padding:0 8px;font-size:10.6px;color:#fff;font-weight:500;white-space:nowrap;overflow:hidden;
   box-shadow:var(--shadow-sm);cursor:pointer;
 }
 .gantt-bar .gbar-progress{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.3);border-radius:6px 0 0 6px;}
@@ -1485,12 +1528,17 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 .gantt-header-track{position:relative;display:grid;}
 .gantt-header-track > div{border-left:1px solid var(--border);padding:8px 4px;font-size:10.6px;color:var(--text-muted);text-align:center;font-family:var(--font-mono);}
 .gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);z-index:1;}
+/* Hitos: línea vertical + rombo violeta, con el nombre al pasar el mouse. */
+.gantt-milestone-line{position:absolute;top:0;bottom:0;width:2px;background:var(--accent-3);z-index:2;pointer-events:auto;cursor:help;}
+.gantt-milestone-diamond{position:absolute;top:-3px;left:50%;transform:translateX(-50%) rotate(45deg);width:8px;height:8px;background:var(--accent-3);border-radius:2px;}
+/* Barras con fecha crítica (ya vencidas, sin cerrar): borde rojo bien visible. */
+.gantt-bar-risk{outline:2px solid var(--danger);outline-offset:1px;}
 
 /* ===== Matriz de prioridades ===== */
 .matrix-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;min-height:520px;}
-.matrix-quad{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);}
-.matrix-quad-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.matrix-quad-head b{font-size:13.5px;font-family:var(--font-display);}
+.matrix-quad{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);}
+.matrix-quad-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;justify-content:space-between;}
+.matrix-quad-head b{font-size:13.5px;font-family:var(--font-display);font-weight:500;}
 .matrix-quad-head span{margin-left:auto;font-size:11px;color:var(--text-muted);background:var(--surface-alt);padding:2px 8px;border-radius:20px;font-family:var(--font-mono);}
 .matrix-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;}
 .matrix-quad.q-ui{border-top:3px solid var(--danger);}
@@ -1613,7 +1661,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       </div>
     </div>
 
-    <div class="nav-group-label">General</div>
+    <div class="nav-group-label">Foco</div>
     <ul class="nav-list">
       <li class="nav-item active" data-view="dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
@@ -1633,14 +1681,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
         <span>Memoria de Alma</span>
       </li>
+    </ul>
+
+    <div class="nav-group-label">Planificación</div>
+    <ul class="nav-list">
       <li class="nav-item" data-view="projects">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
         <span>Proyectos y temas</span>
       </li>
-    </ul>
-
-    <div class="nav-group-label">Vistas de trabajo</div>
-    <ul class="nav-list">
       <li class="nav-item" data-view="kanban">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z"/></svg>
         <span>Kanban</span>
@@ -1665,6 +1713,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
         <span>Personas</span>
       </li>
+      <li class="nav-item hidden" id="navUsersItem" data-view="usuarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Usuarios</span>
+      </li>
+    </ul>
+
+    <div class="nav-group-label">Control</div>
+    <ul class="nav-list">
       <li class="nav-item" data-view="reportes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
         <span>Reportes</span>
@@ -1673,10 +1729,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
         <span>Notificaciones</span>
         <span class="nav-badge" id="navNotifBadge">0</span>
-      </li>
-      <li class="nav-item hidden" id="navUsersItem" data-view="usuarios">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Usuarios</span>
       </li>
       <li class="nav-item" data-view="configuracion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
@@ -1732,8 +1784,8 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
     <section class="view" id="view-dashboard">
       <div class="dash-wrap" id="dashWrap">
 
-        <!-- A. Encabezado -->
-        <div class="dash-header" id="dashHeader">
+        <!-- 1. Encabezado — hero con degradado Impulso -->
+        <div class="dash-header dash-header-hero" id="dashHeader">
           <div class="dash-header-text">
             <div class="dash-greeting-row">
               <label class="dash-avatar" id="dashAvatarLabel" title="Cambiar foto de perfil">
@@ -1787,117 +1839,57 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <!-- Contenido principal (se oculta si no hay datos) -->
         <div id="dashMainContent">
 
-          <!-- Atención necesaria (compacto: reemplaza KPIs + alertas separadas) -->
+          <!-- 2. Impulso del día (capacidad + logro de hoy, en una sola tarjeta) -->
+          <div class="panel dash-impulso-card" id="dashImpulsoPanel" style="margin-bottom:16px;">
+            <div class="dash-impulso-badge" id="dashImpulsoBadge">–</div>
+            <div class="dash-impulso-text">
+              <div class="dash-impulso-eyebrow">Impulso del día</div>
+              <div class="dash-impulso-headline" id="dashImpulsoHeadline">Cargando…</div>
+            </div>
+          </div>
+
+          <!-- 3. Necesita tu atención -->
           <div class="panel" id="dashAttentionPanel" style="margin-bottom:16px;">
-            <div class="panel-title">Atención necesaria</div>
+            <div class="panel-title">Necesita tu atención</div>
             <div id="dashAttentionBar"></div>
           </div>
 
-          <div class="panel" id="dashAchievementPanel" style="margin-bottom:16px;">
-            <div class="panel-title">🎯 Lo que sacaste adelante hoy</div>
-            <div id="dashAchievement"></div>
+          <!-- 4. Prioridades de hoy -->
+          <div class="panel" style="margin-bottom:16px;">
+            <div class="panel-title-row">
+              <div class="panel-title">Prioridades de hoy</div>
+              <button class="btn btn-ghost btn-sm" id="dashViewAllTasksBtn">Ver todas mis tareas</button>
+            </div>
+            <div id="dashPriorityToday"></div>
           </div>
 
-          <div class="dash-home-grid">
-            <!-- Izquierda: Agenda del día -->
+          <!-- 5. Alma dice (un solo mensaje, no tres) -->
+          <div class="panel dash-alma-card" style="margin-bottom:16px;">
+            <div class="panel-title">💜 Alma dice</div>
+            <div id="dashAlmaDice"></div>
+          </div>
+
+          <!-- 6. Resumen semanal -->
+          <div class="panel" style="margin-bottom:16px;">
+            <div class="panel-title">Resumen semanal</div>
+            <div id="dashWeeklyChart"></div>
+          </div>
+
+          <!-- 7. Equipo y proyectos — segundo nivel, más discreto -->
+          <div class="dash-grid-2 dash-secondary-level">
             <div class="panel">
               <div class="panel-title-row">
-                <div class="panel-title">🗓️ Agenda del día</div>
-                <span class="t-sub" title="Tus eventos aparecerán aquí cuando conectemos Google Calendar"></span>
+                <div class="panel-title">Proyectos</div>
+                <button class="btn btn-ghost btn-sm" id="dashViewAllProjectsBtn">Ver todos</button>
               </div>
-              <div id="dashAgendaDia"></div>
+              <div id="dashProjectStatus"></div>
             </div>
-            <!-- Derecha: mensaje motivacional + Retomemos esto juntos -->
-            <div class="dash-home-right">
-              <div class="panel dash-motiva-panel" id="dashMotivaPanel">
-                <div class="dash-motiva-orb"></div>
-                <div class="dash-motiva-msg" id="dashMotivaMsg"></div>
-                <div class="dash-motiva-sub" id="dashMotivaSub"></div>
-              </div>
-              <div class="panel">
-                <div class="panel-title">🤝 Retomemos esto juntos</div>
-                <div class="t-sub" style="margin:-4px 0 10px;">Quedaron pendientes — sin prisa, resuélvelas o reagéndalas.</div>
-                <div id="dashMiDia"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Capacidad de tu día -->
-          <div class="panel" style="margin-bottom:16px;">
-            <div class="panel-title">⚖️ Capacidad de tu día</div>
-            <div id="dashEquilibrio"></div>
-          </div>
-
-          <!-- Tu equilibrio de vida (Módulo 9) -->
-          <div class="panel" style="margin-bottom:16px;">
-            <div class="panel-title">🌱 Tu equilibrio de vida</div>
-            <div id="dashLifeBalance"></div>
-          </div>
-
-          <div class="dash-grid">
-            <!-- D. Prioridades de hoy -->
-            <div class="panel">
-              <div class="panel-title-row">
-                <div class="panel-title">Prioridades de hoy</div>
-                <button class="btn btn-ghost btn-sm" id="dashViewAllTasksBtn">Ver todas mis tareas</button>
-              </div>
-              <div id="dashPriorityToday"></div>
-            </div>
-            <!-- G. Carga del equipo -->
             <div class="panel">
               <div class="panel-title">Carga del equipo</div>
               <div id="dashTeamLoad"></div>
             </div>
           </div>
 
-          <div class="dash-grid-2">
-            <!-- E. Productividad semanal -->
-            <div class="panel">
-              <div class="panel-title">Productividad semanal</div>
-              <div id="dashWeeklyChart"></div>
-            </div>
-            <!-- H. Resumen de estados -->
-            <div class="panel">
-              <div class="panel-title">Resumen de estados</div>
-              <div class="donut-wrap" id="statusDonut"></div>
-              <div style="margin-top:16px;" id="priorityBars"></div>
-            </div>
-          </div>
-
-          <div class="dash-grid">
-            <!-- F. Estado de proyectos -->
-            <div class="panel">
-              <div class="panel-title-row">
-                <div class="panel-title">Estado de temas y proyectos</div>
-                <button class="btn btn-ghost btn-sm" id="dashViewAllProjectsBtn">Ver todos</button>
-              </div>
-              <div id="dashProjectStatus"></div>
-            </div>
-            <!-- L. Recordatorios -->
-            <div class="panel">
-              <div class="panel-title">💙 Recordatorio</div>
-              <div id="dashRecommendations"></div>
-            </div>
-          </div>
-
-          <div class="dash-grid-2">
-            <!-- I. Próximos vencimientos -->
-            <div class="panel">
-              <div class="panel-title">Próximos vencimientos</div>
-              <div id="dashDeadlineTimeline"></div>
-            </div>
-            <!-- J. Actividad reciente -->
-            <div class="panel">
-              <div class="panel-title">Actividad reciente</div>
-              <ul class="activity-list" id="activityList"></ul>
-            </div>
-          </div>
-
-          <!-- K. Acciones rápidas -->
-          <div class="panel" style="margin-bottom:0;">
-            <div class="panel-title">Acciones rápidas</div>
-            <div class="quick-actions-grid" id="dashQuickActions"></div>
-          </div>
         </div>
       </div>
     </section>
@@ -2087,6 +2079,10 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <span style="font-size:16px;">🔒</span>
         <span>Pronto podrás <b>compartir</b> una tarea, lista o compromiso puntual con estas personas. Siempre será opcional y granular — nunca se comparte toda tu información. Esta función llegará cuando conectemos el servidor.</span>
       </div>
+      <div class="info-note hidden" id="respUnassignedBanner" style="margin-bottom:16px;display:flex;gap:10px;align-items:center;padding:12px 14px;background:color-mix(in srgb, var(--warning) 10%, transparent);border:1px solid color-mix(in srgb, var(--warning) 26%, transparent);border-radius:12px;font-size:13px;color:var(--text);cursor:pointer;">
+        <span style="font-size:16px;">⚠️</span>
+        <span id="respUnassignedText"></span>
+      </div>
       <div class="projects-grid" id="responsablesGrid"></div>
     </section>
 
@@ -2101,25 +2097,52 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
       </div>
       <div class="view-sticky-spacer"></div>
+
+      <!-- 1. Resultado principal + 2. Comparación con período anterior -->
+      <div class="panel dash-impulso-card" style="margin-bottom:16px;">
+        <div class="dash-impulso-badge" id="rpMainBadge" style="font-size:17px;">–</div>
+        <div class="dash-impulso-text">
+          <div class="dash-impulso-eyebrow">Cumplimiento de este mes</div>
+          <div class="dash-impulso-headline" id="rpMainHeadline">Cargando…</div>
+        </div>
+      </div>
+
+      <!-- 3. Tendencia -->
       <div class="dash-grid-2">
+        <div class="panel"><div class="panel-title">Tendencia semanal</div><div id="rpWeekly"></div></div>
+        <div class="panel"><div class="panel-title">Tendencia mensual</div><div id="rpMonthly"></div></div>
+      </div>
+
+      <!-- 4. Distribución por estado -->
+      <div class="dash-grid-2">
+        <div class="panel"><div class="panel-title">Distribución por estado</div><div id="rpStatusDist"></div></div>
+        <div class="panel"><div class="panel-title">Distribución por prioridad</div><div id="rpPriorityDist"></div></div>
+      </div>
+
+      <!-- 5. Explicación -->
+      <div class="panel" id="rpExplainPanel" style="margin-bottom:16px;">
+        <div class="panel-title">¿Qué explica este resultado?</div>
+        <div id="rpExplain"></div>
+      </div>
+
+      <!-- 6. Recomendación de Alma -->
+      <div class="panel dash-alma-card" style="margin-bottom:16px;">
+        <div class="panel-title">💜 Alma dice</div>
+        <div id="rpAlmaDice"></div>
+      </div>
+
+      <!-- Detalle operativo, segundo nivel -->
+      <div class="dash-grid-2 dash-secondary-level">
         <div class="panel"><div class="panel-title">Cumplimiento por proyecto</div><div id="rpProjectCompletion"></div></div>
         <div class="panel"><div class="panel-title">Cumplimiento por responsable</div><div id="rpOwnerCompletion"></div></div>
       </div>
-      <div class="dash-grid-2">
-        <div class="panel"><div class="panel-title">Tareas creadas vs. completadas</div><div id="rpCreatedVsCompleted"></div></div>
-        <div class="panel"><div class="panel-title">Tiempo estimado vs. tiempo real (horas)</div><div id="rpTimeEstVsReal"></div></div>
-      </div>
-      <div class="dash-grid-2">
-        <div class="panel"><div class="panel-title">Productividad semanal (tareas completadas)</div><div id="rpWeekly"></div></div>
-        <div class="panel"><div class="panel-title">Productividad mensual (tareas completadas)</div><div id="rpMonthly"></div></div>
-      </div>
-      <div class="dash-grid-2">
-        <div class="panel"><div class="panel-title">Distribución por prioridad</div><div id="rpPriorityDist"></div></div>
-        <div class="panel"><div class="panel-title">Distribución por estado</div><div id="rpStatusDist"></div></div>
-      </div>
-      <div class="dash-grid-2">
+      <div class="dash-grid-2 dash-secondary-level">
         <div class="panel"><div class="panel-title">Tareas atrasadas</div><ul class="deadline-list" id="rpOverdueList"></ul></div>
         <div class="panel"><div class="panel-title">Proyectos en riesgo</div><ul class="deadline-list" id="rpAtRiskList"></ul></div>
+      </div>
+      <div class="dash-grid-2 dash-secondary-level">
+        <div class="panel"><div class="panel-title">Tareas creadas vs. completadas</div><div id="rpCreatedVsCompleted"></div></div>
+        <div class="panel"><div class="panel-title">Tiempo estimado vs. tiempo real (horas)</div><div id="rpTimeEstVsReal"></div></div>
       </div>
     </section>
 
@@ -2161,67 +2184,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       </div>
       <div class="view-sticky-spacer"></div>
 
-      <div class="panel" style="margin-bottom:16px;">
+
+      <div class="config-group-label">Cuenta</div>
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">👤 Mi cuenta</div>
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Sesión iniciada como <b id="cf_currentUsername">—</b>. Tus datos son privados: nadie más puede verlos.</p>
         <button type="button" class="btn btn-ghost" id="cf_logoutBtn">🚪 Cerrar sesión</button>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-title">🔔 Notificaciones en el navegador</div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Recibe resúmenes generales (8am y 8pm) + un aviso puntual antes de cada tarea/actividad con hora — aunque no tengas la app abierta. Gratis, sin WhatsApp ni SMS.</p>
-        <div id="pushStatusText" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px;"></div>
-        <button type="button" class="btn btn-primary" id="cf_pushEnableBtn">🔔 Activar notificaciones</button>
-        <button type="button" class="btn btn-ghost hidden" id="cf_pushDisableBtn">🔕 Desactivar notificaciones</button>
-        <div class="form-row" style="margin-top:14px;">
-          <div class="form-field">
-            <label>Avisarme con cuánta anticipación (horas)</label>
-            <input type="number" id="cf_pushHoursBefore" min="1" max="24" step="1" style="max-width:120px;">
-          </div>
-          <div class="form-field">
-            <label>Tu huso horario</label>
-            <select id="cf_utcOffset">
-              <option value="-5">Perú, Colombia, Ecuador, México (UTC-5)</option>
-              <option value="-4">Chile, Bolivia, Venezuela (UTC-4)</option>
-              <option value="-3">Argentina, Uruguay, Brasil-este (UTC-3)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-title">🗓️ Google Calendar</div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Conecta tu calendario real para ver tus reuniones junto a tus tareas, y entrar a ellas directo con un clic.</p>
-        <div id="gcalStatus"></div>
-      </div>
-
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-title">💜 Mi asistente</div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 14px;">Tú decides cómo te acompaña Alma. Todo esto es opcional y puedes cambiarlo cuando quieras.</p>
-        <div class="form-grid">
-          <div class="form-field"><label>Nombre del asistente</label><input id="cf_almaName" placeholder="Alma"></div>
-          <div class="form-field"><label>¿Cómo quieres que te llame?</label><input id="cf_almaUserName" placeholder="Tu nombre"></div>
-        </div>
-        <div style="margin-top:14px;">
-          <label class="checkbox-line"><input type="checkbox" id="cf_almaCheckEnabled"> Chequeo de bienestar diario</label>
-          <div id="cf_almaCheckPrefs" style="margin:8px 0 0 26px;display:flex;flex-wrap:wrap;gap:16px;">
-            <label class="checkbox-line" style="font-weight:400;"><input type="checkbox" id="cf_almaPrefSleep"> Preguntar por el sueño</label>
-            <label class="checkbox-line" style="font-weight:400;"><input type="checkbox" id="cf_almaPrefEnergy"> Preguntar por la energía</label>
-            <label class="checkbox-line" style="font-weight:400;"><input type="checkbox" id="cf_almaPrefMood"> Preguntar por el ánimo</label>
-          </div>
-        </div>
-        <div style="margin-top:12px;">
-          <label class="checkbox-line"><input type="checkbox" id="cf_almaMinimized"> Mantener la nube de Alma siempre minimizada</label>
-        </div>
-        <div style="margin-top:16px;">
-          <button class="btn btn-ghost btn-sm" id="cf_replayTourBtn" style="margin-right:8px;">🧭 Ver el tour de nuevo</button>
-          <button class="btn btn-ghost btn-sm" id="cf_almaClearWellbeing" style="color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, transparent);">Borrar mi historial de bienestar</button>
-          <p style="font-size:11.5px;color:var(--text-faint);margin:6px 0 0;">Tus respuestas de sueño, energía y ánimo son privadas y nunca se usan para evaluar tu productividad.</p>
-        </div>
-      </div>
-
-      <div class="dash-grid-2">
-        <div class="panel">
+      <div class="panel">
           <div class="panel-title">Organización y usuario</div>
           <div class="form-grid">
             <div class="form-field full"><label>Nombre de la organización</label><input id="cf_orgName"></div>
@@ -2229,44 +2200,9 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <div class="form-field full"><label>Correo electrónico <span style="font-weight:400;color:var(--text-faint);">(opcional)</span></label><input type="email" id="cf_userEmail" placeholder="Ej: miguel@empresa.com"></div>
           </div>
         </div>
-        <div class="panel">
-          <div class="panel-title">Preferencias regionales</div>
-          <div class="form-grid">
-            <div class="form-field"><label>Formato de fecha</label>
-              <select id="cf_dateFormat">
-                <option value="dd/mm/aaaa">dd/mm/aaaa</option>
-                <option value="mm/dd/aaaa">mm/dd/aaaa</option>
-                <option value="aaaa-mm-dd">aaaa-mm-dd</option>
-              </select>
-            </div>
-            <div class="form-field"><label>Inicio de semana</label>
-              <select id="cf_weekStart"><option value="lunes">Lunes</option><option value="domingo">Domingo</option></select>
-            </div>
-            <div class="form-field"><label>Modo de visualización</label>
-              <select id="cf_theme"><option value="light">☀️ Modo día</option><option value="dark">🌙 Modo nocturno</option></select>
-            </div>
-            <div class="form-field">
-              <label>Notificaciones</label>
-              <label class="checkbox-line"><input type="checkbox" id="cf_notifEnabled"> Mostrar centro de notificaciones y avisos</label>
-            </div>
-            <div class="form-field">
-              <label>Avisar vencimientos con anticipación</label>
-              <select id="cf_reminderLeadDays">
-                <option value="1">1 día antes</option>
-                <option value="2">2 días antes</option>
-                <option value="3">3 días antes</option>
-                <option value="4">4 días antes</option>
-                <option value="5">5 días antes</option>
-                <option value="7">7 días antes (una semana)</option>
-                <option value="10">10 días antes</option>
-                <option value="14">14 días antes</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="panel" style="margin-bottom:16px;">
+      <div class="config-group-label">Jornada y disponibilidad</div>
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">🌤️ Mi perfil de vida</div>
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Esta información ayuda a que las sugerencias de horario (en la Cola "Por agendar") respeten cómo vives de verdad, no solo huecos vacíos.</p>
         <div class="form-grid" style="margin-bottom:14px;">
@@ -2333,7 +2269,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <button type="button" class="add-line-btn" id="cf_addRoutineBtn">➕ Agregar rutina</button>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">🌱 Áreas de tu vida</div>
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Las áreas en las que repartes tu energía. Se usan en tu tablero "Tu equilibrio de vida" y puedes asignarlas a cada tarea. Ajústalas a tu vida real.</p>
         <div id="cf_lifeAreasList" class="tags-wrap"></div>
@@ -2343,7 +2279,31 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
+
+      <div class="config-group-label">Notificaciones</div>
+            <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">🔔 Notificaciones en el navegador</div>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Recibe resúmenes generales (8am y 8pm) + un aviso puntual antes de cada tarea/actividad con hora — aunque no tengas la app abierta. Gratis, sin WhatsApp ni SMS.</p>
+        <div id="pushStatusText" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px;"></div>
+        <button type="button" class="btn btn-primary" id="cf_pushEnableBtn">🔔 Activar notificaciones</button>
+        <button type="button" class="btn btn-ghost hidden" id="cf_pushDisableBtn">🔕 Desactivar notificaciones</button>
+        <div class="form-row" style="margin-top:14px;">
+          <div class="form-field">
+            <label>Avisarme con cuánta anticipación (horas)</label>
+            <input type="number" id="cf_pushHoursBefore" min="1" max="24" step="1" style="max-width:120px;">
+          </div>
+          <div class="form-field">
+            <label>Tu huso horario</label>
+            <select id="cf_utcOffset">
+              <option value="-5">Perú, Colombia, Ecuador, México (UTC-5)</option>
+              <option value="-4">Chile, Bolivia, Venezuela (UTC-4)</option>
+              <option value="-3">Argentina, Uruguay, Brasil-este (UTC-3)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">📧 Notificaciones por correo</div>
         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 12px;">
           Elige qué avisos te gustaría recibir por correo, además de verlos en la app.
@@ -2377,6 +2337,70 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <div style="margin-top:10px;font-size:12px;color:var(--text-faint);">Se enviarían a: <b id="cf_emailNotifTarget">—</b> (configura tu correo arriba, en "Correo electrónico")</div>
       </div>
 
+
+      <div class="config-group-label">Preferencias de Alma</div>
+            <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">💜 Mi asistente</div>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 14px;">Tú decides cómo te acompaña Alma. Todo esto es opcional y puedes cambiarlo cuando quieras.</p>
+        <div class="form-grid">
+          <div class="form-field"><label>Nombre del asistente</label><input id="cf_almaName" placeholder="Alma"></div>
+          <div class="form-field"><label>¿Cómo quieres que te llame?</label><input id="cf_almaUserName" placeholder="Tu nombre"></div>
+        </div>
+        <div style="margin-top:14px;">
+          <label class="checkbox-line"><input type="checkbox" id="cf_almaCheckEnabled"> Chequeo de bienestar diario</label>
+          <div id="cf_almaCheckPrefs" style="margin:8px 0 0 26px;display:flex;flex-wrap:wrap;gap:16px;">
+            <label class="checkbox-line" style="font-weight:400;"><input type="checkbox" id="cf_almaPrefSleep"> Preguntar por el sueño</label>
+            <label class="checkbox-line" style="font-weight:400;"><input type="checkbox" id="cf_almaPrefEnergy"> Preguntar por la energía</label>
+            <label class="checkbox-line" style="font-weight:400;"><input type="checkbox" id="cf_almaPrefMood"> Preguntar por el ánimo</label>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <label class="checkbox-line"><input type="checkbox" id="cf_almaMinimized"> Mantener la nube de Alma siempre minimizada</label>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-ghost btn-sm" id="cf_replayTourBtn" style="margin-right:8px;">🧭 Ver el tour de nuevo</button>
+          <button class="btn btn-ghost btn-sm" id="cf_almaClearWellbeing" style="color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, transparent);">Borrar mi historial de bienestar</button>
+          <p style="font-size:11.5px;color:var(--text-faint);margin:6px 0 0;">Tus respuestas de sueño, energía y ánimo son privadas y nunca se usan para evaluar tu productividad.</p>
+        </div>
+      </div>
+
+
+      <div class="config-group-label">Apariencia</div>
+      <div class="panel">
+          <div class="panel-title">Preferencias regionales</div>
+          <div class="form-grid">
+            <div class="form-field"><label>Formato de fecha</label>
+              <select id="cf_dateFormat">
+                <option value="dd/mm/aaaa">dd/mm/aaaa</option>
+                <option value="mm/dd/aaaa">mm/dd/aaaa</option>
+                <option value="aaaa-mm-dd">aaaa-mm-dd</option>
+              </select>
+            </div>
+            <div class="form-field"><label>Inicio de semana</label>
+              <select id="cf_weekStart"><option value="lunes">Lunes</option><option value="domingo">Domingo</option></select>
+            </div>
+            <div class="form-field"><label>Modo de visualización</label>
+              <select id="cf_theme"><option value="light">☀️ Modo día</option><option value="dark">🌙 Modo nocturno</option></select>
+            </div>
+            <div class="form-field">
+              <label>Notificaciones</label>
+              <label class="checkbox-line"><input type="checkbox" id="cf_notifEnabled"> Mostrar centro de notificaciones y avisos</label>
+            </div>
+            <div class="form-field">
+              <label>Avisar vencimientos con anticipación</label>
+              <select id="cf_reminderLeadDays">
+                <option value="1">1 día antes</option>
+                <option value="2">2 días antes</option>
+                <option value="3">3 días antes</option>
+                <option value="4">4 días antes</option>
+                <option value="5">5 días antes</option>
+                <option value="7">7 días antes (una semana)</option>
+                <option value="10">10 días antes</option>
+                <option value="14">14 días antes</option>
+              </select>
+            </div>
+          </div>
+      </div>
       <div class="dash-grid-2">
         <div class="panel">
           <div class="panel-title">Prioridades personalizadas</div>
@@ -2389,8 +2413,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <div id="cf_projectStatusLabels"></div>
         </div>
       </div>
-
-      <div class="panel" style="margin-bottom:16px;">
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">Etiquetas</div>
         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 10px;">Etiquetas sugeridas al crear tareas y proyectos.</p>
         <div class="tag-input-wrap" id="cf_tagsWrap"></div>
@@ -2400,7 +2423,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">Áreas de solicitud</div>
         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 10px;">Áreas disponibles al indicar quién solicitó una tarea.</p>
         <div class="tag-input-wrap" id="cf_areasWrap"></div>
@@ -2410,11 +2433,28 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
+            <div class="panel" style="margin-bottom:16px;">
         <button class="btn btn-primary" id="cf_saveBtn">Guardar configuración</button>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
+
+      <div class="config-group-label">Integraciones</div>
+            <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">🗓️ Google Calendar</div>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Conecta tu calendario real para ver tus reuniones junto a tus tareas, y entrar a ellas directo con un clic.</p>
+        <div id="gcalStatus"></div>
+      </div>
+
+            <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">🔌 Integraciones (próximamente)</div>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">TaskFlow Pro funciona hoy de forma privada en tu navegador. Estas conexiones llegarán más adelante — aquí verás su estado real, sin promesas vacías.</p>
+        <div id="cf_integrationsList"></div>
+        <p style="font-size:12px;color:var(--text-faint);margin:12px 0 0;line-height:1.5;">Cuando conectemos el servidor se activarán los recordatorios, la sincronización entre tus dispositivos y la IA real. Tus datos ya están listos para migrar — usa <b>Exportar respaldo</b> arriba para conservarlos.</p>
+      </div>
+
+
+      <div class="config-group-label">Seguridad y datos</div>
+            <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title-row">
           <div class="panel-title">🗑️ Papelera</div>
           <button class="btn btn-ghost btn-sm" id="cf_emptyTrashBtn">Vaciar papelera</button>
@@ -2423,7 +2463,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <div id="cf_trashList"></div>
       </div>
 
-      <div class="panel">
+            <div class="panel">
         <div class="panel-title">Respaldo de información</div>
         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 12px;">Exporta un respaldo completo en JSON, impórtalo en otro navegador, o vacía todos los datos para empezar de cero.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -2442,12 +2482,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
       </div>
 
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-title">🔌 Integraciones (próximamente)</div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">TaskFlow Pro funciona hoy de forma privada en tu navegador. Estas conexiones llegarán más adelante — aquí verás su estado real, sin promesas vacías.</p>
-        <div id="cf_integrationsList"></div>
-        <p style="font-size:12px;color:var(--text-faint);margin:12px 0 0;line-height:1.5;">Cuando conectemos el servidor se activarán los recordatorios, la sincronización entre tus dispositivos y la IA real. Tus datos ya están listos para migrar — usa <b>Exportar respaldo</b> arriba para conservarlos.</p>
-      </div>
     </section>
 
   </div>
@@ -3082,7 +3116,7 @@ async function refreshGoogleEventsForRange(startIso, endIso){
       });
     }
     googleEventsRangeCache = { start: startIso, end: endIso, byDate };
-    if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashAgenda();
+    if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashImpulsoDelDia();
     if(!document.getElementById("view-calendar").classList.contains("hidden")) renderCalendar();
   }catch(e){
     console.warn("No se pudieron traer eventos de Google Calendar:", e.message);
@@ -4030,21 +4064,12 @@ function renderDashboard(){
   if(!hasData) return;
 
   try{ renderDashAttentionBar(); }catch(e){ console.error("dash attention",e); }
-  try{ renderDashMotiva(); }catch(e){ console.error("dash motiva",e); }
-  try{ renderDashMiDia(); }catch(e){ console.error("dash mi dia",e); }
-  try{ renderDashAgenda(); }catch(e){ console.error("dash agenda",e); }
-  try{ renderDashEquilibrio(); }catch(e){ console.error("dash equilibrio",e); }
-  try{ renderDashAchievement(); }catch(e){ console.error("dash achievement",e); }
-  try{ renderDashLifeBalance(); }catch(e){ console.error("dash life balance",e); }
+  try{ renderDashImpulsoDelDia(); }catch(e){ console.error("dash impulso",e); }
   try{ renderDashPriorityToday(); }catch(e){ console.error("dash priority today",e); }
-  try{ renderDashTeamLoad(); }catch(e){ console.error("dash team load",e); }
+  try{ renderDashAlmaDice(); }catch(e){ console.error("dash alma dice",e); }
   try{ renderDashWeeklyChart(); }catch(e){ console.error("dash weekly chart",e); }
-  try{ renderDashStatusPanels(); }catch(e){ console.error("dash status panels",e); }
   try{ renderDashProjectStatus(); }catch(e){ console.error("dash project status",e); }
-  try{ renderDashRecommendations(); }catch(e){ console.error("dash recommendations",e); }
-  try{ renderDashTimeline(); }catch(e){ console.error("dash timeline",e); }
-  try{ renderDashActivity(); }catch(e){ console.error("dash activity",e); }
-  try{ renderDashQuickActions(); }catch(e){ console.error("dash quick actions",e); }
+  try{ renderDashTeamLoad(); }catch(e){ console.error("dash team load",e); }
 }
 
 /* A. Encabezado */
@@ -4598,6 +4623,105 @@ function renderDashAchievement(){
     <p style="font-size:14.5px;color:var(--text);margin:11px 0 0;line-height:1.5;font-weight:600;">${msg}</p>`;
 }
 
+/* ---------------------------------------------------------------------- *
+ * REDISEÑO IMPULSO — Inicio consolidado (ver antes/después aprobado).
+ * Estas dos funciones reemplazan, en el HOME, a: Equilibrio + Logro del día
+ * (fusionados en "Impulso del día"), y a Motiva + Retomemos esto juntos +
+ * el primer Recordatorio (fusionados en "Alma dice", una sola voz en vez de
+ * tres). El cálculo de fondo (capacidad del día, logros, mensajes según
+ * energía/ánimo) sigue siendo el mismo — solo cambia dónde y cómo se
+ * muestra.
+ * ---------------------------------------------------------------------- */
+function renderDashImpulsoDelDia(){
+  const badge = document.getElementById("dashImpulsoBadge");
+  const headline = document.getElementById("dashImpulsoHeadline");
+  if(!badge || !headline) return;
+  refreshGoogleEventsForToday(); // se actualiza solo (async); si trae datos nuevos, vuelve a llamar a renderDashImpulsoDelDia()
+
+  const a = computeDayAchievement();
+  const iso = TODAY();
+  const tasksToday = DB.tasks.filter(t=>!t.archived && isTaskToday(t));
+  const busy = busySlotsForDate(iso).slice().sort((x,y)=>x[0]-y[0]);
+  let committedMin = 0, lastEnd = -1;
+  busy.forEach(([s,e])=>{ const start = Math.max(s, lastEnd); if(e>start){ committedMin += (e-start); lastEnd = Math.max(lastEnd, e); } });
+  const unscheduledEstMin = tasksToday.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && !t.executionTime)
+    .reduce((s,t)=>s+Math.max(30, Math.round((t.estimatedTime||1)*60)), 0);
+  const pct = Math.min(100, Math.round(((committedMin+unscheduledEstMin)/(10*60))*100));
+  const capLevel = pct<45 ? "liviana" : pct<80 ? "equilibrada" : "exigente";
+
+  if(a.total===0){
+    badge.textContent = "🌤️";
+    headline.textContent = `Agenda ${capLevel} para hoy · tu día está por delante`;
+    return;
+  }
+  badge.textContent = a.done;
+  const restante = a.total - a.done;
+  let text;
+  if(a.done===a.total) text = `¡Completaste todo! ${a.total} de ${a.total} · agenda ${capLevel}`;
+  else text = `${a.done} de ${a.total} logrado hoy · quedan ${restante} · agenda ${capLevel}`;
+  headline.textContent = text;
+}
+
+function renderDashAlmaDice(){
+  const wrap = document.getElementById("dashAlmaDice");
+  if(!wrap) return;
+
+  // 1) el mismo mensaje según energía/carga que antes vivía en "Motiva"
+  const name = (DB.config.alma&&DB.config.alma.userPreferredName)||DB.config.userName||"";
+  const nm = name ? `, ${name}` : "";
+  const today = TODAY();
+  const todayTasksCount = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && (t.startDate===today || t.dueDate===today)).length;
+  const overdueCount = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskOverdue(t)).length;
+  const wb = wellbeingSummary();
+  const lowEnergy = wb && ((wb.energy && wb.energy<=2) || (wb.mood && wb.mood<=2));
+  const heavy = todayTasksCount>=6 || overdueCount>=4;
+  let msg;
+  if(lowEnergy) msg = `Un paso a la vez${nm}. No tienes que con todo hoy.`;
+  else if(heavy) msg = `Hoy se ve movido${nm}. Prioricemos lo esencial.`;
+  else if(todayTasksCount===0) msg = `Tu día está despejado${nm}. Respira y disfruta.`;
+  else msg = `Vamos con calma${nm}. Un buen día para avanzar.`;
+
+  // 2) la MISMA lógica de "Retomemos esto juntos": un solo pick, el más
+  // relevante (crítico > próximo a vencer sin agendar > personal pendiente)
+  const tasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada"));
+  const daysUntil = (isoD)=>{ if(!isoD) return null; const a2=new Date(TODAY()+"T00:00:00"), b2=new Date(isoD+"T00:00:00"); return Math.round((b2-a2)/86400000); };
+  let pick = tasks.filter(t=>isTaskOverdue(t) || isTaskToday(t))
+    .sort((a2,b2)=>{ const ap=a2.priority==="alta"?0:1, bp=b2.priority==="alta"?0:1; if(ap!==bp) return ap-bp; return (a2.dueDate||"9999").localeCompare(b2.dueDate||"9999"); })[0];
+  let pickMotivo;
+  if(pick){
+    pickMotivo = isTaskOverdue(pick) ? `Está atrasada${pick.dueDate?` (venció el ${fmtDate(pick.dueDate)})`:""}` : (pick.executionTime ? "Vence hoy y ya tiene tiempo reservado" : "Vence hoy y aún no la agendas");
+  }else{
+    const upcoming = tasks.filter(t=>t.dueDate && !t.executionTime).map(t=>({t,d:daysUntil(t.dueDate)})).filter(x=>x.d!==null&&x.d>=1&&x.d<=5).sort((a2,b2)=>a2.d-b2.d)[0];
+    if(upcoming){ pick=upcoming.t; const dd=upcoming.d; pickMotivo = `Vence ${dd===1?"mañana":`en ${dd} días`} y aún no le reservas tiempo`; }
+  }
+
+  wrap.innerHTML = `
+    <p style="font-size:14px;color:var(--text);margin:0 0 14px;line-height:1.5;">${esc(msg)}</p>
+    ${pick ? `
+    <div class="pt-row" style="align-items:flex-start;background:var(--surface-alt);border-radius:var(--radius);padding:10px 12px;">
+      <div class="pt-main">
+        <div class="pt-title t-title-click" data-open-task="${pick.id}" style="white-space:normal;cursor:pointer;">${taskTypeBadge(pick)} ${esc(pick.title)}</div>
+        <div class="pt-meta" style="white-space:normal;color:var(--text-muted);">${esc(pickMotivo||"")}</div>
+        <div class="dash-retomar-actions">
+          <button class="dash-retomar-btn reag" data-retomar-reag="${pick.id}">🔄 Reagendar</button>
+          <button class="dash-retomar-btn done" data-retomar-done="${pick.id}">✓ Ya la hice</button>
+        </div>
+      </div>
+    </div>` : ""}
+  `;
+  wrap.querySelectorAll("[data-open-task]").forEach(el=>el.addEventListener("click", ()=>openTaskModal(el.dataset.openTask)));
+  wrap.querySelectorAll("[data-retomar-reag]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); reagendarTask(b.dataset.retomarReag); }));
+  wrap.querySelectorAll("[data-retomar-done]").forEach(b=>b.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    const t = byId(DB.tasks, b.dataset.retomarDone);
+    if(!t) return;
+    t.status = "completada"; t.progress = 100; t.updatedAt = TODAY();
+    logActivity("task_completed", `Completaste "${t.title}".`);
+    recomputeAll(); saveDB(); render();
+    toast(`✓ ¡Hecho! Marqué "${t.title}" como completada.`,"success");
+  }));
+}
+
 /* Tu equilibrio de vida (Módulo 9): reparto de tareas activas por área de vida.
    Mirada honesta de dónde va la energía, sin juzgar. */
 function renderDashLifeBalance(){
@@ -5027,7 +5151,7 @@ const projectFilter = {status:"", owner:""};
  * ====================================================================== */
 const STICKY_MODELS = {
   clasica:  { label:"Clásica",  paper:"#F4ECD8", ink:"#4A3D10", cover:"#8A6D3B", coverInk:"#F4ECD8", ruled:true,  font:"sans" },
-  moderna:  { label:"Moderna",  paper:"#FFFFFF", ink:"#3A3348", cover:"linear-gradient(135deg,#FF7A45,#E8447A)", coverInk:"#FFFFFF", ruled:false, font:"sans" },
+  moderna:  { label:"Moderna",  paper:"#FFFFFF", ink:"#3A3348", cover:"linear-gradient(125deg,#FF6B45,#ED3F7C,#8157EF)", coverInk:"#FFFFFF", ruled:false, font:"sans" },
   creativa: { label:"Creativa", paper:"#EAF4F0", ink:"#245C4A", cover:"#2E9E7B", coverInk:"#FFFFFF", ruled:false, font:"voice" },
 };
 function stickyStyle(){
@@ -5356,6 +5480,9 @@ function renderProjects(){
     const st = byId(PROJECT_STATUSES,p.status);
     const R=26, C=2*Math.PI*R;
     const off = C - (p.progress/100)*C;
+    const atRisk = p.status==="en_riesgo" || p.overdueTasks>0;
+    // Próximo hito: el más cercano de los que todavía no pasan
+    const nextMilestone = (p.milestones||[]).filter(m=>m.date && m.date>=TODAY()).sort((a,b)=>a.date.localeCompare(b.date))[0];
     return `
     <div class="project-card" style="--card-color:${p.color}" data-project-id="${p.id}">
       <div class="project-card-head">
@@ -5369,9 +5496,12 @@ function renderProjects(){
         <div style="flex:1;min-width:0;">
           <div class="project-name">${esc(p.name)}</div>
           <span class="badge" style="background:color-mix(in srgb, ${st.color} 18%, transparent); color:${st.color}">${st.label}</span>
+          ${atRisk?`<span class="badge" style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);margin-left:4px;">⚠️ En riesgo</span>`:""}
         </div>
       </div>
+      ${p.objective?`<div class="project-meta-line" style="font-weight:500;color:var(--text);">🎯 ${esc(p.objective)}</div>`:""}
       <div class="project-desc">${esc(p.description)}</div>
+      ${nextMilestone?`<div class="project-meta-line" style="color:var(--accent-2);">🚩 Próximo hito: ${esc(nextMilestone.name)} · ${fmtDate(nextMilestone.date)}</div>`:""}
       <div class="project-meta">
         ${(()=>{ const la=(DB.config.lifeAreas||DEFAULT_LIFE_AREAS).find(a=>a.id===p.lifeArea); return la?`<span class="badge" style="background:color-mix(in srgb, ${la.color} 16%, transparent);color:${la.color}">${la.icon} ${esc(la.name)}</span>`:""; })()}
         ${(p.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}
@@ -7935,7 +8065,7 @@ function renderPorAgendar(){
       <span class="priority-dot" style="background:${colorOf(PRIORITIES,t.priority)}"></span>
       <div class="qi-main">
         <div class="qi-title">${taskTypeBadge(t)} ${esc(t.title)}${overdue?` <span class="status-pill" style="background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);">Vencida</span>`:""}</div>
-        <div class="qi-meta">${t.dueDate?`<span style="color:${overdue?'var(--danger)':'inherit'}">Vence ${fmtDate(t.dueDate)}</span>`:'<span>Sin fecha límite</span>'}<span>${labelOf(PRIORITIES,t.priority)}</span></div>
+        <div class="qi-meta">${t.dueDate?`<span style="color:${overdue?'var(--danger)':'inherit'}">Vence ${fmtDate(t.dueDate)}</span>`:'<span>Sin fecha límite</span>'}<span>${labelOf(PRIORITIES,t.priority)}</span><span>⏱️ ${t.estimatedTime||1}h estimada</span></div>
       </div>
       <div class="qi-actions">
         <button type="button" class="btn btn-ghost btn-sm qi-btn" data-manual="${t.id}" title="Agendar manualmente">⚙ Manual</button>
@@ -8697,6 +8827,23 @@ function renderGantt(){
   }
   const todayOffset = Math.round((new Date(TODAY())-minD)/86400000)*dayWidth;
 
+  // Hitos: recopilamos los de los proyectos relacionados con las tareas visibles,
+  // que caigan dentro del rango de fechas del gráfico — el brief los pide y no
+  // se estaban graficando en absoluto.
+  const relatedProjectIds = new Set(tasks.map(t=>t.projectId).filter(Boolean));
+  let milestoneMarkers = "";
+  relatedProjectIds.forEach(pid=>{
+    const p = byId(DB.projects, pid);
+    if(!p || !Array.isArray(p.milestones)) return;
+    p.milestones.forEach(m=>{
+      if(!m.date) return;
+      const md = new Date(m.date+"T00:00:00");
+      if(md < minD || md > maxD) return;
+      const off = Math.round((md-minD)/86400000)*dayWidth;
+      milestoneMarkers += `<div class="gantt-milestone-line" style="left:${off}px;" title="🚩 ${esc(m.name)} · ${fmtDate(m.date)} (${esc(p.name)})"><div class="gantt-milestone-diamond"></div></div>`;
+    });
+  });
+
   let rows = "";
   const geometry = {}; // taskId -> {left, width, rowIndex}
   tasks.forEach((t,rowIndex)=>{
@@ -8706,10 +8853,11 @@ function renderGantt(){
     geometry[t.id] = {left, width, rowIndex};
     const p = byId(DB.projects, t.projectId);
     const blocked = hasIncompleteDependencies(t);
+    const atRisk = isTaskOverdue(t); // fecha crítica: ya pasó su vencimiento y sigue sin cerrar
     rows += `<div class="gantt-row">
-      <div class="gantt-label"><span class="priority-dot" style="background:${colorOf(PRIORITIES,t.priority)}"></span>${esc(t.title)}${blocked?` <span class="dep-badge" title="Depende de: ${esc(incompleteDependencyTitles(t).join(', '))}">🔒 dependencia</span>`:""}</div>
+      <div class="gantt-label"><span class="priority-dot" style="background:${colorOf(PRIORITIES,t.priority)}"></span>${esc(t.title)}${blocked?` <span class="dep-badge" title="Depende de: ${esc(incompleteDependencyTitles(t).join(', '))}">🔒 dependencia</span>`:""}${atRisk?` <span class="dep-badge" style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);" title="Fecha crítica: ya venció">⚠️ riesgo</span>`:""}</div>
       <div class="gantt-track" style="width:${totalWidth}px;">
-        <div class="gantt-bar" data-task-id="${t.id}" style="left:${left}px;width:${width}px;background:${p?p.color:'var(--accent)'}">
+        <div class="gantt-bar ${atRisk?'gantt-bar-risk':''}" data-task-id="${t.id}" style="left:${left}px;width:${width}px;background:${p?p.color:'var(--accent)'}">
           <div class="gbar-progress" style="width:${t.progress}%"></div>
           <span style="position:relative;">${esc(t.title)}</span>
         </div>
@@ -8746,6 +8894,7 @@ function renderGantt(){
     <div style="position:relative;">
       ${rows}
       <svg style="position:absolute;top:0;left:220px;width:${totalWidth}px;height:${totalHeight}px;pointer-events:none;" viewBox="0 0 ${totalWidth} ${totalHeight}">${connectors}</svg>
+      <div style="position:absolute;top:0;left:220px;width:${totalWidth}px;height:${totalHeight}px;pointer-events:none;">${milestoneMarkers}</div>
     </div>
   `;
   document.getElementById("ganttWrap").querySelectorAll(".gantt-bar").forEach(el=>{
@@ -8758,10 +8907,10 @@ function renderGantt(){
  * RENDER: Matriz de prioridades (Eisenhower)
  * ---------------------------------------------------------------------- */
 const MATRIX_QUADS = [
-  {id:"ui", label:"Urgente e importante", cls:"q-ui"},
-  {id:"inu", label:"Importante, no urgente", cls:"q-inu"},
-  {id:"uni", label:"Urgente, no importante", cls:"q-uni"},
-  {id:"nn", label:"Ni urgente ni importante", cls:"q-nn"},
+  {id:"ui", label:"Hacer ahora", sub:"Urgente e importante", cls:"q-ui"},
+  {id:"inu", label:"Agendar", sub:"Importante, no urgente", cls:"q-inu"},
+  {id:"uni", label:"Delegar", sub:"Urgente, no importante", cls:"q-uni"},
+  {id:"nn", label:"Eliminar o pausar", sub:"Ni urgente ni importante", cls:"q-nn"},
 ];
 function computeQuadrant(t){
   if(t.matrixQuadrant) return t.matrixQuadrant;
@@ -8780,7 +8929,7 @@ function renderMatrix(){
   grid.innerHTML = MATRIX_QUADS.map(q=>{
     const items = list.filter(t=>computeQuadrant(t)===q.id);
     return `<div class="matrix-quad ${q.cls}" data-quad="${q.id}">
-      <div class="matrix-quad-head"><b>${q.label}</b><span>${items.length}</span></div>
+      <div class="matrix-quad-head"><div><b>${q.label}</b><div style="font-size:10.5px;color:var(--text-faint);font-weight:400;">${q.sub}</div></div><span>${items.length}</span></div>
       <div class="matrix-cards" data-dropzone="${q.id}">
         ${items.map(t=>{
           const p = byId(DB.projects,t.projectId);
@@ -9477,9 +9626,23 @@ function responsableStats(r){
 }
 function renderResponsables(){
   const grid = document.getElementById("responsablesGrid");
+  const unassigned = DB.tasks.filter(t=>!t.archived && !t.owner && t.status!=="completada" && t.status!=="cancelada");
+  const banner = document.getElementById("respUnassignedBanner");
+  if(unassigned.length){
+    banner.classList.remove("hidden");
+    document.getElementById("respUnassignedText").innerHTML = `<b>${unassigned.length}</b> tarea${unassigned.length===1?"":"s"} sin responsable asignado — toca para revisarlas.`;
+    banner.onclick = ()=>{
+      Object.assign(taskFilterState, {project:"",owner:"",status:"",priority:"",tag:"",quick:"unassigned"});
+      showView("mytasks");
+    };
+  }else{
+    banner.classList.add("hidden");
+  }
   if(!DB.responsables.length){ grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div>Aún no hay responsables registrados.</div></div>`; return; }
   grid.innerHTML = DB.responsables.map(r=>{
     const s = responsableStats(r);
+    const cap = computeWorkloadCapacity(r);
+    const capColor = cap.cls==="danger"?"var(--danger)":cap.cls==="warning"?"var(--warning)":"var(--success)";
     return `<div class="project-card" style="--card-color:${r.color}" data-rid="${r.id}">
       <div class="project-card-head">
         <span class="chip-avatar" style="width:46px;height:46px;font-size:15px;background:${r.color};flex:none;">${initials(r.name)}</span>
@@ -9487,6 +9650,7 @@ function renderResponsables(){
           <div class="project-name">${esc(r.name)}</div>
           <div class="t-sub">${esc(r.role||"Sin relación indicada")}</div>
         </div>
+        <span class="badge" style="background:color-mix(in srgb, ${capColor} 16%, transparent);color:${capColor};white-space:nowrap;">${cap.level}</span>
       </div>
       <div class="project-desc">${esc(r.email||"")}</div>
       <div class="project-meta">
@@ -9595,6 +9759,59 @@ function isoWeekKey(dateStr){
 function renderReportes(){
   const tasks = DB.tasks.filter(t=>!t.archived);
 
+  // 1 + 2. Resultado principal y comparación con el período anterior — reutiliza
+  // computeKpis(), que ya calculaba esto para otra vista pero no se mostraba aquí.
+  const kpi = computeKpis("month");
+  const badge = document.getElementById("rpMainBadge");
+  const headline = document.getElementById("rpMainHeadline");
+  if(kpi.complianceCur===null){
+    badge.textContent = "–";
+    headline.textContent = "Todavía no hay tareas con vencimiento este mes para medir cumplimiento.";
+  }else{
+    badge.textContent = kpi.complianceCur+"%";
+    const diff = (kpi.compliancePrev!==null) ? kpi.complianceCur-kpi.compliancePrev : null;
+    headline.innerHTML = `${kpi.complianceCur}% de cumplimiento este mes ${trendBadge(diff, {suffix:" pts vs. mes anterior"})}`;
+  }
+
+  document.getElementById("rpWeekly").innerHTML = (()=>{
+    const completedTasks = tasks.filter(t=>t.status==="completada" && t.updatedAt);
+    const weekMap = {};
+    completedTasks.forEach(t=>{ const k=isoWeekKey(t.updatedAt); weekMap[k]=(weekMap[k]||0)+1; });
+    const weekPairs = Object.keys(weekMap).sort().slice(-6).map(k=>({label:k, value:weekMap[k], color:"var(--accent)"}));
+    return barList(weekPairs);
+  })();
+  document.getElementById("rpMonthly").innerHTML = (()=>{
+    const completedTasks = tasks.filter(t=>t.status==="completada" && t.updatedAt);
+    const monthMap = {};
+    completedTasks.forEach(t=>{ const d=new Date(t.updatedAt+"T00:00:00"); const k=MONTH_LABELS[d.getMonth()].slice(0,3); monthMap[k]=(monthMap[k]||0)+1; });
+    return barList(Object.keys(monthMap).map(k=>({label:k, value:monthMap[k], color:"var(--accent-2)"})));
+  })();
+
+  document.getElementById("rpStatusDist").innerHTML = barList(
+    TASK_STATUSES.map(s=>({label:s.label, value:tasks.filter(t=>t.status===s.id).length, color:s.color}))
+  );
+  document.getElementById("rpPriorityDist").innerHTML = barList(
+    PRIORITIES.map(p=>({label:p.label, value:tasks.filter(t=>t.priority===p.id).length, color:p.color}))
+  );
+
+  // 5. Explicación — una frase concreta, no un gráfico sin conclusión.
+  const explainEl = document.getElementById("rpExplain");
+  const parts = [];
+  if(kpi.overdueNow>0) parts.push(`tienes ${kpi.overdueNow} tarea(s) atrasada(s) ahora mismo`);
+  if(kpi.completedCur!==kpi.completedPrev) parts.push(`completaste ${kpi.completedCur} tareas este período (${kpi.completedCur>kpi.completedPrev?'más':'menos'} que las ${kpi.completedPrev} del período anterior)`);
+  explainEl.innerHTML = parts.length
+    ? `<p style="font-size:13.5px;color:var(--text);line-height:1.55;margin:0;">${parts.join("; ")}.</p>`
+    : `<p style="font-size:13.5px;color:var(--text-muted);margin:0;">Sin cambios relevantes que destacar este período.</p>`;
+
+  // 6. Recomendación de Alma — una sola, la más relevante (no una lista larga).
+  const almaEl = document.getElementById("rpAlmaDice");
+  let almaMsg;
+  if(kpi.overdueNow>0) almaMsg = `Tienes ${kpi.overdueNow} tarea(s) atrasada(s) — conviene revisarlas antes de sumar más carga nueva.`;
+  else if(kpi.complianceCur!==null && kpi.compliancePrev!==null && kpi.complianceCur<kpi.compliancePrev) almaMsg = "El cumplimiento bajó un poco respecto al período anterior. Nada grave, solo vale la pena mirar qué se está acumulando.";
+  else if(kpi.complianceCur!==null && kpi.complianceCur>=80) almaMsg = "Buen ritmo de cumplimiento — sigue así.";
+  else almaMsg = "Todo se ve bajo control por ahora.";
+  almaEl.innerHTML = `<p style="font-size:14px;color:var(--text);margin:0;line-height:1.5;">${esc(almaMsg)}</p>`;
+
   document.getElementById("rpProjectCompletion").innerHTML = barList(
     DB.projects.filter(p=>!p.archived).map(p=>({label:p.name, value:p.progress, color:p.color})),
     {max:100, fmt:v=>v+"%"}
@@ -9617,24 +9834,6 @@ function renderReportes(){
     {label:"Tiempo estimado", value:Math.round(estTotal), color:"var(--accent-2)"},
     {label:"Tiempo real", value:Math.round(actTotal), color:"var(--accent)"},
   ], {fmt:v=>v+"h"});
-
-  const completedTasks = tasks.filter(t=>t.status==="completada" && t.updatedAt);
-  const weekMap = {};
-  completedTasks.forEach(t=>{ const k=isoWeekKey(t.updatedAt); weekMap[k]=(weekMap[k]||0)+1; });
-  const weekPairs = Object.keys(weekMap).sort().slice(-6).map(k=>({label:k, value:weekMap[k], color:"var(--accent)"}));
-  document.getElementById("rpWeekly").innerHTML = barList(weekPairs);
-
-  const monthMap = {};
-  completedTasks.forEach(t=>{ const d=new Date(t.updatedAt+"T00:00:00"); const k=MONTH_LABELS[d.getMonth()].slice(0,3); monthMap[k]=(monthMap[k]||0)+1; });
-  const monthPairs = Object.keys(monthMap).map(k=>({label:k, value:monthMap[k], color:"var(--accent-2)"}));
-  document.getElementById("rpMonthly").innerHTML = barList(monthPairs);
-
-  document.getElementById("rpPriorityDist").innerHTML = barList(
-    PRIORITIES.map(p=>({label:p.label, value:tasks.filter(t=>t.priority===p.id).length, color:p.color}))
-  );
-  document.getElementById("rpStatusDist").innerHTML = barList(
-    TASK_STATUSES.map(s=>({label:s.label, value:tasks.filter(t=>t.status===s.id).length, color:s.color}))
-  );
 
   const overdueTasks = tasks.filter(isTaskOverdue).sort((a,b)=>(a.dueDate||"").localeCompare(b.dueDate||""));
   document.getElementById("rpOverdueList").innerHTML = overdueTasks.length ? overdueTasks.map(t=>{
@@ -9666,6 +9865,7 @@ function renderNotificaciones(){
     {title:"Tareas atrasadas", color:"var(--danger)", icon:iconAlert(), items:n.overdue.map(t=>({text:`${t.title} — venció ${fmtDate(t.dueDate)}`, action:()=>openTaskModal(t.id)}))},
     {title:"Tareas bloqueadas", color:"var(--danger)", icon:iconAlert(), items:n.blocked.map(t=>({text:t.title, action:()=>openTaskModal(t.id)}))},
     {title:"Proyectos en riesgo", color:"var(--danger)", icon:iconFlag(), items:n.atRiskProjects.map(p=>({text:p.name, action:()=>openProjectModal(p.id)}))},
+    {title:"Comentarios recientes", color:"var(--info)", icon:iconClipboard(), items:n.recentComments.map(x=>({text:`${x.comment.author||"Alguien"} comentó en "${x.task.title}": "${x.comment.text.slice(0,60)}${x.comment.text.length>60?'…':''}"`, action:()=>openTaskModal(x.task.id)}))},
     {title:"Hitos próximos", color:"var(--info)", icon:iconTarget(), items:n.upcomingMilestones.map(x=>({text:`${x.milestone.name} (${x.project.name}) — ${fmtDate(x.milestone.date)}`, action:()=>openProjectModal(x.project.id)}))},
     {title:"Tareas sin responsable", color:"var(--text-faint)", icon:iconClipboard(), items:n.unassigned.map(t=>({text:t.title, action:()=>openTaskModal(t.id)}))},
     {title:"Sobrecarga de trabajo", color:"var(--warning)", icon:iconFlag(), items:n.overloaded.map(x=>({text:`${x.responsable.name} tiene ${x.count} tareas pendientes`, action:()=>openResponsableModal(x.responsable.id)}))},
@@ -10733,7 +10933,17 @@ function computeNotifications(){
   const overloaded = DB.responsables.map(r=>({
     responsable:r, count: tasks.filter(t=>t.owner===r.id && (t.status!=="completada"&&t.status!=="cancelada")).length,
   })).filter(x=>x.count>=5);
-  return {dueSoon, overdue, blocked, atRiskProjects, upcomingMilestones, unassigned, overloaded};
+  // Comentarios importantes de los últimos 3 días — antes solo se veían
+  // abriendo cada tarea una por una, no había forma de enterarse sin buscar.
+  const recentCommentCutoff = isoDaysAgo(2);
+  const recentComments = [];
+  tasks.forEach(t=>{
+    (t.comments||[]).forEach(c=>{
+      if(c.date && c.date>=recentCommentCutoff) recentComments.push({task:t, comment:c});
+    });
+  });
+  recentComments.sort((a,b)=>(b.comment.date||"").localeCompare(a.comment.date||""));
+  return {dueSoon, overdue, blocked, atRiskProjects, upcomingMilestones, unassigned, overloaded, recentComments};
 }
 function renderSidebarCounters(){
   const mine = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada")).length;
@@ -10743,7 +10953,7 @@ function renderSidebarCounters(){
   const queueCount = DB.tasks.filter(t=>!t.archived && needsScheduling(t)).length;
   document.getElementById("navQueueBadge").textContent = queueCount;
   const notif = computeNotifications();
-  const notifTotal = DB.config.notificationsEnabled===false ? 0 : (notif.dueSoon.length+notif.overdue.length+notif.blocked.length+notif.atRiskProjects.length+notif.upcomingMilestones.length+notif.unassigned.length+notif.overloaded.length);
+  const notifTotal = DB.config.notificationsEnabled===false ? 0 : (notif.dueSoon.length+notif.overdue.length+notif.blocked.length+notif.atRiskProjects.length+notif.upcomingMilestones.length+notif.unassigned.length+notif.overloaded.length+notif.recentComments.length);
   const notifBadge = document.getElementById("navNotifBadge");
   notifBadge.textContent = notifTotal;
   notifBadge.classList.toggle("alert", notifTotal>0);
@@ -11453,26 +11663,35 @@ async function renderUsuariosView(){
       wrap.innerHTML = `<div class="t-sub" style="padding:20px 2px;">Todavía no hay cuentas registradas.</div>`;
       return;
     }
+    const myUsername = (localStorage.getItem(AUTH_USER_KEY)||"").toLowerCase();
     wrap.innerHTML = `
+      <div class="t-sub" style="margin-bottom:14px;">📩 <b>${list.length}</b> invitación${list.length===1?"":"es"} aceptada${list.length===1?"":"s"} hasta ahora. El código de invitación se administra desde el servidor (variable <code>INVITE_CODE</code>).</div>
       <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
         <thead>
           <tr style="text-align:left;color:var(--text-muted);border-bottom:1.5px solid var(--border);">
             <th style="padding:8px 6px;">Usuario</th>
             <th style="padding:8px 6px;">Correo</th>
+            <th style="padding:8px 6px;">Rol</th>
+            <th style="padding:8px 6px;">Estado</th>
             <th style="padding:8px 6px;">Creada</th>
             <th style="padding:8px 6px;"></th>
           </tr>
         </thead>
         <tbody>
-          ${list.map(u=>`
+          ${list.map(u=>{
+            const isAdminRow = u.username.toLowerCase()===myUsername;
+            return `
             <tr style="border-bottom:1px solid var(--border);">
-              <td style="padding:8px 6px;font-weight:700;">${esc(u.username)}</td>
+              <td style="padding:8px 6px;font-weight:500;">${esc(u.username)}</td>
               <td style="padding:8px 6px;">${esc(u.email||"—")}</td>
+              <td style="padding:8px 6px;">${isAdminRow?`<span class="badge" style="background:color-mix(in srgb, var(--accent-2) 16%, transparent);color:var(--accent-2);">👑 Admin</span>`:`<span class="t-sub">Miembro</span>`}</td>
+              <td style="padding:8px 6px;"><span class="badge" style="background:color-mix(in srgb, var(--success) 16%, transparent);color:var(--success);">🟢 Activa</span></td>
               <td style="padding:8px 6px;color:var(--text-muted);">${u.createdAt ? new Date(u.createdAt).toLocaleString() : "—"}</td>
               <td style="padding:8px 6px;text-align:right;">
                 <button type="button" class="btn btn-ghost btn-sm" data-delete-user="${esc(u.username)}" style="color:var(--danger);">🗑️ Eliminar</button>
               </td>
-            </tr>`).join("")}
+            </tr>`;
+          }).join("")}
         </tbody>
       </table>
       <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">${list.length} cuenta${list.length===1?"":"s"} en total.</p>`;
@@ -12192,11 +12411,9 @@ document.getElementById("welcomeOrgName").addEventListener("keydown", (e)=>{ if(
 const TOUR_STEPS = [
   { sel:"#dashHeader", view:"dashboard", title:"Tu Inicio", text:"Aquí empieza tu día. Alma te saluda según cómo vengas y te muestra lo importante sin abrumarte." },
   { sel:"#almaFab", view:"dashboard", title:"Alma, tu asistente", text:"Esta nube es Alma. Te acompaña, te pregunta cómo estás y te ayuda a organizarte — siempre con calma y sin juzgarte." },
-  { sel:"#dashAchievement", view:"dashboard", title:"Lo que sacaste adelante", text:"Cuenta todo lo que lograste hoy: reuniones y tareas juntas. Celebra tu avance, sin castigar lo que quede pendiente." },
-  { sel:"#dashMiDia", view:"dashboard", title:"Retomemos esto juntos", text:"Alma reúne aquí lo que quedó pendiente o vencido, con calma, para que lo resuelvas o lo reagendes sin presión." },
+  { sel:"#dashImpulsoPanel", view:"dashboard", title:"Impulso del día", text:"De un vistazo: cuánto llevas logrado hoy y qué tan cargada está tu agenda. Celebra tu avance, sin castigar lo que quede pendiente." },
+  { sel:"#dashAlmaDice", view:"dashboard", title:"Alma dice", text:"Un solo mensaje de Alma con lo pendiente más relevante — con calma, para que lo resuelvas o lo reagendes sin presión." },
   { sel:"#dashPlanDayBtn", view:"dashboard", title:"Organizar mi día", text:"Con un toque, Alma te propone un orden para hoy usando tus horas libres. Tú decides si lo aplicas." },
-  { sel:"#dashEquilibrio", view:"dashboard", title:"Capacidad de tu día", text:"Te muestra cuánto de tu día ya está comprometido, para que no te sobrecargues. Es una guía, no una exigencia." },
-  { sel:"#dashLifeBalance", view:"dashboard", title:"Tu equilibrio de vida", text:"Refleja en qué áreas pones tu energía (trabajo, familia, salud...). Una mirada honesta para cuidar lo que te importa." },
   { sel:"#quickAddTask", view:"dashboard", title:"Crear tareas fácil", text:"Escribe, dicta por voz o toma una foto de una lista: Alma la lee y crea las tareas por ti." },
   { sel:"#view-mytasks", view:"mytasks", title:"Mis tareas", text:"Todas tus tareas en un solo lugar. Puedes iniciar/terminar el cronómetro real, cambiar el estado tocando la píldora, editar, duplicar y filtrar en segundos." },
   { sel:"#view-projects", view:"projects", title:"Proyectos y temas", text:"Agrupa tu trabajo y tu vida en proyectos o temas (Hogar, Estudios, un cliente...). Cada uno con su color, avance y fechas. Aquí creas, editas y sigues cada tema." },
