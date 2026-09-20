@@ -12297,7 +12297,16 @@ function bootApp(){
     try{ ensureStickyToday(); }catch(e){ console.error("sticky init",e); }
     applyTheme((DB && DB.config && DB.config.theme) || "light");
     handleGoogleCalendarRedirectParams();
-    render();
+    // Enlace directo: si el link trae ?view=agendar (o cualquier otra vista
+    // válida), la app abre ahí directo en vez de en el dashboard de
+    // siempre — así un botón de un correo puede llevarte justo a donde
+    // tienes que actuar (ej. el CTA del resumen semanal → "Por agendar").
+    const deepLinkView = new URLSearchParams(window.location.search).get("view");
+    if(deepLinkView && VIEWS.includes(deepLinkView)){
+      showView(deepLinkView);
+    }else{
+      render();
+    }
     startTopbarClock();
     window.__tfpAppReady = true;
     if(DB.config.userName === "Usuario Demo") openWelcomeModal();
