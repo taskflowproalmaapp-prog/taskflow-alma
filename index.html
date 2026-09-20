@@ -11543,16 +11543,24 @@ function renderConfiguracion(){
       testBtn.disabled = true; testBtn.textContent = "Enviando…";
       try{
         await apiData("save", { data: DB }); // sincroniza YA, sin esperar el debounce, para que la prueba use tus datos más recientes
-        const res = await fetch("/.netlify/functions/send-weekly-report", {
+        const res = await fetch("/.netlify/functions/send-weekly-report-test", {
           method: "POST",
           headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ test: true, token: getAuthToken() })
+          body: JSON.stringify({ token: getAuthToken() })
         });
-        const data = await res.json();
-        if(res.ok && data.ok) toast(`✅ Te mandé un resumen de prueba a ${data.sentTo || DB.config.userEmail}. Revisa tu correo (y spam la primera vez).`,"success");
-        else toast("No se pudo enviar: " + (data.error || "error desconocido"),"error");
+        const rawText = await res.text();
+        let data = null;
+        try{ data = JSON.parse(rawText); }catch(parseErr){ /* la respuesta no fue JSON — la mostramos cruda abajo */ }
+        if(res.ok && data && data.ok){
+          toast(`✅ Te mandé un resumen de prueba a ${data.sentTo || DB.config.userEmail}. Revisa tu correo (y spam la primera vez).`,"success");
+        }else{
+          const detail = (data && data.error) || rawText.slice(0,200) || "sin detalle";
+          console.error("send-weekly-report test falló", {status: res.status, detail});
+          toast(`No se pudo enviar (código ${res.status}): ${detail}`,"error");
+        }
       }catch(e){
-        toast("No se pudo conectar con el servidor para mandar la prueba.","error");
+        console.error("send-weekly-report test — error de red", e);
+        toast("No se pudo conectar con el servidor: " + e.message,"error");
       }
       testBtn.disabled = false; testBtn.textContent = "🧪 Enviarme un resumen de prueba ahora";
     });
