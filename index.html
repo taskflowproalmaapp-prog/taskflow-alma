@@ -903,6 +903,13 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
   .kanban-card{cursor:default;}
   .kanban-card[draggable]{ -webkit-user-drag:none; }
 
+  /* --- Mis tareas: los botones (Actualizar, avatar, estado) ya no quedan
+     centrados a media altura de un título envuelto en varias líneas — se
+     van a su propia fila debajo, siempre a la izquierda. --- */
+  .tk-card{flex-wrap:wrap;align-items:flex-start;}
+  .tk-card .tk-body{flex:1 1 auto;min-width:0;}
+  .tk-actions{flex:1 1 100%;flex-wrap:wrap;margin-top:8px;margin-left:32px;}
+
   /* --- Aire y limpieza general en móvil --- */
   .view-header{margin-bottom:14px;}
   .panel{padding:16px;margin-bottom:14px;}
@@ -959,6 +966,7 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .tk-title:hover{color:var(--accent);}
 .tk-done .tk-title{text-decoration:line-through;}
 .tk-ctx{font-size:12px;color:var(--text-muted);margin-top:3px;}
+.tk-actions{display:flex;align-items:center;gap:12px;flex:none;}
 .tk-avatar{width:24px;height:24px;border-radius:50%;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;}
 .tk-avatar-empty{background:transparent!important;visibility:hidden;}
 .tk-reag{background:none;border:none;cursor:pointer;font-size:13px;opacity:.55;padding:3px 5px;border-radius:7px;flex:none;}
@@ -1441,6 +1449,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 #calHeaderSpacer{display:block;}
 #view-calendar .view-header{position:static;top:auto;margin-bottom:14px;padding-top:0;}
 #calStickyTop{padding-top:2px;}
+@media (max-width:700px){
+  /* En celular este panel vive dentro del bloque fijo (siempre visible),
+     así que si es muy alto le come espacio a la grilla de eventos de abajo.
+     Lo compactamos: sin el desglose 💼/🌿, todo en una sola fila chica. */
+  #calStatsPanel{padding:10px 12px;}
+  #calStatsPanel .panel-title{font-size:12.5px;margin-bottom:4px!important;}
+  #calStatsPanel .t-sub{display:none;}
+  #calStatsPanel > div{gap:10px!important;font-size:11.5px!important;}
+}
 #calDayRowMount .calmod-header{margin-top:0;}
 /* Debajo del bloque fijo, la tarjeta de la grilla horaria ya no tiene fila
    de días propia, así que el borde/esquinas superiores quedan planos. */
@@ -1500,6 +1517,19 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   .calmod-header-gutter,.calmod-gutter{width:44px;}
   .calmod-day-head .dnum{font-size:18px;}
   .calmod-event .ce-time,.calmod-event .ce-tag{display:none;}
+  /* Antes las 7 columnas se apretaban en la pantalla y el texto de cada
+     evento quedaba cortado letra por letra ("Ll...", "Fe..."). Ahora, como
+     en Google Calendar, cada columna tiene un ancho legible y se recorre
+     con scroll horizontal — la cabecera (días) y la fila de modalidad se
+     sincronizan con ese scroll vía JS (ver renderCalHourGrid). */
+  .calmod-header{overflow:hidden;}
+  .calmod-modality-row{overflow:hidden;}
+  .calmod-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .calmod-header-days,.calmod-modality-days,.calmod-days{width:max-content;}
+  .calmod-header-days .calmod-day-head,
+  .calmod-modality-days .calmod-modality-cell,
+  .calmod-days .calmod-day-col{flex:none;width:150px;}
+  .calmod-event .ce-title{font-size:12.5px;-webkit-line-clamp:3;}
 }
 
 /* ===== Gantt / Cronograma ===== */
@@ -1915,23 +1945,21 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
     <!-- ---------- NOTAS DEL DÍA (sticky note / libreta) ---------- -->
     <section class="view hidden" id="view-notas">
-      <div class="view-sticky-header">
-        <div class="view-header">
-          <div>
-            <h1>Memoria de Alma</h1>
-            <p>Anota lo que se te ocurra durante el día. Al cerrar la hoja, Alma lo guarda y lo convierte en tareas.</p>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-ghost" id="notasHistoryBtn" title="Ver histórico de hojas">📚 Histórico</button>
-            <button class="btn btn-ghost" id="notasCustomizeBtn" title="Personalizar mi libreta">🎨 Personalizar</button>
-          </div>
+      <div class="view-header">
+        <div>
+          <h1>Memoria de Alma</h1>
+          <p>Anota lo que se te ocurra durante el día. Al cerrar la hoja, Alma lo guarda y lo convierte en tareas.</p>
         </div>
-        <!-- La portada naranja ("Mi libreta") se monta aquí, así queda
-             fija junto con el título en vez de irse con el scroll de la
-             hoja de notas (que sí puede crecer mucho). -->
-        <div id="notasCoverMount"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" id="notasHistoryBtn" title="Ver histórico de hojas">📚 Histórico</button>
+          <button class="btn btn-ghost" id="notasCustomizeBtn" title="Personalizar mi libreta">🎨 Personalizar</button>
+        </div>
       </div>
-      <div class="view-sticky-spacer"></div>
+      <!-- La portada ("Mi libreta") va en flujo normal, justo arriba de la
+           hoja — sin position:fixed. Es una libreta corta, no hace falta
+           que quede "pegada" mientras escribes, y así evitamos por completo
+           el problema de calcular mal el espacio reservado. -->
+      <div id="notasCoverMount"></div>
       <div id="notasContainer"></div>
     </section>
 
@@ -5653,11 +5681,13 @@ function taskCardHTML(t){
       <div class="tk-title t-title-click" data-open-task="${t.id}">${done?"✓ ":""}${taskTypeBadge(t)} ${esc(t.title)}${hasIncompleteDependencies(t)?` <span class="dep-badge" title="Bloqueada por dependencias">🔒</span>`:""}</div>
       ${ctx?`<div class="tk-ctx">${esc(ctx)}</div>`:""}
     </div>
-    <span class="tk-avatar${owner?"":" tk-avatar-empty"}" ${owner?`style="background:${owner.color}" title="${esc(owner.name)}"`:""}>${owner?initials(owner.name):""}</span>
-    ${!done?`<button type="button" class="tk-update-btn" data-quick-update="${t.id}" title="Agregar actualización">💬 Actualizar</button>`:""}
-    ${Array.isArray(t.updates)&&t.updates.length?`<button type="button" class="tk-update-info" data-update-info="${t.id}" title="Ver última actualización">🕓</button>`:""}
-    ${canReag?`<button class="tk-reag" data-reag="${t.id}" title="Reagendar">🔄</button>`:""}
-    <button type="button" class="status-pill status-pill-btn tk-status" data-status-btn="${t.id}" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color};" title="Cambiar estado">${st.label} <span style="font-size:9px;opacity:.7;">▾</span></button>
+    <div class="tk-actions">
+      <span class="tk-avatar${owner?"":" tk-avatar-empty"}" ${owner?`style="background:${owner.color}" title="${esc(owner.name)}"`:""}>${owner?initials(owner.name):""}</span>
+      ${!done?`<button type="button" class="tk-update-btn" data-quick-update="${t.id}" title="Agregar actualización">💬 Actualizar</button>`:""}
+      ${Array.isArray(t.updates)&&t.updates.length?`<button type="button" class="tk-update-info" data-update-info="${t.id}" title="Ver última actualización">🕓</button>`:""}
+      ${canReag?`<button class="tk-reag" data-reag="${t.id}" title="Reagendar">🔄</button>`:""}
+      <button type="button" class="status-pill status-pill-btn tk-status" data-status-btn="${t.id}" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color};" title="Cambiar estado">${st.label} <span style="font-size:9px;opacity:.7;">▾</span></button>
+    </div>
   </div>`;
 }
 function renderTaskList(){
@@ -8679,6 +8709,22 @@ function renderCalHourGrid(daysArr, list){
         </div>
       </div>
     </div>`;
+
+  // En celular las columnas se ensanchan y se recorren con scroll horizontal
+  // (ver CSS @media max-width:700px) — esto mantiene la fila de días y la de
+  // modalidad (Oficina/Teletrabajo/Libre) pegadas visualmente a esas
+  // columnas mientras se hace ese scroll. En escritorio no pasa nada raro:
+  // ahí no hay overflow horizontal, así que translateX(0) no mueve nada.
+  const calmodScrollEl = document.getElementById("calmodScroll");
+  if(calmodScrollEl){
+    calmodScrollEl.addEventListener("scroll", ()=>{
+      const x = -calmodScrollEl.scrollLeft;
+      const hd = document.querySelector(".calmod-header-days");
+      const md = document.querySelector(".calmod-modality-days");
+      if(hd) hd.style.transform = `translateX(${x}px)`;
+      if(md) md.style.transform = `translateX(${x}px)`;
+    });
+  }
 
   document.querySelectorAll("#calBody [data-task-id]").forEach(el=>{
     el.addEventListener("click", (e)=>{ e.stopPropagation(); openCalTaskActionCloud(el, el.dataset.taskId); });
