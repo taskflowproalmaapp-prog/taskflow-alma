@@ -10,6 +10,7 @@
 
 const nodemailer = require("nodemailer");
 const { getStore } = require("@netlify/blobs");
+const { getValidGoogleAccessToken } = require("./google-helpers");
 
 function store(name) {
   const siteID = process.env.NETLIFY_SITE_ID;
@@ -27,12 +28,17 @@ function daysAgoISO(isoDate, n) {
   d.setUTCDate(d.getUTCDate() - n);
   return d.toISOString().slice(0, 10);
 }
-// Día de la semana (0=domingo…6=sábado) y hora "HH:00" según el huso horario
-// DE ESA PERSONA — para comparar contra lo que eligió en Configuración.
 function localDowAndHour(utcOffsetHours) {
   const local = new Date(Date.now() + utcOffsetHours * 3600 * 1000);
   const hh = String(local.getUTCHours()).padStart(2, "0");
   return { dow: local.getUTCDay(), hour: `${hh}:00` };
+}
+function localTimeOfDay(utcOffsetHours) {
+  const h = new Date(Date.now() + utcOffsetHours * 3600 * 1000).getUTCHours();
+  if (h < 6) return "madrugada";
+  if (h < 12) return "mañana";
+  if (h < 19) return "tarde";
+  return "noche";
 }
 
 function buildWeeklyStats(tasks, utcOffsetHours) {
@@ -42,8 +48,9 @@ function buildWeeklyStats(tasks, utcOffsetHours) {
   let completedThisWeek = 0;
   let overdueNow = 0;
   let partialNow = 0;
-  let unscheduledNow = 0; // activas, sin día+hora agendados todavía ("Por agendar")
-  const repeatedPartials = []; // títulos que quedaron "parcial" 2+ veces
+  let unscheduledNow = 0;
+  let taskHoursThisWeek = 0;
+  const repeatedPartials = [];
 
   (tasks || []).forEach((t) => {
     if (!t || t.archived) return;
@@ -55,27 +62,117 @@ function buildWeeklyStats(tasks, utcOffsetHours) {
     if (isActive && t.dueDate && t.dueDate < today) overdueNow++;
     if (isActive && !t.executionTime) unscheduledNow++;
     if (t.status === "parcial") partialNow++;
+    if (t.startDate && t.startDate >= weekAgo && t.startDate <= today) {
+      taskHoursThisWeek += t.estimatedTime || 1;
+    }
 
     const partialHits = (t.updates || []).filter((u) => u && u.status === "parcial").length;
     if (partialHits >= 2) repeatedPartials.push({ title: t.title, hits: partialHits });
   });
 
   repeatedPartials.sort((a, b) => b.hits - a.hits);
-  return { completedThisWeek, overdueNow, partialNow, unscheduledNow, repeatedPartials: repeatedPartials.slice(0, 5) };
+  return {
+    completedThisWeek, overdueNow, partialNow, unscheduledNow,
+    taskHoursThisWeek: Math.round(taskHoursThisWeek * 10) / 10,
+    repeatedPartials: repeatedPartials.slice(0, 5),
+  };
 }
 
-// Le pide a Gemini que redacte el saludo/comentario inicial en el tono de
-// Alma, PERO le pasamos los números ya calculados y le pedimos que los use
-// tal cual — la IA nunca inventa una cifra, solo la redacta con calidez.
-// Si falla por cualquier motivo (sin API key, sin cuota, sin internet), se
-// usa un saludo genérico de respaldo y el correo se manda igual.
-async function buildAiGreeting(username, stats) {
+// Igual que el panel "Tu semana en números" del Calendario, calculado en el
+// servidor. Si no tiene Google Calendar conectado, devuelve null.
+async function getWeeklyMeetingStats(username, utcOffsetHours, workCalendarIds) {
+  try {
+    const accessToken = await getValidGoogleAccessToken(username);
+    if (!accessToken) return null;
+
+    const nowLocal = new Date(Date.now() + utcOffsetHours * 3600 * 1000);
+    const timeMax = nowLocal.toISOString();
+    const weekAgoLocal = new Date(nowLocal); weekAgoLocal.setUTCDate(weekAgoLocal.getUTCDate() - 7);
+    const timeMin = weekAgoLocal.toISOString();
+
+    const listResp = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!listResp.ok) return null;
+    const listData = await listResp.json();
+    const calIds = (listData.items || []).map((c) => c.id);
+    const workSet = new Set(Array.isArray(workCalendarIds) ? workCalendarIds : []);
+
+    let workHours = 0, personalHours = 0;
+    for (const calId of calIds) {
+      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+      url.searchParams.set("timeMin", timeMin);
+      url.searchParams.set("timeMax", timeMax);
+      url.searchParams.set("singleEvents", "true");
+      url.searchParams.set("maxResults", "100");
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      (data.items || []).forEach((ev) => {
+        if (ev.status === "cancelled") return;
+        if (ev.extendedProperties && ev.extendedProperties.private && ev.extendedProperties.private.taskflowOrigin === "true") return;
+        if (!ev.start || !ev.start.dateTime || !ev.end || !ev.end.dateTime) return;
+        const h = (new Date(ev.end.dateTime) - new Date(ev.start.dateTime)) / 3600000;
+        if (h <= 0) return;
+        if (workSet.has(calId)) workHours += h; else personalHours += h;
+      });
+    }
+    return {
+      workHours: Math.round(workHours * 10) / 10,
+      personalHours: Math.round(personalHours * 10) / 10,
+      totalHours: Math.round((workHours + personalHours) * 10) / 10,
+    };
+  } catch (err) {
+    console.error("getWeeklyMeetingStats:", err.message);
+    return null;
+  }
+}
+
+// Respuesta de respaldo si Gemini falla o no hay API key — el correo se
+// manda igual, solo con un contenido más simple (nunca se cae por esto).
+function fallbackContent(username, stats) {
+  const { completedThisWeek } = stats;
+  return {
+    headline: `${username || "Hola"}, así fue tu semana`,
+    body: `Completaste ${completedThisWeek} tarea${completedThisWeek === 1 ? "" : "s"} esta semana en TaskFlow Pro.`,
+    quote: "La semana no tiene que ser perfecta para haber sido valiosa.",
+    insight: "Revisa el detalle abajo para ver dónde se fue tu tiempo.",
+    suggestion: "Dale una fecha a lo que todavía no la tiene — así no se te acumula.",
+    cta: "Ir a TaskFlow Pro",
+  };
+}
+
+// Le pide a Gemini que arme el contenido del correo en el tono de Alma —
+// coach personal, cálida, con humor suave, nunca corporativa ni robótica.
+// Le pasamos los números ya calculados y le pedimos que los use tal cual —
+// nunca inventa una cifra, solo les pone las palabras. Devuelve SIEMPRE un
+// objeto con las mismas claves (con respaldo si Gemini falla), así la
+// plantilla del correo nunca se rompe por un problema de IA.
+async function buildAiContent(username, stats, meetingStats, timeOfDay) {
+  const fallback = fallbackContent(username, stats);
   const apiKey = process.env.GEMINI_API_KEY;
-  const fallback = `Hola ${username || ""}, así te fue esta semana en TaskFlow Pro:`.trim();
   if (!apiKey) return fallback;
 
-  const { completedThisWeek, overdueNow, partialNow, unscheduledNow } = stats;
-  const prompt = `Eres "Alma", la asistente personal dentro de la app TaskFlow Pro. Escríbele a ${username || "la persona"} un saludo cálido y breve (máximo 3 frases, sin markdown, sin emojis, texto plano) para el resumen semanal de su correo. Usa EXACTAMENTE estos datos, sin inventar ni cambiar ningún número: completó ${completedThisWeek} tarea(s) esta semana, tiene ${overdueNow} tarea(s) atrasada(s) ahora mismo, ${partialNow} quedaron "parcial" (a medias), y ${unscheduledNow} todavía no tienen día y hora agendados. Tono cercano, chileno-neutro, alentador pero honesto — si hay atrasadas o sin agendar, menciónalo con suavidad, no como regaño. No repitas la palabra "resumen". No agregues saludo tipo "Estimado/a".`;
+  const { completedThisWeek, overdueNow, partialNow, unscheduledNow, taskHoursThisWeek } = stats;
+  const meetingLine = meetingStats
+    ? `Tuvo ${meetingStats.totalHours}h en reuniones esta semana (${meetingStats.workHours}h trabajo, ${meetingStats.personalHours}h personal), frente a ${taskHoursThisWeek}h planificadas en tareas.`
+    : `No tiene Google Calendar conectado, así que no hay datos de reuniones.`;
+
+  const prompt = `Eres "Alma", la coach personal dentro de la app TaskFlow Pro — cercana, honesta, con humor suave, nunca corporativa ni robótica. Es de ${timeOfDay} para ${username || "la persona"} ahora mismo.
+
+Datos EXACTOS de su semana (no inventes ni cambies ningún número): completó ${completedThisWeek} tarea(s), tiene ${overdueNow} atrasada(s) ahora mismo, ${partialNow} quedaron "parcial" (a medias), ${unscheduledNow} sin día y hora agendados todavía. ${meetingLine}
+
+Devuelve SOLO un objeto JSON válido (nada de texto antes o después, nada de markdown ni backticks) con exactamente estas claves de texto plano (sin emojis):
+{
+  "headline": "título corto y personal, 4 a 9 palabras, con su nombre si suena natural, que resuma el tono de su semana",
+  "body": "2 a 3 frases usando los datos exactos de arriba — si le fue muy bien celébrala de verdad (que se note el orgullo, sin exagerar), si le fue floja anímala con cariño sin culpa ni sermón",
+  "quote": "una frase corta tipo aforismo o coach, relacionada a su semana, sin comillas dentro del texto",
+  "insight": "1 a 2 frases: qué patrón notaste en su semana (ej: dominada por reuniones, muchas tareas a medias, buen ritmo constante, etc.) — algo específico a SUS datos, no genérico",
+  "suggestion": "1 a 2 frases: una sugerencia CONCRETA y accionable para la próxima semana, específica a lo que más le convenga según sus datos",
+  "cta": "2 a 4 palabras para un botón, en infinitivo o imperativo, ej: Planificar mi semana"
+}
+
+Tono chileno-neutro, como una amiga que te quiere ver bien, no como un jefe ni un reporte de empresa. Profesional pero cálido — nada cursi ni sobreactuado.`;
 
   try {
     const modelo = "gemini-3.5-flash-lite";
@@ -83,13 +180,26 @@ async function buildAiGreeting(username, stats) {
     const resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" },
+      }),
     });
     const datos = await resp.json();
     const texto = datos?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return (texto && texto.trim()) || fallback;
+    if (!texto) return fallback;
+    const cleaned = texto.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+    const parsed = JSON.parse(cleaned);
+    return {
+      headline: parsed.headline || fallback.headline,
+      body: parsed.body || fallback.body,
+      quote: parsed.quote || fallback.quote,
+      insight: parsed.insight || fallback.insight,
+      suggestion: parsed.suggestion || fallback.suggestion,
+      cta: parsed.cta || fallback.cta,
+    };
   } catch (err) {
-    console.error("buildAiGreeting: fallo Gemini, uso saludo de respaldo.", err.message);
+    console.error("buildAiContent: fallo Gemini/JSON, uso contenido de respaldo.", err.message);
     return fallback;
   }
 }
@@ -98,48 +208,109 @@ function escHtml(s) {
   return String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
-function buildEmailHtml(greeting, stats) {
-  const { completedThisWeek, overdueNow, partialNow, unscheduledNow, repeatedPartials } = stats;
+const SITE_URL = "https://taskflow-alma.netlify.app/?view=agendar";
 
-  const repeatedBlock = repeatedPartials.length
-    ? `<div style="margin-top:16px;padding:14px 16px;background:#FFF4E8;border-radius:12px;">
-         <div style="font-weight:700;color:#B5540A;margin-bottom:6px;">🔁 Estas se te siguen quedando a medias:</div>
-         <ul style="margin:0;padding-left:18px;color:#7C4A12;font-size:13.5px;">
-           ${repeatedPartials.map(p => `<li>${escHtml(p.title)} (quedó "parcial" ${p.hits} veces)</li>`).join("")}
-         </ul>
-         <div style="font-size:12.5px;color:#946334;margin-top:8px;">Si una tarea vuelve una y otra vez, probablemente esté pidiendo más tiempo del que le estás dando, o convenga partirla en pasos más chicos.</div>
-       </div>`
-    : "";
+// Plantilla final "Impulso" (naranjo de marca, bien marcada visualmente):
+// hero con degradado + título grande, círculo de "victoria de la semana",
+// 3 stats grandes, panel oscuro de reuniones-vs-tareas, caja de sugerencia
+// con botón, y la lista de tareas que se repiten como "parcial".
+function buildEmailHtml(content, stats, meetingStats) {
+  const { headline, body, insight, suggestion, cta } = content;
+  const { completedThisWeek, overdueNow, partialNow, unscheduledNow, taskHoursThisWeek, repeatedPartials } = stats;
+
+  const meetPct = meetingStats
+    ? Math.max(4, Math.min(100, Math.round((meetingStats.totalHours / Math.max(0.1, meetingStats.totalHours + taskHoursThisWeek)) * 100)))
+    : 0;
+
+  const balanceBlock = meetingStats ? `
+      <div style="margin-top:22px;background:#1A1025;border-radius:18px;padding:22px;">
+        <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:14px;">⏱️ Reuniones vs. tareas esta semana</div>
+        <div style="display:flex;height:18px;border-radius:9px;overflow:hidden;background:rgba(255,255,255,.12);">
+          <div style="width:${meetPct}%;background:linear-gradient(90deg,#FF7A45,#F0447A);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;color:#fff;margin-top:12px;font-weight:700;">
+          <span>🗓️ ${meetingStats.totalHours}h en reuniones</span>
+          <span>✅ ${taskHoursThisWeek}h en tareas</span>
+        </div>
+        <div style="font-size:12.5px;color:#B8A9CE;margin-top:8px;">${escHtml(insight)}</div>
+      </div>` : `
+      <div style="margin-top:22px;background:#FAF7F5;border-radius:18px;padding:20px;">
+        <div style="font-weight:800;color:#1A1025;font-size:14.5px;margin-bottom:6px;">💡 Lo que Alma detectó</div>
+        <div style="font-size:13.5px;color:#5C4A3E;line-height:1.55;">${escHtml(insight)}</div>
+      </div>`;
+
+  const decisionsBlock = repeatedPartials.length ? `
+      <div style="margin-top:24px;">
+        <div style="font-weight:900;color:#1A1025;font-size:17px;margin-bottom:14px;">🔁 Pendientes que merecen una decisión</div>
+        ${repeatedPartials.map(p => `
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;background:#FAF7F5;border-radius:12px;margin-bottom:8px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#FF7A45;flex:none;"></span>
+          <span style="font-size:14px;color:#1A1025;font-weight:600;">${escHtml(p.title)}<br><span style="color:#A99C91;font-weight:400;font-size:12.5px;">Quedó "parcial" ${p.hits} veces</span></span>
+        </div>`).join("")}
+      </div>` : "";
 
   return `
-  <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;color:#2A2019;">
-    <div style="background:linear-gradient(135deg,#FF7A45,#E8447A);border-radius:16px;padding:24px 22px;color:#fff;">
-      <div style="font-size:13px;opacity:.9;">TaskFlow Pro · Alma</div>
-      <div style="font-size:20px;font-weight:700;margin-top:4px;">Tu semana, en resumen 🌱</div>
+  <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:580px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;">
+
+    <!-- HERO -->
+    <div style="background:linear-gradient(135deg,#FF7A45 0%,#F0447A 55%,#8B5CF6 100%);padding:40px 32px 36px;color:#fff;">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.95;">✨ TASKFLOW PRO · TU RESUMEN SEMANAL</div>
+      <div style="font-size:30px;font-weight:900;margin-top:14px;line-height:1.18;letter-spacing:-.4px;">${escHtml(headline)}</div>
+      <div style="font-size:15px;opacity:.95;margin-top:14px;line-height:1.55;max-width:460px;">${escHtml(body)}</div>
     </div>
-    <div style="padding:20px 4px;">
-      <p style="font-size:14px;color:#2A2019;">${escHtml(greeting)}</p>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:110px;background:#EFFBF5;border-radius:12px;padding:14px;">
-          <div style="font-size:22px;font-weight:700;color:#1FAE7A;">${completedThisWeek}</div>
-          <div style="font-size:12.5px;color:#3D6B57;">Completadas</div>
+
+    <div style="padding:32px 28px 8px;">
+
+      <!-- VICTORIA -->
+      <div style="background:linear-gradient(135deg,#FFF3EC,#FFE8F0);border-radius:18px;padding:24px;display:flex;align-items:center;gap:20px;">
+        <div style="width:92px;height:92px;border-radius:50%;background:conic-gradient(#FF7A45 0% ${Math.min(100,completedThisWeek*7)}%, #FFDDD0 ${Math.min(100,completedThisWeek*7)}% 100%);display:flex;align-items:center;justify-content:center;flex:none;">
+          <div style="width:72px;height:72px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:28px;font-weight:900;color:#1A1025;line-height:1;">${completedThisWeek}</div>
+            <div style="font-size:9.5px;color:#8A7C6E;font-weight:700;">completadas</div>
+          </div>
         </div>
-        <div style="flex:1;min-width:110px;background:#FFF0F0;border-radius:12px;padding:14px;">
-          <div style="font-size:22px;font-weight:700;color:#E5484D;">${overdueNow}</div>
-          <div style="font-size:12.5px;color:#8A3A3C;">Atrasadas ahora</div>
-        </div>
-        <div style="flex:1;min-width:110px;background:#FFF4E8;border-radius:12px;padding:14px;">
-          <div style="font-size:22px;font-weight:700;color:#F0793C;">${partialNow}</div>
-          <div style="font-size:12.5px;color:#946334;">Quedaron "parcial"</div>
-        </div>
-        <div style="flex:1;min-width:110px;background:#F1EEFC;border-radius:12px;padding:14px;">
-          <div style="font-size:22px;font-weight:700;color:#7C5CD9;">${unscheduledNow}</div>
-          <div style="font-size:12.5px;color:#564689;">Sin agendar aún</div>
+        <div>
+          <div style="font-size:11.5px;font-weight:900;color:#E8447A;letter-spacing:.06em;">🏆 TU VICTORIA DE LA SEMANA</div>
+          <div style="font-size:16px;font-weight:800;color:#1A1025;margin-top:6px;line-height:1.3;">${escHtml(suggestion.split(".")[0] || "Seguiste avanzando esta semana.")}</div>
         </div>
       </div>
-      ${repeatedBlock}
-      <p style="font-size:12.5px;color:#7C6E64;margin-top:20px;">Lo importante es que nada se te pase — para eso está Alma. Que tengas una buena semana. 💪</p>
-      <p style="font-size:11px;color:#A99C91;margin-top:18px;">¿No quieres recibir este correo? Puedes desactivarlo en TaskFlow Pro → Configuración → Notificaciones por correo.</p>
+
+      <!-- STATS -->
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <div style="flex:1;background:#FFEDED;border-radius:16px;padding:18px 14px;text-align:center;">
+          <div style="font-size:30px;font-weight:900;color:#E5484D;">${overdueNow}</div>
+          <div style="font-size:12px;color:#B33338;font-weight:700;margin-top:2px;">Atrasadas</div>
+        </div>
+        <div style="flex:1;background:#FFF4E8;border-radius:16px;padding:18px 14px;text-align:center;">
+          <div style="font-size:30px;font-weight:900;color:#E8602A;">${partialNow}</div>
+          <div style="font-size:12px;color:#B3491E;font-weight:700;margin-top:2px;">Parciales</div>
+        </div>
+        <div style="flex:1;background:#F1EEFC;border-radius:16px;padding:18px 14px;text-align:center;">
+          <div style="font-size:30px;font-weight:900;color:#7C5CD9;">${unscheduledNow}</div>
+          <div style="font-size:12px;color:#564689;font-weight:700;margin-top:2px;">Sin agendar</div>
+        </div>
+      </div>
+
+      ${balanceBlock}
+
+      <!-- SUGERENCIA -->
+      <div style="margin-top:20px;background:linear-gradient(135deg,#FFF3EC,#FFE4EC);border-radius:18px;padding:22px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="width:28px;height:28px;border-radius:50%;background:#FF7A45;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;">+</span>
+          <span style="font-weight:900;color:#1A1025;font-size:16px;">Una mejora simple para tu próxima semana</span>
+        </div>
+        <div style="font-size:14px;color:#5C4A3E;line-height:1.6;">${escHtml(suggestion)}</div>
+        <a href="${SITE_URL}" style="display:inline-block;margin-top:16px;background:#1A1025;color:#fff;text-decoration:none;font-size:14.5px;font-weight:800;padding:14px 26px;border-radius:12px;">${escHtml(cta)} →</a>
+      </div>
+
+      ${decisionsBlock}
+
+      <div style="text-align:center;margin-top:32px;padding-bottom:30px;">
+        <div style="font-size:20px;">🌱</div>
+        <p style="font-size:14px;color:#5C4A3E;font-weight:700;margin-top:8px;">Alma te ayuda a recordar, priorizar y cerrar.</p>
+        <p style="font-size:13px;color:#A99C91;margin-top:2px;">Tú sigues tomando las decisiones.</p>
+        <p style="font-size:11px;color:#C9BEB2;margin-top:18px;">¿No quieres recibir este correo? Desactívalo en TaskFlow Pro → Configuración → Notificaciones por correo.</p>
+      </div>
     </div>
   </div>`;
 }
@@ -164,8 +335,10 @@ async function buildAndSendFor(username, data, userRec) {
 
   const utcOffsetHours = typeof cfg.utcOffsetHours === "number" ? cfg.utcOffsetHours : -4;
   const stats = buildWeeklyStats(data.tasks, utcOffsetHours);
-  const greeting = await buildAiGreeting(username, stats);
-  const html = buildEmailHtml(greeting, stats);
+  const meetingStats = await getWeeklyMeetingStats(username, utcOffsetHours, cfg.workCalendarIds);
+  const timeOfDay = localTimeOfDay(utcOffsetHours);
+  const content = await buildAiContent(username, stats, meetingStats, timeOfDay);
+  const html = buildEmailHtml(content, stats, meetingStats);
   await sendReportEmail(toEmail, html);
   return { ok: true, sentTo: toEmail };
 }
