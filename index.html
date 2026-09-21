@@ -1449,6 +1449,18 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 #calHeaderSpacer{display:block;}
 #view-calendar .view-header{position:static;top:auto;margin-bottom:14px;padding-top:0;}
 #calStickyTop{padding-top:2px;}
+.cal-stats-caret{margin-left:auto;font-size:11px;color:var(--text-faint);transition:transform .15s ease;}
+@media (max-width:700px){
+  /* El bloque fijo (título + fecha + pestañas + "Tu semana en números")
+     ocupaba casi toda la pantalla en celular y dejaba muy poco espacio
+     real para el calendario. En escritorio esto no se toca — solo aplica
+     bajo los 700px de ancho. */
+  #calHeaderSticky .view-header{display:none;} /* ya sabes que estás en Calendario, no hace falta repetirlo aquí */
+  #calStatsPanel{padding:10px 12px;}
+  #calStatsPanel .cal-stats-body{display:none;} /* plegado por defecto en celular */
+  #calStatsPanel.cal-stats-open .cal-stats-body{display:flex;} /* se despliega solo si lo tocas */
+  #calStatsPanel.cal-stats-open .cal-stats-caret{transform:rotate(180deg);}
+}
 @media (max-width:700px){
   /* En celular este panel vive dentro del bloque fijo (siempre visible),
      así que si es muy alto le come espacio a la grilla de eventos de abajo.
@@ -8498,17 +8510,22 @@ function renderCalStats(range){
   const totalMeet = s.meetWork+s.meetPersonal+s.meetOther;
   const totalTask = s.taskWork+s.taskPersonal;
   const fmt = h => (Math.round(h*10)/10) + "h";
+  // El título ahora es un botón que pliega/despliega — en celular arranca
+  // plegado (ver CSS) para no comerse toda la pantalla fija; en escritorio
+  // el CSS lo ignora y siempre se ve expandido, sin cambiar nada ahí.
+  const toggleBtn = `<button type="button" class="panel-title cal-stats-toggle" id="calStatsToggle" style="margin-bottom:8px;background:none;border:none;padding:0;cursor:pointer;width:100%;text-align:left;display:flex;align-items:center;gap:6px;font:inherit;">📊 Tu semana en números <span class="cal-stats-caret">▾</span></button>`;
   if(totalMeet+totalTask===0){
-    wrap.innerHTML = `<div class="panel-title" style="margin-bottom:4px;">📊 Tu semana en números</div><p class="t-sub" style="margin:0;">Todavía no hay reuniones ni tareas planificadas en este rango.</p>`;
-    return;
-  }
-  wrap.innerHTML = `
-    <div class="panel-title" style="margin-bottom:8px;">📊 Tu semana en números</div>
-    <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:13px;">
+    wrap.innerHTML = `${toggleBtn}<div class="cal-stats-body"><p class="t-sub" style="margin:0;">Todavía no hay reuniones ni tareas planificadas en este rango.</p></div>`;
+  }else{
+    wrap.innerHTML = `${toggleBtn}
+    <div class="cal-stats-body" style="display:flex;gap:22px;flex-wrap:wrap;font-size:13px;">
       <div><b>${fmt(totalMeet)}</b> en reuniones <span class="t-sub">(💼 ${fmt(s.meetWork)} · 🌿 ${fmt(s.meetPersonal)})</span></div>
       <div><b>${fmt(totalTask)}</b> en tareas planificadas <span class="t-sub">(💼 ${fmt(s.taskWork)} · 🌿 ${fmt(s.taskPersonal)})</span></div>
       <div><b>${fmt(totalMeet+totalTask)}</b> comprometidas en total</div>
     </div>`;
+  }
+  const btn = document.getElementById("calStatsToggle");
+  if(btn) btn.addEventListener("click", ()=>{ wrap.classList.toggle("cal-stats-open"); });
 }
 function renderCalendar(){
   const range = calendarViewRange();
