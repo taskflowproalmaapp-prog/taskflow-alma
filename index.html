@@ -1460,6 +1460,21 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   #calStatsPanel .cal-stats-body{display:none;} /* plegado por defecto en celular */
   #calStatsPanel.cal-stats-open .cal-stats-body{display:flex;} /* se despliega solo si lo tocas */
   #calStatsPanel.cal-stats-open .cal-stats-caret{transform:rotate(180deg);}
+
+  /* Toda la barra (‹ Hoy › + fecha + pestañas Semana/Día/Mes) ahora cabe
+     en UNA sola fila compacta, como Google Calendar — antes eran 2 filas
+     separadas, cada una con harto aire. */
+  .cal-toolbar{gap:8px;margin-bottom:10px;flex-wrap:nowrap;}
+  .cal-toolbar h2{font-size:14px;min-width:0;flex:1;text-align:center;white-space:nowrap;}
+  .cal-nav{gap:4px;flex:none;}
+  .cal-nav .icon-btn{width:30px;height:30px;padding:0;}
+  .cal-nav #calToday{padding:6px 10px;font-size:12.5px;}
+  .cal-toggle{flex:none;}
+  .cal-toggle button{padding:7px 10px;font-size:12px;}
+  #calStickyTop{padding-top:0;}
+  .calmod-day-head{padding:8px 4px;}
+  .calmod-day-head .dname{font-size:10px;}
+  .calmod-day-head.is-today .dnum{width:32px;height:32px;font-size:14px;margin-top:2px;}
 }
 @media (max-width:700px){
   /* En celular este panel vive dentro del bloque fijo (siempre visible),
@@ -8776,13 +8791,22 @@ function renderCalHourGrid(daysArr, list){
 function renderCalWeek(list){
   const start = startOfWeek(calState.anchor);
   const end = new Date(start); end.setDate(start.getDate()+6);
-  document.getElementById("calTitle").textContent = `${start.getDate()} ${MONTH_LABELS[start.getMonth()].slice(0,3)} — ${end.getDate()} ${MONTH_LABELS[end.getMonth()].slice(0,3)} ${end.getFullYear()}`;
+  const isMobile = window.innerWidth <= 700;
+  const sameMonth = start.getMonth()===end.getMonth();
+  document.getElementById("calTitle").textContent = isMobile
+    ? (sameMonth
+        ? `${start.getDate()}–${end.getDate()} ${MONTH_LABELS[end.getMonth()].slice(0,3)}`
+        : `${start.getDate()} ${MONTH_LABELS[start.getMonth()].slice(0,3)} – ${end.getDate()} ${MONTH_LABELS[end.getMonth()].slice(0,3)}`)
+    : `${start.getDate()} ${MONTH_LABELS[start.getMonth()].slice(0,3)} — ${end.getDate()} ${MONTH_LABELS[end.getMonth()].slice(0,3)} ${end.getFullYear()}`;
   const days = []; for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); days.push(d); }
   renderCalHourGrid(days, list);
 }
 function renderCalDay(list){
   const d = new Date(calState.anchor);
-  const dateStr = d.toLocaleDateString("es-ES",{weekday:"long", day:"numeric", month:"long"});
+  const isMobile = window.innerWidth <= 700;
+  const dateStr = isMobile
+    ? d.toLocaleDateString("es-ES",{weekday:"short", day:"numeric", month:"short"})
+    : d.toLocaleDateString("es-ES",{weekday:"long", day:"numeric", month:"long"});
   document.getElementById("calTitle").textContent = dateStr.charAt(0).toUpperCase()+dateStr.slice(1);
   renderCalHourGrid([d], list);
 }
