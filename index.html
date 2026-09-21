@@ -1450,13 +1450,16 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 #view-calendar .view-header{position:static;top:auto;margin-bottom:14px;padding-top:0;}
 #calStickyTop{padding-top:2px;}
 .cal-stats-caret{margin-left:auto;font-size:11px;color:var(--text-faint);transition:transform .15s ease;}
-@media (max-width:700px){
+@media (max-width:700px), (max-height:480px){
   /* El bloque fijo (título + fecha + pestañas + "Tu semana en números")
      ocupaba casi toda la pantalla en celular y dejaba muy poco espacio
-     real para el calendario. En escritorio esto no se toca — solo aplica
-     bajo los 700px de ancho. */
+     real para el calendario. En escritorio esto no se toca — aplica bajo
+     los 700px de ancho, O si la pantalla es baja (celular acostado/
+     landscape, donde el ancho puede superar 700px pero la altura es muy
+     poca). */
   #calHeaderSticky .view-header{display:none;} /* ya sabes que estás en Calendario, no hace falta repetirlo aquí */
-  #calStatsPanel{padding:10px 12px;}
+  #calStatsPanel{padding:8px 12px;}
+  #calStatsPanel .panel-title{font-size:12px;}
   #calStatsPanel .cal-stats-body{display:none;} /* plegado por defecto en celular */
   #calStatsPanel.cal-stats-open .cal-stats-body{display:flex;} /* se despliega solo si lo tocas */
   #calStatsPanel.cal-stats-open .cal-stats-caret{transform:rotate(180deg);}
@@ -1464,26 +1467,26 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   /* Toda la barra (‹ Hoy › + fecha + pestañas Semana/Día/Mes) ahora cabe
      en UNA sola fila compacta, como Google Calendar — antes eran 2 filas
      separadas, cada una con harto aire. */
-  .cal-toolbar{gap:8px;margin-bottom:10px;flex-wrap:nowrap;}
-  .cal-toolbar h2{font-size:14px;min-width:0;flex:1;text-align:center;white-space:nowrap;}
+  .cal-toolbar{gap:8px;margin-bottom:8px;flex-wrap:nowrap;}
+  .cal-toolbar h2{font-size:13px;min-width:0;flex:1;text-align:center;white-space:nowrap;}
   .cal-nav{gap:4px;flex:none;}
-  .cal-nav .icon-btn{width:30px;height:30px;padding:0;}
-  .cal-nav #calToday{padding:6px 10px;font-size:12.5px;}
+  .cal-nav .icon-btn{width:28px;height:28px;padding:0;}
+  .cal-nav #calToday{padding:5px 9px;font-size:12px;}
   .cal-toggle{flex:none;}
-  .cal-toggle button{padding:7px 10px;font-size:12px;}
+  .cal-toggle button{padding:6px 9px;font-size:11.5px;}
   #calStickyTop{padding-top:0;}
-  .calmod-day-head{padding:8px 4px;}
-  .calmod-day-head .dname{font-size:10px;}
-  .calmod-day-head.is-today .dnum{width:32px;height:32px;font-size:14px;margin-top:2px;}
-}
-@media (max-width:700px){
-  /* En celular este panel vive dentro del bloque fijo (siempre visible),
-     así que si es muy alto le come espacio a la grilla de eventos de abajo.
-     Lo compactamos: sin el desglose 💼/🌿, todo en una sola fila chica. */
-  #calStatsPanel{padding:10px 12px;}
-  #calStatsPanel .panel-title{font-size:12.5px;margin-bottom:4px!important;}
-  #calStatsPanel .t-sub{display:none;}
-  #calStatsPanel > div{gap:10px!important;font-size:11.5px!important;}
+  /* La fila de días (LUN 14, MAR 15...) más baja y compacta — antes cada
+     número era casi tan grande como en escritorio, ocupando mucha altura
+     fija de golpe. */
+  /* La fila de días (LUN 14, MAR 15...) en UNA sola línea (nombre + número
+     lado a lado) en vez de apilados en 2 líneas — así baja casi a la mitad
+     de alto. */
+  .calmod-day-head{padding:5px 2px;display:flex;align-items:center;justify-content:center;gap:4px;}
+  .calmod-day-head .dname{font-size:9.5px;margin:0;}
+  .calmod-day-head .dnum{font-size:13px;margin:0;line-height:1;}
+  .calmod-day-head.is-today{gap:5px;}
+  .calmod-day-head.is-today .dnum{width:20px;height:20px;font-size:11px;margin:0;}
+  .calmod-modality-cell{padding:3px 2px;font-size:9.5px;}
 }
 #calDayRowMount .calmod-header{margin-top:0;}
 /* Debajo del bloque fijo, la tarjeta de la grilla horaria ya no tiene fila
@@ -8791,7 +8794,7 @@ function renderCalHourGrid(daysArr, list){
 function renderCalWeek(list){
   const start = startOfWeek(calState.anchor);
   const end = new Date(start); end.setDate(start.getDate()+6);
-  const isMobile = window.innerWidth <= 700;
+  const isMobile = window.innerWidth <= 700 || window.innerHeight <= 480;
   const sameMonth = start.getMonth()===end.getMonth();
   document.getElementById("calTitle").textContent = isMobile
     ? (sameMonth
@@ -8803,7 +8806,7 @@ function renderCalWeek(list){
 }
 function renderCalDay(list){
   const d = new Date(calState.anchor);
-  const isMobile = window.innerWidth <= 700;
+  const isMobile = window.innerWidth <= 700 || window.innerHeight <= 480;
   const dateStr = isMobile
     ? d.toLocaleDateString("es-ES",{weekday:"short", day:"numeric", month:"short"})
     : d.toLocaleDateString("es-ES",{weekday:"long", day:"numeric", month:"long"});
