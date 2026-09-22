@@ -3499,6 +3499,8 @@ function initials(name){
  * Estado / persistencia
  * ---------------------------------------------------------------------- */
 let DB = null;
+const _pasteImageHandlers = new Map();
+let _pasteImageListenerAttached = false;
 // Versión de los datos: al subir este número, la próxima vez que se abra la
 // app se retiran las tareas/proyectos/responsables de piloto o prueba,
 // conservando las preferencias ya configuradas (tema, nombre, formato, etc.).
@@ -12982,8 +12984,6 @@ async function extractSubjectsFromParsed(raw, listId, statusId){
 // visible en pantalla en ese momento — así no interfiere con otras
 // pantallas. Se registra UNA sola vez por gatillo (más abajo, junto a los
 // demás listeners globales), no cada vez que se vuelve a dibujar la vista.
-const _pasteImageHandlers = new Map();
-let _pasteImageListenerAttached = false;
 function enablePasteImage(triggerSelector, onImage){
   // El handler se actualiza cada vez que se llama (algunos, como el de la
   // ficha de tarea, cambian de contexto cada vez que se abre un modal
