@@ -1114,6 +1114,13 @@ table.task-table{width:100%;border-collapse:collapse;font-size:12.8px;}
 .af-question{font-size:21px;font-weight:700;color:#3A2F5C;line-height:1.3;margin-bottom:6px;}
 .alma-form.ia .af-question{color:#5C2F44;}
 .af-hint{font-size:13px;color:#8B7BA5;margin-bottom:4px;}
+.askalma-log{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px;margin-top:10px;}
+.askalma-msg{display:flex;gap:8px;align-items:flex-start;}
+.askalma-msg.user{flex-direction:row-reverse;}
+.askalma-avatar{width:26px;height:26px;border-radius:50%;background:color-mix(in srgb, var(--accent-3) 16%, var(--surface));display:flex;align-items:center;justify-content:center;font-size:13px;flex:none;}
+.askalma-bubble{max-width:78%;font-size:13.5px;line-height:1.5;padding:9px 13px;border-radius:14px;background:var(--surface-alt);color:var(--text);}
+.askalma-msg.user .askalma-bubble{background:var(--accent-3);color:#fff;border-bottom-right-radius:4px;}
+.askalma-msg.alma .askalma-bubble{border-bottom-left-radius:4px;}
 .af-task-name{font-size:13.5px;color:#A08BC0;margin-bottom:18px;font-style:italic;}
 .af-control{margin-bottom:20px;}
 .af-choices{display:flex;gap:12px;flex-wrap:wrap;}
@@ -1560,6 +1567,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   .calmod-modality-days .calmod-modality-cell,
   .calmod-days .calmod-day-col{flex:none;width:150px;}
   .calmod-event .ce-title{font-size:12.5px;-webkit-line-clamp:3;}
+  /* La columna de las horas (2 PM, 3 PM...) queda "congelada" a la
+     izquierda mientras solo los días se mueven con el scroll horizontal —
+     como la primera columna fija de una hoja de cálculo. Antes se iba con
+     el resto y perdías de vista la hora al desplazarte hacia días
+     posteriores. */
+  .calmod-gutter{position:sticky;left:0;z-index:5;background:var(--cal-card);}
+  .calmod-header-gutter{position:sticky;left:0;z-index:6;background:var(--cal-card);}
+  .calmod-modality-gutter{position:sticky;left:0;z-index:6;background:color-mix(in srgb, var(--accent) 4%, var(--cal-card));}
 }
 
 /* ===== Gantt / Cronograma ===== */
@@ -2306,9 +2321,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <button type="button" data-dow="domingo">D</button>
             </div>
           </div>
-          <div class="form-grid" style="margin-bottom:12px;">
-            <div class="form-field"><label>Hora de inicio</label><input type="time" id="cf_workStart"></div>
-            <div class="form-field"><label>Hora de término</label><input type="time" id="cf_workEnd"></div>
+          <div class="form-field full" style="margin-bottom:12px;">
+            <label style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Horario por día</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_copyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
+            </label>
+            <div id="cf_perDayHours" style="margin-top:8px;"></div>
+            <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Alma va a respetar estos horarios exactos al sugerirte cuándo hacer tus tareas de trabajo.</div>
           </div>
           <div class="form-field full hidden" id="cf_hybridDaysWrap" style="margin-bottom:4px;">
             <label>¿Qué días vas presencial?</label>
@@ -6430,7 +6449,21 @@ function needsScheduling(t){
 }
 const CAL_DAY_START_MIN = 8*60, CAL_DAY_END_MIN = 20*60; // ventana razonable para sugerir horarios: 08:00–20:00
 function dowNameFor(date){ return DOW_ORDER[(date.getDay()+6)%7]; }
-function busySlotsForDate(iso, taskType){
+// Ventana de trabajo REAL de un día concreto (en minutos desde medianoche),
+// usando el horario por día que la persona configuró. Si ese día no es un
+// día de trabajo, devuelve null.
+function workWindowForDate(iso){
+  const ws = DB.config.workSchedule;
+  if(!ws || !ws.mode) return null;
+  const dow = dowNameFor(new Date(iso+"T00:00:00"));
+  if(!(ws.days||[]).includes(dow)) return null;
+  const perDay = (ws.perDayHours && ws.perDayHours[dow]) || null;
+  const start = perDay ? perDay.start : ws.startTime;
+  const end = perDay ? perDay.end : ws.endTime;
+  if(!start || !end) return null;
+  return { start: timeToMinutes(start), end: timeToMinutes(end) };
+}
+function busySlotsForDate(iso, taskType, allowException){
   const busy = [];
   DB.tasks.forEach(t=>{
     if((t.status!=="completada"&&t.status!=="cancelada") && t.startDate===iso && t.executionTime){
@@ -6456,16 +6489,28 @@ function busySlotsForDate(iso, taskType){
     });
   });
 
-  // horario laboral — solo cuenta como "ocupado" para tareas personales; una tarea
-  // laboral obviamente puede ir justo en ese horario.
-  const ws = DB.config.workSchedule;
-  if(ws && ws.mode && taskType!=="laboral" && (ws.days||[]).includes(dow) && ws.startTime && ws.endTime){
-    busy.push([timeToMinutes(ws.startTime), timeToMinutes(ws.endTime)]);
+  const workWin = workWindowForDate(iso);
+  if(taskType==="laboral" && !allowException){
+    // Regla dura: una tarea laboral SOLO puede caer dentro de tu jornada real
+    // de ese día — se bloquea todo lo de afuera. Si ese día no es de trabajo,
+    // se bloquea el día completo. "allowException" es la válvula de escape:
+    // se activa solo cuando TÚ confirmas explícitamente hacer una excepción
+    // (ver renderAlmaIaDays) — Alma nunca lo decide por su cuenta.
+    if(!workWin){
+      busy.push([CAL_DAY_START_MIN, CAL_DAY_END_MIN]);
+    }else{
+      if(workWin.start>CAL_DAY_START_MIN) busy.push([CAL_DAY_START_MIN, workWin.start]);
+      if(workWin.end<CAL_DAY_END_MIN) busy.push([workWin.end, CAL_DAY_END_MIN]);
+    }
+  }else if(taskType!=="laboral"){
+    // horario laboral — cuenta como "ocupado" para tareas personales; una tarea
+    // laboral obviamente puede ir justo en ese horario (regla de arriba).
+    if(workWin) busy.push([workWin.start, workWin.end]);
   }
 
   return busy.sort((a,b)=>a[0]-b[0]);
 }
-function findFreeSlots(estimatedHours, startOffsetDays, scanDays, taskType){
+function findFreeSlots(estimatedHours, startOffsetDays, scanDays, taskType, allowException){
   startOffsetDays = startOffsetDays || 0;
   scanDays = scanDays || 7;
   const durMin = Math.max(30, Math.round((estimatedHours||1)*60));
@@ -6473,7 +6518,7 @@ function findFreeSlots(estimatedHours, startOffsetDays, scanDays, taskType){
   for(let d=startOffsetDays; d<startOffsetDays+scanDays && slots.length<3; d++){
     const date = new Date(); date.setDate(date.getDate()+d); date.setHours(0,0,0,0);
     const iso = isoOf(date);
-    const busy = busySlotsForDate(iso, taskType);
+    const busy = busySlotsForDate(iso, taskType, allowException);
     let cursor = CAL_DAY_START_MIN;
     if(iso===TODAY()){
       const now = new Date();
@@ -6492,9 +6537,9 @@ function findFreeSlots(estimatedHours, startOffsetDays, scanDays, taskType){
 }
 // Devuelve TODOS los huecos libres de un día (no solo el primero), cada uno con
 // duración >= la estimada. Respeta la hora actual si es hoy.
-function freeSlotsForDate(iso, durMin, taskType, title){
+function freeSlotsForDate(iso, durMin, taskType, title, allowException){
   durMin = Math.max(30, durMin||60);
-  const busy = busySlotsForDate(iso, taskType);
+  const busy = busySlotsForDate(iso, taskType, allowException);
   const free = [];
   let cursor = CAL_DAY_START_MIN;
   if(iso===TODAY()){
@@ -6530,8 +6575,8 @@ function freeSlotsForDate(iso, durMin, taskType, title){
   return free;
 }
 // Total de minutos libres de un día (para mostrar "N horas libres").
-function freeMinutesForDate(iso, taskType){
-  const busy = busySlotsForDate(iso, taskType);
+function freeMinutesForDate(iso, taskType, allowException){
+  const busy = busySlotsForDate(iso, taskType, allowException);
   let cursor = CAL_DAY_START_MIN, total = 0;
   if(iso===TODAY()){
     const now = new Date();
@@ -7330,6 +7375,135 @@ function askAlmaScheduleMode(tid, title){
     openAlmaScheduleForm(tid, b.dataset.mode);
   }));
 }
+// ---------------------------------------------------------------------- //
+// "Pregúntale directo a Alma": en vez del formulario paso a paso, un chat
+// libre — escribes o dictas algo como "revisa mi agenda, ¿cuándo puedo
+// hacer esto?" y Alma responde de verdad, usando las mismas funciones
+// reales de disponibilidad (nunca inventa horarios ni huecos). Coexiste
+// con "Manual" e "IA" — es una tercera puerta, no un reemplazo.
+// ---------------------------------------------------------------------- //
+let askAlmaChatState = null;
+function openAskAlmaChat(tid){
+  const t = byId(DB.tasks, tid);
+  if(!t) return;
+  askAlmaChatState = { tid, messages: [] };
+  renderAskAlmaChat();
+}
+function renderAskAlmaChat(){
+  const stt = askAlmaChatState;
+  if(!stt) return;
+  const t = byId(DB.tasks, stt.tid);
+  if(!t){ closeGenericModal(); return; }
+  const log = stt.messages.map(m=>`
+    <div class="askalma-msg ${m.role}">
+      ${m.role==="alma" ? `<div class="askalma-avatar">💜</div>` : ""}
+      <div class="askalma-bubble">${esc(m.text)}${m.slot?`
+        <button type="button" class="btn btn-primary btn-sm" style="margin-top:8px;" data-apply-ask-slot="${m.slot.id}">
+          📅 Agendar ${slotDayLabel(m.slot.iso, new Date(m.slot.iso+"T00:00:00"))} a las ${minutesTo12h(timeToMinutes(m.slot.hhmm))}
+        </button>`:""}
+      </div>
+    </div>`).join("");
+  const html = `
+    <div class="alma-form manual" style="max-width:460px;">
+      <div class="af-head">
+        <div class="af-orb"></div>
+        <div><div class="af-name">Alma</div><div class="af-sub">pregúntame lo que quieras sobre tu agenda</div></div>
+      </div>
+      <div class="af-task-name">“${esc(t.title)}”</div>
+      <div class="askalma-log" id="askAlmaLog">
+        ${log || `<div class="af-hint">Por ejemplo: "¿cuándo tengo espacio esta semana?" o "revisa mi agenda y dime si puedo el viernes".</div>`}
+      </div>
+      <div class="askalma-input-row" style="display:flex;gap:8px;margin-top:10px;">
+        <input type="text" id="askAlmaInput" placeholder="Escribe tu pregunta…" style="flex:1;">
+        <button type="button" class="btn btn-primary" id="askAlmaSend">Enviar</button>
+      </div>
+      <div class="af-actions" style="margin-top:12px;">
+        <button class="af-back" id="askAlmaBack">← Volver</button>
+      </div>
+    </div>`;
+  openGenericModal("", html);
+  document.getElementById("genericModalTitle").style.display = "none";
+  const logEl = document.getElementById("askAlmaLog");
+  if(logEl) logEl.scrollTop = logEl.scrollHeight;
+  const input = document.getElementById("askAlmaInput");
+  const send = document.getElementById("askAlmaSend");
+  const doSend = ()=>{
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = "";
+    submitAskAlmaMessage(text);
+  };
+  if(send) send.addEventListener("click", doSend);
+  if(input){
+    input.addEventListener("keydown", e=>{ if(e.key==="Enter") doSend(); });
+    input.focus();
+  }
+  document.querySelectorAll("[data-apply-ask-slot]").forEach(b=>b.addEventListener("click", ()=>{
+    const [diso, hhmm] = b.dataset.applyAskSlot.split("|");
+    t.startDate = diso; t.executionTime = hhmm; t.updatedAt = TODAY();
+    logActivity("task_updated", `Agendaste "${t.title}" para ${fmtDate(diso)} a las ${hhmm} (charla con Alma).`);
+    recomputeAll(); saveDB(); closeGenericModal(); render();
+    syncTaskToGoogleCalendar(t);
+    toast(`✨ Agendé "${t.title}" para ${slotDayLabel(diso,new Date(diso+"T00:00:00"))} a las ${minutesTo12h(timeToMinutes(hhmm))}.`,"success");
+  }));
+  const back = document.getElementById("askAlmaBack");
+  if(back) back.addEventListener("click", ()=>{ askAlmaChatState = null; closeGenericModal(); });
+}
+async function submitAskAlmaMessage(text){
+  const stt = askAlmaChatState;
+  if(!stt) return;
+  const t = byId(DB.tasks, stt.tid);
+  if(!t) return;
+  stt.messages.push({ role:"user", text });
+  stt.messages.push({ role:"alma", text:"…pensando", pending:true });
+  renderAskAlmaChat();
+  // Contexto real: los próximos 14 días de huecos, calculados con las
+  // MISMAS funciones deterministas que usa el resto de la app (respeta tu
+  // jornada real, si es laboral/personal, y una excepción si ya la
+  // confirmaste antes en esta conversación). La IA solo puede elegir entre
+  // estos slot_id — nunca inventa un horario que no exista de verdad.
+  const durMin = Math.max(30, Math.round((t.estimatedTime||1)*60));
+  const daySlots = [];
+  for(let d=0; d<14; d++){
+    const dd = new Date(); dd.setDate(dd.getDate()+d); dd.setHours(0,0,0,0);
+    const iso = isoOf(dd);
+    if(t.dueDate && iso>t.dueDate) break;
+    const free = freeSlotsForDate(iso, durMin, t.taskType, t.title, stt.allowException);
+    if(!free.length) continue;
+    daySlots.push({ iso, dow: dowNameFor(dd), daysAway:d,
+      slots: free.slice(0,4).map(s=>({ id:`${iso}|${minutesToHHMM(s.start)}`, start:minutesToHHMM(s.start), end:minutesToHHMM(s.end) })) });
+  }
+  const history = stt.messages.filter(m=>!m.pending).map(m=>`${m.role==="user"?"Usuario":"Alma"}: ${m.text}`).join("\n");
+  const prompt = `Eres Alma, la asistente personal dentro de TaskFlow Pro — cálida, directa, nunca robótica. La persona te está preguntando algo, en lenguaje libre, sobre cuándo agendar esta tarea.
+
+TAREA: "${t.title}" — tipo: ${t.taskType==="personal"?"personal":"laboral"} — dura ${t.estimatedTime||1}h — vence: ${t.dueDate?fmtDate(t.dueDate):"sin fecha límite"}.
+
+HUECOS REALES DISPONIBLES (ya calculados por la app, respetando su jornada laboral real; SOLO puedes mencionar/sugerir horarios que estén en esta lista, nunca inventes uno):
+${JSON.stringify(daySlots)}
+
+CONVERSACIÓN HASTA AHORA:
+${history}
+
+Responde a su último mensaje de forma natural y breve (2-4 frases), en español chileno-neutro. Si tiene sentido recomendar un momento concreto, elige el slot_id más adecuado de la lista de arriba. Si no hay ningún hueco que sirva para lo que pide, dilo con honestidad, sin inventar nada.
+
+Responde SOLO JSON válido: {"reply":"<tu respuesta>", "suggested_slot_id": "<un id de la lista, o null>"}`;
+  try{
+    const raw = await askAI(prompt);
+    const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
+    stt.messages = stt.messages.filter(m=>!m.pending);
+    let slot = null;
+    if(parsed.suggested_slot_id){
+      const [diso, hhmm] = parsed.suggested_slot_id.split("|");
+      if(diso && hhmm) slot = { id: parsed.suggested_slot_id, iso: diso, hhmm };
+    }
+    stt.messages.push({ role:"alma", text: parsed.reply || "No estoy segura, ¿puedes reformular la pregunta?", slot });
+  }catch(err){
+    console.error("submitAskAlmaMessage:", err.message);
+    stt.messages = stt.messages.filter(m=>!m.pending);
+    stt.messages.push({ role:"alma", text:"No pude pensarlo bien esta vez (puede ser un problema de conexión). ¿Intentamos de nuevo?" });
+  }
+  if(askAlmaChatState===stt) renderAskAlmaChat();
+}
 function openAlmaScheduleForm(tid, mode){
   const t = byId(DB.tasks, tid);
   if(!t) return;
@@ -7615,12 +7789,12 @@ async function tryAlmaSlotIntelligence(tid){
   const t = byId(DB.tasks, tid);
   if(!t) return;
   try{
-    const { days } = almaIaDayCandidates(t, stt.urgency, Math.max(stt.daysShown, 5));
+    const { days } = almaIaDayCandidates(t, stt.urgency, Math.max(stt.daysShown, 5), stt.allowException);
     if(!days.length) return;
     const durMin = Math.max(30, Math.round((t.estimatedTime||1)*60));
     const daySlots = days.map(dy=>{
-      const ctx = buildDayContext(dy.iso, t.taskType);
-      const free = freeSlotsForDate(dy.iso, durMin, t.taskType, t.title);
+      const ctx = buildDayContext(dy.iso, t.taskType, stt.allowException);
+      const free = freeSlotsForDate(dy.iso, durMin, t.taskType, t.title, stt.allowException);
       return { iso: dy.iso, label: slotDayLabel(dy.iso, dy.date), modality: ctx.modality,
                loadLevel: ctx.loadLevel, commitments: ctx.commitments,
                freeHours: Math.round(ctx.freeMin/60), daysAway: ctx.daysAway,
@@ -7733,7 +7907,7 @@ function renderAlmaIaDays(extend){
   const t = byId(DB.tasks, stt.tid);
   if(extend) stt.daysShown = (stt.daysShown||3) + 3;
   const howMany = stt.daysShown || 3;
-  const { days, forcedByDue } = almaIaDayCandidates(t, stt.urgency, howMany);
+  const { days, forcedByDue, needsExceptionOffer } = almaIaDayCandidates(t, stt.urgency, howMany, stt.allowException);
   // si la IA devolvió un orden, respetarlo
   let orderedDays = days;
   if(stt.aiOrder && stt.aiOrder.length){
@@ -7744,12 +7918,17 @@ function renderAlmaIaDays(extend){
   const urgencyLabel = stt.urgency==="asap"?"cuanto antes":stt.urgency==="calm"?"con calma":"esta semana";
   const durMin = Math.max(30, Math.round((t.estimatedTime||1)*60));
   const rows = orderedDays.length ? orderedDays.map(dy=>{
-    const mins = freeMinutesForDate(dy.iso, t.taskType);
+    const mins = freeMinutesForDate(dy.iso, t.taskType, stt.allowException);
     return `<button class="ia-slot" data-day="${dy.iso}">
       <span class="ia-slot-day">${slotDayLabel(dy.iso, dy.date)}</span>
       <span class="ia-free">● ${freeHoursLabel(mins)}</span>
     </button>`;
-  }).join("") : `<div class="af-hint">No encontré días con espacio libre. Prueba con otra urgencia o revisa tu agenda.</div>`;
+  }).join("") : (needsExceptionOffer
+    ? `<div class="ia-due-note" style="background:color-mix(in srgb, var(--warning) 14%, transparent);border-color:color-mix(in srgb, var(--warning) 30%, transparent);">
+        ⚠️ No encontré ningún hueco dentro de tu jornada laboral real antes de que venza. ¿Hacemos una excepción por esta vez y buscamos también fuera de tu horario habitual?
+      </div>
+      <button type="button" class="btn btn-primary" id="afConfirmException" style="width:100%;margin-top:10px;">Sí, buscar una excepción</button>`
+    : `<div class="af-hint">No encontré días con espacio libre. Prueba con otra urgencia o revisa tu agenda.</div>`);
   const html = `
     <div class="alma-form ia">
       <div class="af-head">
@@ -7774,6 +7953,12 @@ function renderAlmaIaDays(extend){
   }));
   const more = document.getElementById("iaMoreDays");
   if(more) more.addEventListener("click", ()=>renderAlmaIaDays(true));
+  const confirmException = document.getElementById("afConfirmException");
+  if(confirmException) confirmException.addEventListener("click", ()=>{
+    stt.allowException = true;
+    logActivity("task_updated", `Confirmaste hacer una excepción de horario para "${t.title}".`);
+    renderAlmaIaDays();
+  });
   const back = document.getElementById("afBackToForm");
   if(back) back.addEventListener("click", ()=>{
     const steps = almaSteps();
@@ -7788,7 +7973,7 @@ function renderAlmaIaHours(){
   const iso = stt.selectedDay;
   const date = new Date(iso+"T00:00:00");
   const durMin = Math.max(30, Math.round((t.estimatedTime||1)*60));
-  const free = freeSlotsForDate(iso, durMin, t.taskType, t.title);
+  const free = freeSlotsForDate(iso, durMin, t.taskType, t.title, stt.allowException);
   // Alma destaca un hueco. Si la IA eligió una hora para ESTE día, se usa esa con su
   // razón; si no, el criterio local (reglas simples).
   let best = pickBestSlot(free, t, iso);
@@ -7853,13 +8038,13 @@ function dayModality(iso){
   return ws.mode==="teletrabajo" ? "teletrabajo" : "oficina";
 }
 // Contexto de carga de un día: nº de compromisos, minutos ocupados, modalidad.
-function buildDayContext(iso, taskType){
-  const busy = busySlotsForDate(iso, taskType);
+function buildDayContext(iso, taskType, allowException){
+  const busy = busySlotsForDate(iso, taskType, allowException);
   let busyMin = 0; busy.forEach(([s,e])=>busyMin += Math.max(0,e-s));
   // contar compromisos "reales" (tareas + eventos), sin contar el bloque de jornada laboral entero
   let commitments = DB.tasks.filter(x=>x.status!=="completada" && x.startDate===iso && x.executionTime).length;
   if(iso===TODAY()) commitments += getDemoEventsToday().length;
-  const freeMin = freeMinutesForDate(iso, taskType);
+  const freeMin = freeMinutesForDate(iso, taskType, allowException);
   const daysAway = Math.round((new Date(iso+"T00:00:00") - new Date(TODAY()+"T00:00:00"))/86400000);
   return { iso, modality: dayModality(iso), commitments, busyMin, freeMin, daysAway,
            dow: dowNameFor(new Date(iso+"T00:00:00")),
@@ -7900,7 +8085,7 @@ CRITERIOS:
 - Respeta el horizonte elegido, pero la fecha límite SIEMPRE manda.
 - NUNCA apuntes al último día disponible si hay una alternativa razonable antes: deja margen para imprevistos.
 - Prefiere días equilibrados; evita días ya muy cargados aunque tengan un hueco.
-- No metas tareas personales dentro del horario de oficina salvo que no haya mejor opción.
+- IMPORTANTE: estas ventanas YA vienen filtradas por la app según si la tarea es laboral o personal — si es laboral, ya están limitadas a la jornada laboral real de esa persona (o, si aceptó una excepción, pueden incluir horario fuera de jornada; en ese caso, dilo con cuidado en tu razón, reconociendo que es una excepción).
 - Si ninguna ventana es realmente buena, elige la menos mala y adviértelo.
 
 Responde SOLO JSON válido:
@@ -7965,7 +8150,7 @@ function pickBestSlot(free, t, iso){
 }
 // Devuelve DÍAS candidatos (con huecos suficientes) según la urgencia, ordenados
 // por conveniencia (carga del día, anticipación a la fecha límite, tipo de tarea).
-function almaIaDayCandidates(t, urgency, howMany){
+function almaIaDayCandidates(t, urgency, howMany, allowException){
   howMany = howMany || 3;
   const durMin = Math.max(30, Math.round((t.estimatedTime||1)*60));
   let daysToDue = null;
@@ -7984,10 +8169,14 @@ function almaIaDayCandidates(t, urgency, howMany){
     if(daysToDue!==null && d>daysToDue) continue;
     const dd = new Date(); dd.setDate(dd.getDate()+d); dd.setHours(0,0,0,0);
     const iso = isoOf(dd);
-    if(freeSlotsForDate(iso, durMin, t.taskType, t.title).length===0) continue;
-    pool.push({ iso, date: dd, ctx: buildDayContext(iso, t.taskType) });
+    if(freeSlotsForDate(iso, durMin, t.taskType, t.title, allowException).length===0) continue;
+    pool.push({ iso, date: dd, ctx: buildDayContext(iso, t.taskType, allowException) });
   }
-  if(!pool.length) return { days: [], forcedByDue };
+  // Si es una tarea laboral y no encontramos NINGÚN hueco dentro de tu jornada
+  // real antes del vencimiento, no se inventa nada — se avisa para que TÚ
+  // decidas si hacer una excepción (ver renderAlmaIaDays).
+  const needsExceptionOffer = !pool.length && t.taskType==="laboral" && !allowException;
+  if(!pool.length) return { days: [], forcedByDue, needsExceptionOffer };
 
   // 2) puntuar cada día (mayor score = más conveniente)
   pool.forEach(p=>{
@@ -8130,6 +8319,7 @@ function renderPorAgendar(){
       <div class="qi-actions">
         <button type="button" class="btn btn-ghost btn-sm qi-btn" data-manual="${t.id}" title="Agendar manualmente">⚙ Manual</button>
         <button type="button" class="btn btn-primary btn-sm qi-btn" data-suggest="${t.id}" title="Sugerencia de Alma">✨ IA</button>
+        <button type="button" class="btn btn-ghost btn-sm qi-btn" data-ask-alma="${t.id}" title="Pregúntale directo a Alma">💬 Preguntar</button>
         <button type="button" class="qi-trash" data-qtrash="${t.id}" title="Eliminar (va a la papelera)" aria-label="Eliminar">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
         </button>
@@ -8143,6 +8333,9 @@ function renderPorAgendar(){
   });
   listEl.querySelectorAll("[data-suggest]").forEach(btn=>{
     btn.addEventListener("click", ()=>openAlmaScheduleForm(btn.dataset.suggest, "ia"));
+  });
+  listEl.querySelectorAll("[data-ask-alma]").forEach(btn=>{
+    btn.addEventListener("click", ()=>openAskAlmaChat(btn.dataset.askAlma));
   });
   listEl.querySelectorAll("[data-qtrash]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
@@ -9273,6 +9466,9 @@ function openTaskModal(tid, opts){
       <div class="form-field full" id="tf_projectedEndWrap" style="margin-top:-4px;"><div id="tf_projectedEnd" style="font-size:12.5px;color:var(--accent-dark);"></div></div>
       <div class="form-field"><label>Fecha de vencimiento <span class="req">*</span></label><input type="date" id="tf_due" value="${t.dueDate||""}"></div>
       <div class="form-field"><label>Hora de vencimiento</label><input type="time" id="tf_dueTime" value="${t.dueTime||"18:00"}"></div>
+      <div class="form-field full hidden" id="tf_almaHintWrap" style="margin-top:-6px;">
+        <div id="tf_almaHint" style="font-size:12.5px;padding:9px 12px;background:color-mix(in srgb, var(--accent-3) 8%, var(--surface-alt));border-radius:10px;display:flex;gap:8px;align-items:flex-start;"></div>
+      </div>
       <div class="form-field"><label>Prioridad</label><select id="tf_priority">${PRIORITIES.map(x=>`<option value="${x.id}" ${t.priority===x.id?"selected":""}>${x.label}</option>`).join("")}</select></div>
       <div class="form-field"><label>Área de vida <span style="font-weight:400;color:var(--text-faint);">(opcional)</span></label><select id="tf_lifeArea"><option value="">Sin asignar</option>${(DB.config.lifeAreas||DEFAULT_LIFE_AREAS).map(a=>`<option value="${a.id}" ${t.lifeArea===a.id?"selected":""}>${a.icon} ${esc(a.name)}</option>`).join("")}</select></div>
       <div class="form-field"><label>Estado</label><select id="tf_status">${TASK_STATUSES.map(x=>`<option value="${x.id}" ${t.status===x.id?"selected":""}>${x.label}</option>`).join("")}</select></div>
@@ -9451,11 +9647,48 @@ function openTaskModal(tid, opts){
     document.getElementById("tf_taskType").value = type;
     document.querySelectorAll("#tf_taskTypeToggle button").forEach(b=>b.classList.toggle("active", b.dataset.type===type));
     document.getElementById("tf_laboralFields").style.display = type==="personal" ? "none" : "grid";
+    updateAlmaScheduleHint();
   }
   document.querySelectorAll("#tf_taskTypeToggle button").forEach(btn=>{
     btn.addEventListener("click", ()=>setTaskTypeUI(btn.dataset.type));
   });
   setTaskTypeUI(t.taskType || "laboral");
+
+  // Aviso inline de Alma: apenas eliges una fecha (de ejecución o de
+  // vencimiento), te cuenta al toque qué tan ocupado está ese día — sin
+  // tener que salir del formulario ni pasar por "Por agendar" para
+  // enterarte. Usa las mismas funciones reales de disponibilidad, nunca
+  // inventa nada.
+  function updateAlmaScheduleHint(){
+    const hintWrap = document.getElementById("tf_almaHintWrap");
+    const hintEl = document.getElementById("tf_almaHint");
+    if(!hintWrap || !hintEl) return;
+    const iso = document.getElementById("tf_start").value || document.getElementById("tf_due").value;
+    if(!iso){ hintWrap.classList.add("hidden"); return; }
+    const taskType = document.getElementById("tf_taskType").value || "laboral";
+    const win = workWindowForDate(iso);
+    const dow = dowNameFor(new Date(iso+"T00:00:00"));
+    let msg;
+    if(taskType==="laboral" && !win){
+      msg = `⚠️ Ese día (${dow}) no está configurado como día de trabajo — si igual quieres hacerla ahí, será fuera de tu jornada habitual.`;
+    }else{
+      const ctx = buildDayContext(iso, taskType);
+      const freeTxt = freeHoursLabel(ctx.freeMin);
+      const busyTxt = ctx.commitments===1 ? "1 compromiso" : `${ctx.commitments} compromisos`;
+      const winTxt = win ? ` (tu jornada ese día: ${win_start_label(win)})` : "";
+      msg = `🗓️ Revisé tu agenda: ese día (${dow}) tienes ${busyTxt} y ${freeTxt} libres${winTxt}.`;
+    }
+    hintEl.innerHTML = `<span style="flex:none;">💜</span><span>${msg}</span>`;
+    hintWrap.classList.remove("hidden");
+  }
+  function win_start_label(win){
+    return `${minutesTo12h(win.start)} a ${minutesTo12h(win.end)}`;
+  }
+  ["tf_start","tf_due"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener("change", updateAlmaScheduleHint);
+  });
+  updateAlmaScheduleHint();
 
   document.getElementById("tf_project").addEventListener("change", (e)=>{
     if(e.target.value !== "__new__") return;
@@ -11893,12 +12126,23 @@ function renderConfiguracion(){
   const ws = c.workSchedule || {};
   document.querySelectorAll("#cf_workMode button").forEach(b=>b.classList.toggle("active", b.dataset.mode===ws.mode));
   document.getElementById("cf_hybridDaysWrap").classList.toggle("hidden", ws.mode!=="hibrido");
-  bindDowPicker(document.getElementById("cf_workDays"));
+  bindDowPicker(document.getElementById("cf_workDays"), ()=>renderPerDayHours("cf_perDayHours","cf_workDays", ws));
   bindDowPicker(document.getElementById("cf_hybridDays"));
   setSelectedDows(document.getElementById("cf_workDays"), ws.days || ["lunes","martes","miércoles","jueves","viernes"]);
   setSelectedDows(document.getElementById("cf_hybridDays"), ws.hybridOfficeDays || []);
-  document.getElementById("cf_workStart").value = ws.startTime || "09:00";
-  document.getElementById("cf_workEnd").value = ws.endTime || "18:00";
+  renderPerDayHours("cf_perDayHours", "cf_workDays", ws);
+  const copyHoursBtn = document.getElementById("cf_copyHoursBtn");
+  if(copyHoursBtn && !copyHoursBtn.dataset.bound){
+    copyHoursBtn.dataset.bound = "1";
+    copyHoursBtn.addEventListener("click", ()=>{
+      const rows = document.querySelectorAll("#cf_perDayHours .pdh-row");
+      if(!rows.length) return;
+      const first = rows[0];
+      const s = first.querySelector(".pdh-start").value, e = first.querySelector(".pdh-end").value;
+      rows.forEach(r=>{ r.querySelector(".pdh-start").value = s; r.querySelector(".pdh-end").value = e; });
+      toast("Copiado a todos los días.","success");
+    });
+  }
   renderCfRoutinesList(c.routines || []);
   renderCfLifeAreas();
   renderCfIntegrations();
@@ -12131,6 +12375,7 @@ document.querySelectorAll("#cf_dailyMode button").forEach(btn=>{
     document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("cf_workBlock").classList.toggle("hidden", btn.dataset.daily!=="trabajo");
+    if(btn.dataset.daily==="trabajo") renderPerDayHours("cf_perDayHours","cf_workDays", DB.config.workSchedule||{});
   });
 });
 document.querySelectorAll("#cf_workMode button").forEach(btn=>{
@@ -12229,13 +12474,17 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   DB.config.dailyMode = cfDailyBtn ? cfDailyBtn.dataset.daily : "";
   const cfIsWorker = DB.config.dailyMode==="trabajo";
   const cfModeBtn = document.querySelector("#cf_workMode button.active");
+  const cfPerDayHours = cfIsWorker ? collectPerDayHours("cf_perDayHours") : {};
+  const cfFirstDay = getSelectedDows(document.getElementById("cf_workDays"))[0];
   DB.config.workSchedule = cfIsWorker ? {
     mode: cfModeBtn ? cfModeBtn.dataset.mode : "",
     days: getSelectedDows(document.getElementById("cf_workDays")),
-    startTime: document.getElementById("cf_workStart").value || "09:00",
-    endTime: document.getElementById("cf_workEnd").value || "18:00",
+    perDayHours: cfPerDayHours,
+    // se mantienen por compatibilidad con código viejo que aún lea un horario único
+    startTime: (cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].start) || "09:00",
+    endTime: (cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].end) || "18:00",
     hybridOfficeDays: cfModeBtn && cfModeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("cf_hybridDays")) : [],
-  } : { mode:"", days:[], startTime:"", endTime:"", hybridOfficeDays:[] };
+  } : { mode:"", days:[], perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
   DB.config.routines = Array.from(document.querySelectorAll("#cf_routinesList .routine-row")).map(row=>({
     id: uid("rt"),
     name: row.querySelector(".routine-name").value.trim(),
@@ -12333,11 +12582,52 @@ const DOW_ORDER = ["lunes","martes","miércoles","jueves","viernes","sábado","d
 let wizardStep = 1;
 let welcomeRoutineSeq = 0;
 
-function bindDowPicker(container){
+const DOW_LABELS_FULL = {lunes:"Lunes",martes:"Martes","miércoles":"Miércoles",jueves:"Jueves",viernes:"Viernes",sábado:"Sábado",domingo:"Domingo"};
+// Dibuja una fila de horario (inicio/término) por cada día que la persona
+// marcó como día de trabajo. Si ya tenía guardado un horario distinto por
+// día (perDayHours), lo respeta; si no, usa el horario único viejo
+// (startTime/endTime) como valor por defecto — así nadie pierde lo que ya
+// tenía configurado.
+function renderPerDayHours(containerId, dowPickerId, ws){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  const days = getSelectedDows(document.getElementById(dowPickerId));
+  const perDay = (ws && ws.perDayHours) || {};
+  const fallbackStart = (ws && ws.startTime) || "09:00";
+  const fallbackEnd = (ws && ws.endTime) || "18:00";
+  if(!days.length){
+    wrap.innerHTML = `<div class="t-sub" style="padding:4px 2px;">Marca arriba qué días trabajas para configurar su horario.</div>`;
+    return;
+  }
+  wrap.innerHTML = days.map(d=>{
+    const h = perDay[d] || {start: fallbackStart, end: fallbackEnd};
+    return `<div class="pdh-row" data-dow="${d}" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface-alt);border-radius:10px;margin-bottom:7px;">
+      <div style="width:84px;font-size:12.8px;font-weight:500;color:var(--text);flex:none;">${DOW_LABELS_FULL[d]||d}</div>
+      <input type="time" class="pdh-start" value="${h.start}" style="flex:1;min-width:0;">
+      <span style="color:var(--text-faint);font-size:12px;flex:none;">a</span>
+      <input type="time" class="pdh-end" value="${h.end}" style="flex:1;min-width:0;">
+    </div>`;
+  }).join("");
+}
+// Junta lo que quedó en las filas de horario por día, en el mismo formato
+// {lunes:{start,end}, martes:{...}, ...} que espera workSchedule.perDayHours.
+function collectPerDayHours(containerId){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return {};
+  const out = {};
+  wrap.querySelectorAll(".pdh-row").forEach(row=>{
+    out[row.dataset.dow] = {
+      start: row.querySelector(".pdh-start").value || "09:00",
+      end: row.querySelector(".pdh-end").value || "18:00",
+    };
+  });
+  return out;
+}
+function bindDowPicker(container, onChange){
   if(!container || container._dowBound) return;
   container._dowBound = true;
   container.querySelectorAll("button[data-dow]").forEach(btn=>{
-    btn.addEventListener("click", ()=>btn.classList.toggle("active"));
+    btn.addEventListener("click", ()=>{ btn.classList.toggle("active"); if(onChange) onChange(); });
   });
 }
 function getSelectedDows(container){
@@ -12459,13 +12749,19 @@ function finishOnboarding(){
   DB.config.dailyMode = dailyBtn ? dailyBtn.dataset.daily : "";
   const isWorker = DB.config.dailyMode==="trabajo";
   const modeBtn = document.querySelector("#welcomeWorkMode button.active");
+  const welcomeDays = getSelectedDows(document.getElementById("welcomeWorkDays"));
+  const welcomeStart = document.getElementById("welcomeWorkStart").value || "09:00";
+  const welcomeEnd = document.getElementById("welcomeWorkEnd").value || "18:00";
+  const welcomePerDay = {};
+  welcomeDays.forEach(d=>{ welcomePerDay[d] = {start: welcomeStart, end: welcomeEnd}; });
   DB.config.workSchedule = isWorker ? {
     mode: modeBtn ? modeBtn.dataset.mode : "",
-    days: getSelectedDows(document.getElementById("welcomeWorkDays")),
-    startTime: document.getElementById("welcomeWorkStart").value || "09:00",
-    endTime: document.getElementById("welcomeWorkEnd").value || "18:00",
+    days: welcomeDays,
+    perDayHours: welcomePerDay, // uniforme por ahora; se puede personalizar día a día luego en Configuración
+    startTime: welcomeStart,
+    endTime: welcomeEnd,
     hybridOfficeDays: modeBtn && modeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("welcomeHybridDays")) : [],
-  } : { mode:"", days:[], startTime:"", endTime:"", hybridOfficeDays:[] };
+  } : { mode:"", days:[], perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
 
   DB.config.routines = Array.from(document.querySelectorAll("#welcomeRoutinesList .routine-row")).map(row=>({
     id: uid("rt"),
