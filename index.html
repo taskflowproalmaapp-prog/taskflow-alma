@@ -2309,64 +2309,86 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           </div>
         </div>
         <div id="cf_workBlock" class="hidden">
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>Modalidad de trabajo</label>
-            <div class="tasktype-toggle" id="cf_workMode">
-              <button type="button" data-mode="presencial">🏢 Presencial</button>
-              <button type="button" data-mode="remoto">🏠 Remoto</button>
-              <button type="button" data-mode="hibrido">🔀 Híbrido</button>
+          <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+            <div>
+              <div style="font-weight:500;font-size:15px;color:var(--text);font-family:var(--font-display);">💼 Ahora hablemos de tu trabajo</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Cuéntame tu jornada para que Alma la respete al agendar tus tareas laborales.</div>
             </div>
+            <button type="button" class="btn btn-ghost btn-sm hidden" id="cf_workEditBtn" style="flex:none;">✏️ Editar</button>
           </div>
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>Días que trabajas</label>
-            <div class="dow-picker" id="cf_workDays">
-              <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
-              <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
-              <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
-              <button type="button" data-dow="domingo">D</button>
+          <div id="cf_workSummary"></div>
+          <div id="cf_workEditWrap">
+            <div class="form-field full" style="margin-bottom:12px;">
+              <label>Modalidad de trabajo</label>
+              <div class="tasktype-toggle" id="cf_workMode">
+                <button type="button" data-mode="presencial">🏢 Presencial</button>
+                <button type="button" data-mode="remoto">🏠 Remoto</button>
+                <button type="button" data-mode="hibrido">🔀 Híbrido</button>
+              </div>
             </div>
-          </div>
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>¿Todos esos días tienen el mismo horario?</label>
-            <div class="tasktype-toggle" id="cf_sameHoursToggle">
-              <button type="button" data-same="si">Sí, el mismo</button>
-              <button type="button" data-same="no">No, varía por día</button>
+            <div class="form-field full" style="margin-bottom:12px;">
+              <label>Días que trabajas</label>
+              <div class="dow-picker" id="cf_workDays">
+                <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
+                <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
+                <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
+                <button type="button" data-dow="domingo">D</button>
+              </div>
             </div>
-          </div>
-          <div class="form-grid hidden" id="cf_sameHoursWrap" style="margin-bottom:12px;">
-            <div class="form-field"><label>Hora de inicio</label><input type="time" id="cf_workStart" value="09:00"></div>
-            <div class="form-field"><label>Hora de término</label><input type="time" id="cf_workEnd" value="18:00"></div>
-          </div>
-          <div class="form-field full hidden" id="cf_perDayHoursWrap" style="margin-bottom:12px;">
-            <label style="display:flex;align-items:center;justify-content:space-between;">
-              <span>Horario por día</span>
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_copyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
-            </label>
-            <div id="cf_perDayHours" style="margin-top:8px;"></div>
-            <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Alma va a respetar estos horarios exactos al sugerirte cuándo hacer tus tareas de trabajo.</div>
-          </div>
-          <div class="form-field full hidden" id="cf_hybridDaysWrap" style="margin-bottom:4px;">
-            <label>¿Qué días vas presencial?</label>
-            <div class="dow-picker" id="cf_hybridDays">
-              <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
-              <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
-              <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
-              <button type="button" data-dow="domingo">D</button>
+            <div class="form-field full" style="margin-bottom:12px;">
+              <label>¿Todos esos días tienen el mismo horario?</label>
+              <div class="tasktype-toggle" id="cf_sameHoursToggle">
+                <button type="button" data-same="si">Sí, el mismo</button>
+                <button type="button" data-same="no">No, varía por día</button>
+              </div>
             </div>
+            <div class="form-grid hidden" id="cf_sameHoursWrap" style="margin-bottom:12px;">
+              <div class="form-field"><label>Hora de inicio</label><input type="time" id="cf_workStart" value="09:00"></div>
+              <div class="form-field"><label>Hora de término</label><input type="time" id="cf_workEnd" value="18:00"></div>
+            </div>
+            <div class="form-field full hidden" id="cf_perDayHoursWrap" style="margin-bottom:12px;">
+              <label style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Horario por día</span>
+                <button type="button" class="btn btn-ghost btn-sm" id="cf_copyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
+              </label>
+              <div id="cf_perDayHours" style="margin-top:8px;"></div>
+              <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Alma va a respetar estos horarios exactos al sugerirte cuándo hacer tus tareas de trabajo.</div>
+            </div>
+            <div class="form-field full hidden" id="cf_hybridDaysWrap" style="margin-bottom:4px;">
+              <label>¿Qué días vas presencial?</label>
+              <div class="dow-picker" id="cf_hybridDays">
+                <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
+                <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
+                <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
+                <button type="button" data-dow="domingo">D</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm hidden" id="cf_workDoneBtn" style="margin-top:4px;">✓ Listo</button>
           </div>
         </div>
         <div id="cf_studyBlock" class="hidden">
+          <div style="margin-bottom:14px;">
+            <div style="font-weight:500;font-size:15px;color:var(--text);font-family:var(--font-display);">📚 Ahora vamos con tus estudios</div>
+            <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Así Alma también va a cuidar el tiempo de tus ramos al sugerirte cuándo hacer otras cosas.</div>
+          </div>
           <div class="form-field full" style="margin-bottom:12px;">
-            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(para que Alma los respete al agendar, y aparezcan en tu Calendario)</span></label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_addSubjectBtn">✍️ Escribir</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectPhotoBtn">📷 Foto</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectExcelBtn">📥 Importar archivo</button>
-              <input type="file" accept="image/*" id="cf_subjectPhotoInput" class="hidden">
-              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="cf_subjectExcelInput" class="hidden">
+            <label style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Tus ramos</span>
+              <button type="button" class="btn btn-ghost btn-sm hidden" id="cf_subjectsEditBtn">✏️ Editar ramos</button>
+              <button type="button" class="btn btn-ghost btn-sm hidden" id="cf_subjectsDoneBtn">✓ Listo, ver como horario</button>
+            </label>
+            <div id="cf_subjectsGrid" style="margin-top:8px;"></div>
+            <div id="cf_subjectsEditWrap" style="margin-top:8px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <button type="button" class="btn btn-ghost btn-sm" id="cf_addSubjectBtn">✍️ Escribir</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectPhotoBtn">📷 Foto</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectExcelBtn">📥 Importar archivo</button>
+                <input type="file" accept="image/*" id="cf_subjectPhotoInput" class="hidden">
+                <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="cf_subjectExcelInput" class="hidden">
+              </div>
+              <div id="cf_subjectsAiStatus"></div>
+              <div id="cf_subjectsList" style="margin-top:8px;"></div>
             </div>
-            <div id="cf_subjectsAiStatus"></div>
-            <div id="cf_subjectsList" style="margin-top:8px;"></div>
           </div>
         </div>
 
@@ -2825,63 +2847,85 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           </div>
         </div>
         <div id="welcomeWorkBlock" class="hidden">
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>Modalidad de trabajo</label>
-            <div class="tasktype-toggle" id="welcomeWorkMode">
-              <button type="button" data-mode="presencial">🏢 Presencial</button>
-              <button type="button" data-mode="remoto">🏠 Remoto</button>
-              <button type="button" data-mode="hibrido">🔀 Híbrido</button>
+          <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+            <div>
+              <div style="font-weight:500;font-size:15px;color:var(--text);font-family:var(--font-display);">💼 Ahora hablemos de tu trabajo</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Cuéntame tu jornada para que Alma la respete al agendar.</div>
             </div>
+            <button type="button" class="btn btn-ghost btn-sm hidden" id="welcomeWorkEditBtn" style="flex:none;">✏️ Editar</button>
           </div>
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>Días que trabajas</label>
-            <div class="dow-picker" id="welcomeWorkDays">
-              <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
-              <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
-              <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
-              <button type="button" data-dow="domingo">D</button>
+          <div id="welcomeWorkSummary"></div>
+          <div id="welcomeWorkEditWrap">
+            <div class="form-field full" style="margin-bottom:12px;">
+              <label>Modalidad de trabajo</label>
+              <div class="tasktype-toggle" id="welcomeWorkMode">
+                <button type="button" data-mode="presencial">🏢 Presencial</button>
+                <button type="button" data-mode="remoto">🏠 Remoto</button>
+                <button type="button" data-mode="hibrido">🔀 Híbrido</button>
+              </div>
             </div>
-          </div>
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>¿Todos esos días tienen el mismo horario?</label>
-            <div class="tasktype-toggle" id="welcomeSameHoursToggle">
-              <button type="button" data-same="si">Sí, el mismo</button>
-              <button type="button" data-same="no">No, varía por día</button>
+            <div class="form-field full" style="margin-bottom:12px;">
+              <label>Días que trabajas</label>
+              <div class="dow-picker" id="welcomeWorkDays">
+                <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
+                <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
+                <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
+                <button type="button" data-dow="domingo">D</button>
+              </div>
             </div>
-          </div>
-          <div class="form-grid hidden" id="welcomeSameHoursWrap" style="margin-bottom:12px;">
-            <div class="form-field"><label>Hora de inicio</label><input type="time" id="welcomeWorkStart" value="09:00"></div>
-            <div class="form-field"><label>Hora de término</label><input type="time" id="welcomeWorkEnd" value="18:00"></div>
-          </div>
-          <div class="form-field full hidden" id="welcomePerDayHoursWrap" style="margin-bottom:12px;">
-            <label style="display:flex;align-items:center;justify-content:space-between;">
-              <span>Horario por día</span>
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeCopyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
-            </label>
-            <div id="welcomePerDayHours" style="margin-top:8px;"></div>
-          </div>
-          <div class="form-field full hidden" id="welcomeHybridDaysWrap">
-            <label>¿Qué días vas presencial?</label>
-            <div class="dow-picker" id="welcomeHybridDays">
-              <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
-              <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
-              <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
-              <button type="button" data-dow="domingo">D</button>
+            <div class="form-field full" style="margin-bottom:12px;">
+              <label>¿Todos esos días tienen el mismo horario?</label>
+              <div class="tasktype-toggle" id="welcomeSameHoursToggle">
+                <button type="button" data-same="si">Sí, el mismo</button>
+                <button type="button" data-same="no">No, varía por día</button>
+              </div>
             </div>
+            <div class="form-grid hidden" id="welcomeSameHoursWrap" style="margin-bottom:12px;">
+              <div class="form-field"><label>Hora de inicio</label><input type="time" id="welcomeWorkStart" value="09:00"></div>
+              <div class="form-field"><label>Hora de término</label><input type="time" id="welcomeWorkEnd" value="18:00"></div>
+            </div>
+            <div class="form-field full hidden" id="welcomePerDayHoursWrap" style="margin-bottom:12px;">
+              <label style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Horario por día</span>
+                <button type="button" class="btn btn-ghost btn-sm" id="welcomeCopyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
+              </label>
+              <div id="welcomePerDayHours" style="margin-top:8px;"></div>
+            </div>
+            <div class="form-field full hidden" id="welcomeHybridDaysWrap">
+              <label>¿Qué días vas presencial?</label>
+              <div class="dow-picker" id="welcomeHybridDays">
+                <button type="button" data-dow="lunes">L</button><button type="button" data-dow="martes">M</button>
+                <button type="button" data-dow="miércoles">X</button><button type="button" data-dow="jueves">J</button>
+                <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
+                <button type="button" data-dow="domingo">D</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm hidden" id="welcomeWorkDoneBtn" style="margin-top:4px;">✓ Listo</button>
           </div>
         </div>
         <div id="welcomeStudyBlock" class="hidden">
+          <div style="margin-bottom:14px;">
+            <div style="font-weight:500;font-size:15px;color:var(--text);font-family:var(--font-display);">📚 Ahora vamos con tus estudios</div>
+            <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Así Alma también va a cuidar el tiempo de tus ramos.</div>
+          </div>
           <div class="form-field full" style="margin-bottom:12px;">
-            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(opcional — lo puedes hacer después en Configuración)</span></label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeAddSubjectBtn">✍️ Escribir</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectPhotoBtn">📷 Foto</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectExcelBtn">📥 Importar archivo</button>
-              <input type="file" accept="image/*" id="welcomeSubjectPhotoInput" class="hidden">
-              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="welcomeSubjectExcelInput" class="hidden">
+            <label style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(opcional)</span></span>
+              <button type="button" class="btn btn-ghost btn-sm hidden" id="welcomeSubjectsEditBtn">✏️ Editar ramos</button>
+              <button type="button" class="btn btn-ghost btn-sm hidden" id="welcomeSubjectsDoneBtn">✓ Listo, ver como horario</button>
+            </label>
+            <div id="welcomeSubjectsGrid" style="margin-top:8px;"></div>
+            <div id="welcomeSubjectsEditWrap" style="margin-top:8px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <button type="button" class="btn btn-ghost btn-sm" id="welcomeAddSubjectBtn">✍️ Escribir</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectPhotoBtn">📷 Foto</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectExcelBtn">📥 Importar archivo</button>
+                <input type="file" accept="image/*" id="welcomeSubjectPhotoInput" class="hidden">
+                <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="welcomeSubjectExcelInput" class="hidden">
+              </div>
+              <div id="welcomeSubjectsAiStatus"></div>
+              <div id="welcomeSubjectsList" style="margin-top:8px;"></div>
             </div>
-            <div id="welcomeSubjectsAiStatus"></div>
-            <div id="welcomeSubjectsList" style="margin-top:8px;"></div>
           </div>
         </div>
       </div>
@@ -12188,7 +12232,10 @@ function renderConfiguracion(){
   document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.toggle("active", dailyModes.includes(b.dataset.daily)));
   document.getElementById("cf_workBlock").classList.toggle("hidden", !dailyModes.includes("trabajo"));
   document.getElementById("cf_studyBlock").classList.toggle("hidden", !dailyModes.includes("estudio"));
-  renderSubjectsList("cf_subjectsList", (c.studySchedule && c.studySchedule.subjects) || []);
+  const cfExistingSubjects = (c.studySchedule && c.studySchedule.subjects) || [];
+  renderSubjectsList("cf_subjectsList", cfExistingSubjects);
+  renderSubjectsGrid("cf_subjectsGrid", cfExistingSubjects);
+  setCfSubjectsMode(cfExistingSubjects.length ? "grid" : "edit");
   const ws = c.workSchedule || {};
   document.querySelectorAll("#cf_workMode button").forEach(b=>b.classList.toggle("active", b.dataset.mode===ws.mode));
   document.getElementById("cf_hybridDaysWrap").classList.toggle("hidden", ws.mode!=="hibrido");
@@ -12218,6 +12265,8 @@ function renderConfiguracion(){
   renderCfRoutinesList(c.routines || []);
   renderCfLifeAreas();
   renderCfIntegrations();
+  renderWorkSummary("cf_workSummary", ws);
+  setCfWorkMode(ws.mode ? "summary" : "edit");
   // Mi asistente (Módulo 13)
   const alma = c.alma || {};
   document.getElementById("cf_almaName").value = alma.assistantName || "Alma";
@@ -12450,7 +12499,12 @@ document.querySelectorAll("#cf_dailyMode button").forEach(btn=>{
     document.getElementById("cf_workBlock").classList.toggle("hidden", !hasWork);
     document.getElementById("cf_studyBlock").classList.toggle("hidden", !hasStudy);
     if(hasWork) renderPerDayHours("cf_perDayHours","cf_workDays", DB.config.workSchedule||{});
-    if(hasStudy && !document.getElementById("cf_subjectsList").children.length) renderSubjectsList("cf_subjectsList", (DB.config.studySchedule&&DB.config.studySchedule.subjects)||[]);
+    if(hasStudy && !document.getElementById("cf_subjectsList").children.length){
+      const existing = (DB.config.studySchedule&&DB.config.studySchedule.subjects)||[];
+      renderSubjectsList("cf_subjectsList", existing);
+      renderSubjectsGrid("cf_subjectsGrid", existing);
+      setCfSubjectsMode(existing.length ? "grid" : "edit");
+    }
   });
 });
 document.querySelectorAll("#cf_sameHoursToggle button").forEach(btn=>{
@@ -12477,6 +12531,55 @@ document.getElementById("cf_subjectExcelInput").addEventListener("change", (e)=>
   const file = e.target.files[0];
   if(file) handleSubjectExcel(file, "cf_subjectsList", "cf_subjectsAiStatus");
   e.target.value = "";
+});
+// Lee el horario laboral directo de los campos del formulario (sin
+// depender de lo que ya estaba guardado) — la usa tanto el guardado final
+// como el botón "Listo" del resumen, para que este último siempre refleje
+// lo que la persona acaba de escribir, no un dato viejo.
+function computeCfWorkScheduleFromForm(){
+  const isWorker = Array.from(document.querySelectorAll("#cf_dailyMode button.active")).some(b=>b.dataset.daily==="trabajo");
+  const modeBtn = document.querySelector("#cf_workMode button.active");
+  const sameHoursBtn = document.querySelector("#cf_sameHoursToggle button.active");
+  const sameHours = !sameHoursBtn || sameHoursBtn.dataset.same==="si";
+  const workDays = getSelectedDows(document.getElementById("cf_workDays"));
+  const uniformStart = document.getElementById("cf_workStart").value || "09:00";
+  const uniformEnd = document.getElementById("cf_workEnd").value || "18:00";
+  const perDayHours = isWorker ? (sameHours
+    ? Object.fromEntries(workDays.map(d=>[d,{start:uniformStart,end:uniformEnd}]))
+    : collectPerDayHours("cf_perDayHours")) : {};
+  const firstDay = workDays[0];
+  return isWorker ? {
+    mode: modeBtn ? modeBtn.dataset.mode : "",
+    days: workDays,
+    sameHoursAllDays: sameHours,
+    perDayHours: perDayHours,
+    startTime: sameHours ? uniformStart : ((firstDay && perDayHours[firstDay] && perDayHours[firstDay].start) || "09:00"),
+    endTime: sameHours ? uniformEnd : ((firstDay && perDayHours[firstDay] && perDayHours[firstDay].end) || "18:00"),
+    hybridOfficeDays: modeBtn && modeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("cf_hybridDays")) : [],
+  } : { mode:"", days:[], sameHoursAllDays:true, perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
+}
+function setCfWorkMode(mode){
+  document.getElementById("cf_workSummary").classList.toggle("hidden", mode!=="summary");
+  document.getElementById("cf_workEditWrap").classList.toggle("hidden", mode!=="edit");
+  document.getElementById("cf_workEditBtn").classList.toggle("hidden", mode!=="summary");
+  document.getElementById("cf_workDoneBtn").classList.toggle("hidden", mode!=="edit");
+}
+document.getElementById("cf_workEditBtn").addEventListener("click", ()=>setCfWorkMode("edit"));
+document.getElementById("cf_workDoneBtn").addEventListener("click", ()=>{
+  renderWorkSummary("cf_workSummary", computeCfWorkScheduleFromForm());
+  setCfWorkMode("summary");
+});
+function setCfSubjectsMode(mode){
+  document.getElementById("cf_subjectsGrid").classList.toggle("hidden", mode!=="grid");
+  document.getElementById("cf_subjectsEditWrap").classList.toggle("hidden", mode!=="edit");
+  document.getElementById("cf_subjectsEditBtn").classList.toggle("hidden", mode!=="grid");
+  document.getElementById("cf_subjectsDoneBtn").classList.toggle("hidden", mode!=="edit");
+}
+document.getElementById("cf_subjectsEditBtn").addEventListener("click", ()=>setCfSubjectsMode("edit"));
+document.getElementById("cf_subjectsDoneBtn").addEventListener("click", ()=>{
+  const subs = collectSubjects("cf_subjectsList");
+  renderSubjectsGrid("cf_subjectsGrid", subs);
+  setCfSubjectsMode(subs.length ? "grid" : "edit");
 });
 document.querySelectorAll("#cf_workMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -12572,29 +12675,9 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   DB.config.country = countrySel==="__other__" ? document.getElementById("cf_countryOther").value.trim() : countrySel;
   DB.config.dailyModes = Array.from(document.querySelectorAll("#cf_dailyMode button.active")).map(b=>b.dataset.daily);
   DB.config.dailyMode = DB.config.dailyModes[0] || ""; // por compatibilidad con código viejo
-  const cfIsWorker = DB.config.dailyModes.includes("trabajo");
   const cfIsStudent = DB.config.dailyModes.includes("estudio");
   DB.config.studySchedule = { subjects: cfIsStudent ? collectSubjects("cf_subjectsList") : [] };
-  const cfModeBtn = document.querySelector("#cf_workMode button.active");
-  const cfSameHoursBtn = document.querySelector("#cf_sameHoursToggle button.active");
-  const cfSameHours = !cfSameHoursBtn || cfSameHoursBtn.dataset.same==="si";
-  const cfWorkDays = getSelectedDows(document.getElementById("cf_workDays"));
-  const cfUniformStart = document.getElementById("cf_workStart").value || "09:00";
-  const cfUniformEnd = document.getElementById("cf_workEnd").value || "18:00";
-  const cfPerDayHours = cfIsWorker ? (cfSameHours
-    ? Object.fromEntries(cfWorkDays.map(d=>[d,{start:cfUniformStart,end:cfUniformEnd}]))
-    : collectPerDayHours("cf_perDayHours")) : {};
-  const cfFirstDay = cfWorkDays[0];
-  DB.config.workSchedule = cfIsWorker ? {
-    mode: cfModeBtn ? cfModeBtn.dataset.mode : "",
-    days: cfWorkDays,
-    sameHoursAllDays: cfSameHours,
-    perDayHours: cfPerDayHours,
-    // se mantienen por compatibilidad con código viejo que aún lea un horario único
-    startTime: cfSameHours ? cfUniformStart : ((cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].start) || "09:00"),
-    endTime: cfSameHours ? cfUniformEnd : ((cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].end) || "18:00"),
-    hybridOfficeDays: cfModeBtn && cfModeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("cf_hybridDays")) : [],
-  } : { mode:"", days:[], sameHoursAllDays:true, perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
+  DB.config.workSchedule = computeCfWorkScheduleFromForm();
   DB.config.routines = Array.from(document.querySelectorAll("#cf_routinesList .routine-row")).map(row=>({
     id: uid("rt"),
     name: row.querySelector(".routine-name").value.trim(),
@@ -12734,6 +12817,37 @@ function collectPerDayHours(containerId){
   return out;
 }
 
+// Resumen compacto del horario laboral: agrupa días consecutivos con el
+// mismo horario en una sola línea (ej. "Lun-Mié 8:00-18:00, Jue 8:00-17:00")
+// en vez de mostrar una fila por cada día — así no se hace larguísimo si
+// alguien trabaja los 7 días.
+function renderWorkSummary(containerId, ws){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  const days = ws.days || [];
+  if(!days.length){ wrap.innerHTML = `<div class="t-sub">Sin días de trabajo configurados.</div>`; return; }
+  const perDay = ws.perDayHours || {};
+  const ordered = DOW_ORDER.filter(d=>days.includes(d));
+  const groups = [];
+  ordered.forEach(d=>{
+    const h = perDay[d] || {start: ws.startTime, end: ws.endTime};
+    const last = groups[groups.length-1];
+    if(last && last.start===h.start && last.end===h.end && DOW_ORDER.indexOf(d)===DOW_ORDER.indexOf(last.days[last.days.length-1])+1){
+      last.days.push(d);
+    }else{
+      groups.push({ days:[d], start:h.start, end:h.end });
+    }
+  });
+  const modeLabel = {presencial:"🏢 Presencial", remoto:"🏠 Remoto", hibrido:"🔀 Híbrido"}[ws.mode] || "";
+  const lines = groups.map(g=>{
+    const label = g.days.length>1 ? `${DOW_SHORT[g.days[0]]}-${DOW_SHORT[g.days[g.days.length-1]]}` : DOW_SHORT[g.days[0]];
+    return `${label} ${minutesTo12h(timeToMinutes(g.start))}-${minutesTo12h(timeToMinutes(g.end))}`;
+  });
+  wrap.innerHTML = `<div style="background:var(--surface-alt);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text);">
+    <div style="font-weight:500;margin-bottom:4px;">${modeLabel}</div>
+    <div style="color:var(--text-muted);">${lines.join(" · ")}</div>
+  </div>`;
+}
 let subjectRowSeq = 0;
 // Dibuja las filas de "ramos" ya guardadas (nombre + días + horario), cada
 // una con su botón de eliminar. "Agregar ramo" usa addSubjectRow() para
@@ -12778,6 +12892,42 @@ function addSubjectRow(containerId, subject){
   wrap.appendChild(row);
   bindDowPicker(row.querySelector(".subj-days"));
   row.querySelector(".subj-remove").addEventListener("click", ()=>row.remove());
+}
+const SUBJECT_COLORS = ["#FF6B45","#3F7DF2","#20AD7A","#8157EF","#ED3F7C","#E7A117","#4C6FEA","#3FAE8A"];
+// Grilla visual de horario (como una malla académica): mucho más fácil de
+// leer que 20 filas apiladas si tienes muchos ramos. Se genera a partir de
+// la lista de ramos ya guardada — es una vista de solo lectura; para editar
+// se usa el botón "✏️ Editar ramos" que muestra la lista de filas de siempre.
+function renderSubjectsGrid(containerId, subjects){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  if(!subjects.length){ wrap.innerHTML = ""; return; }
+  const activeDays = DOW_ORDER.filter(d=>subjects.some(s=>(s.days||[]).includes(d)));
+  let minMin = 24*60, maxMin = 0;
+  subjects.forEach(s=>{ minMin = Math.min(minMin, timeToMinutes(s.start)); maxMin = Math.max(maxMin, timeToMinutes(s.end)); });
+  minMin = Math.max(0, minMin - 30); maxMin = Math.min(24*60, maxMin + 30);
+  const totalMin = Math.max(60, maxMin - minMin);
+  const PX_PER_MIN = 1.1;
+  const gridHeight = Math.round(totalMin * PX_PER_MIN);
+  const colorMap = {};
+  subjects.forEach((s,i)=>{ if(!colorMap[s.name]) colorMap[s.name] = SUBJECT_COLORS[Object.keys(colorMap).length % SUBJECT_COLORS.length]; });
+
+  const cols = activeDays.map(d=>{
+    const blocks = subjects.filter(s=>(s.days||[]).includes(d)).map(s=>{
+      const top = Math.round((timeToMinutes(s.start)-minMin)*PX_PER_MIN);
+      const height = Math.max(24, Math.round((timeToMinutes(s.end)-timeToMinutes(s.start))*PX_PER_MIN)-2);
+      return `<div style="position:absolute;top:${top}px;height:${height}px;left:2px;right:2px;background:${colorMap[s.name]};border-radius:6px;padding:4px 6px;overflow:hidden;">
+        <div style="font-size:10.5px;font-weight:600;color:#fff;line-height:1.2;">${esc(s.name)}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.85);">${minutesTo12h(timeToMinutes(s.start))}</div>
+      </div>`;
+    }).join("");
+    return `<div style="flex:1;min-width:64px;">
+      <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-muted);padding:6px 2px;background:var(--surface-alt);border-radius:8px 8px 0 0;">${DOW_SHORT[d]}</div>
+      <div style="position:relative;height:${gridHeight}px;background:var(--surface-alt);border-radius:0 0 8px 8px;">${blocks}</div>
+    </div>`;
+  }).join("");
+
+  wrap.innerHTML = `<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;">${cols}</div>`;
 }
 function collectSubjects(containerId){
   const wrap = document.getElementById(containerId);
@@ -12893,10 +13043,12 @@ function openWelcomeModal(){
   document.getElementById("welcomeWorkBlock").classList.add("hidden");
   document.getElementById("welcomeStudyBlock").classList.add("hidden");
   document.getElementById("welcomeSubjectsList").innerHTML = "";
+  document.getElementById("welcomeSubjectsGrid").innerHTML = "";
   document.querySelectorAll("#welcomeWorkMode button").forEach(b=>b.classList.remove("active"));
   document.getElementById("welcomeHybridDaysWrap").classList.add("hidden");
   document.querySelectorAll("#welcomeSameHoursToggle button").forEach(b=>b.classList.toggle("active", b.dataset.same==="si"));
   document.getElementById("welcomeSameHoursWrap").classList.remove("hidden");
+  setWelcomeWorkMode("edit");
   document.getElementById("welcomePerDayHoursWrap").classList.add("hidden");
   document.getElementById("welcomeWorkStart").value = "09:00";
   document.getElementById("welcomeWorkEnd").value = "18:00";
@@ -12953,7 +13105,7 @@ document.querySelectorAll("#welcomeDailyMode button").forEach(btn=>{
     const hasStudy = !!document.querySelector('#welcomeDailyMode button[data-daily="estudio"].active');
     document.getElementById("welcomeWorkBlock").classList.toggle("hidden", !hasWork);
     document.getElementById("welcomeStudyBlock").classList.toggle("hidden", !hasStudy);
-    if(hasStudy && !document.getElementById("welcomeSubjectsList").children.length) addSubjectRow("welcomeSubjectsList");
+    if(hasStudy && !document.getElementById("welcomeSubjectsList").children.length){ addSubjectRow("welcomeSubjectsList"); setWelcomeSubjectsMode("edit"); }
   });
 });
 document.querySelectorAll("#welcomeSameHoursToggle button").forEach(btn=>{
@@ -12981,6 +13133,18 @@ document.getElementById("welcomeSubjectExcelInput").addEventListener("change", (
   if(file) handleSubjectExcel(file, "welcomeSubjectsList", "welcomeSubjectsAiStatus");
   e.target.value = "";
 });
+function setWelcomeSubjectsMode(mode){
+  document.getElementById("welcomeSubjectsGrid").classList.toggle("hidden", mode!=="grid");
+  document.getElementById("welcomeSubjectsEditWrap").classList.toggle("hidden", mode!=="edit");
+  document.getElementById("welcomeSubjectsEditBtn").classList.toggle("hidden", mode!=="grid");
+  document.getElementById("welcomeSubjectsDoneBtn").classList.toggle("hidden", mode!=="edit");
+}
+document.getElementById("welcomeSubjectsEditBtn").addEventListener("click", ()=>setWelcomeSubjectsMode("edit"));
+document.getElementById("welcomeSubjectsDoneBtn").addEventListener("click", ()=>{
+  const subs = collectSubjects("welcomeSubjectsList");
+  renderSubjectsGrid("welcomeSubjectsGrid", subs);
+  setWelcomeSubjectsMode(subs.length ? "grid" : "edit");
+});
 document.getElementById("welcomeCopyHoursBtn").addEventListener("click", ()=>{
   const rows = document.querySelectorAll("#welcomePerDayHours .pdh-row");
   if(!rows.length) return;
@@ -12988,6 +13152,42 @@ document.getElementById("welcomeCopyHoursBtn").addEventListener("click", ()=>{
   const s = first.querySelector(".pdh-start").value, e = first.querySelector(".pdh-end").value;
   rows.forEach(r=>{ r.querySelector(".pdh-start").value = s; r.querySelector(".pdh-end").value = e; });
   toast("Copiado a todos los días.","success");
+});
+// Misma idea que en Configuración: lee el horario directo de los campos
+// del formulario, no de lo ya guardado — así "Listo" siempre refleja lo
+// que la persona acaba de escribir.
+function computeWelcomeWorkScheduleFromForm(){
+  const isWorker = Array.from(document.querySelectorAll("#welcomeDailyMode button.active")).some(b=>b.dataset.daily==="trabajo");
+  const modeBtn = document.querySelector("#welcomeWorkMode button.active");
+  const sameHoursBtn = document.querySelector("#welcomeSameHoursToggle button.active");
+  const sameHours = !sameHoursBtn || sameHoursBtn.dataset.same==="si";
+  const workDays = getSelectedDows(document.getElementById("welcomeWorkDays"));
+  const uniformStart = document.getElementById("welcomeWorkStart").value || "09:00";
+  const uniformEnd = document.getElementById("welcomeWorkEnd").value || "18:00";
+  const perDayHours = isWorker ? (sameHours
+    ? Object.fromEntries(workDays.map(d=>[d,{start:uniformStart,end:uniformEnd}]))
+    : collectPerDayHours("welcomePerDayHours")) : {};
+  const firstDay = workDays[0];
+  return isWorker ? {
+    mode: modeBtn ? modeBtn.dataset.mode : "",
+    days: workDays,
+    sameHoursAllDays: sameHours,
+    perDayHours: perDayHours,
+    startTime: sameHours ? uniformStart : ((firstDay && perDayHours[firstDay] && perDayHours[firstDay].start) || "09:00"),
+    endTime: sameHours ? uniformEnd : ((firstDay && perDayHours[firstDay] && perDayHours[firstDay].end) || "18:00"),
+    hybridOfficeDays: modeBtn && modeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("welcomeHybridDays")) : [],
+  } : { mode:"", days:[], sameHoursAllDays:true, perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
+}
+function setWelcomeWorkMode(mode){
+  document.getElementById("welcomeWorkSummary").classList.toggle("hidden", mode!=="summary");
+  document.getElementById("welcomeWorkEditWrap").classList.toggle("hidden", mode!=="edit");
+  document.getElementById("welcomeWorkEditBtn").classList.toggle("hidden", mode!=="summary");
+  document.getElementById("welcomeWorkDoneBtn").classList.toggle("hidden", mode!=="edit");
+}
+document.getElementById("welcomeWorkEditBtn").addEventListener("click", ()=>setWelcomeWorkMode("edit"));
+document.getElementById("welcomeWorkDoneBtn").addEventListener("click", ()=>{
+  renderWorkSummary("welcomeWorkSummary", computeWelcomeWorkScheduleFromForm());
+  setWelcomeWorkMode("summary");
 });
 document.querySelectorAll("#welcomeWorkMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -13034,28 +13234,9 @@ function finishOnboarding(){
 
   DB.config.dailyModes = Array.from(document.querySelectorAll("#welcomeDailyMode button.active")).map(b=>b.dataset.daily);
   DB.config.dailyMode = DB.config.dailyModes[0] || "";
-  const isWorker = DB.config.dailyModes.includes("trabajo");
   const isStudent = DB.config.dailyModes.includes("estudio");
   DB.config.studySchedule = { subjects: isStudent ? collectSubjects("welcomeSubjectsList") : [] };
-  const modeBtn = document.querySelector("#welcomeWorkMode button.active");
-  const welcomeDays = getSelectedDows(document.getElementById("welcomeWorkDays"));
-  const welcomeSameBtn = document.querySelector("#welcomeSameHoursToggle button.active");
-  const welcomeSameHours = !welcomeSameBtn || welcomeSameBtn.dataset.same==="si";
-  const welcomeStart = document.getElementById("welcomeWorkStart").value || "09:00";
-  const welcomeEnd = document.getElementById("welcomeWorkEnd").value || "18:00";
-  const welcomePerDay = welcomeSameHours
-    ? Object.fromEntries(welcomeDays.map(d=>[d,{start:welcomeStart,end:welcomeEnd}]))
-    : collectPerDayHours("welcomePerDayHours");
-  const welcomeFirstDay = welcomeDays[0];
-  DB.config.workSchedule = isWorker ? {
-    mode: modeBtn ? modeBtn.dataset.mode : "",
-    days: welcomeDays,
-    sameHoursAllDays: welcomeSameHours,
-    perDayHours: welcomePerDay,
-    startTime: welcomeSameHours ? welcomeStart : ((welcomeFirstDay && welcomePerDay[welcomeFirstDay] && welcomePerDay[welcomeFirstDay].start) || "09:00"),
-    endTime: welcomeSameHours ? welcomeEnd : ((welcomeFirstDay && welcomePerDay[welcomeFirstDay] && welcomePerDay[welcomeFirstDay].end) || "18:00"),
-    hybridOfficeDays: modeBtn && modeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("welcomeHybridDays")) : [],
-  } : { mode:"", days:[], sameHoursAllDays:true, perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
+  DB.config.workSchedule = computeWelcomeWorkScheduleFromForm();
 
   DB.config.routines = Array.from(document.querySelectorAll("#welcomeRoutinesList .routine-row")).map(row=>({
     id: uid("rt"),
