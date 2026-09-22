@@ -2363,7 +2363,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
                 <button type="button" data-dow="domingo">D</button>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm hidden" id="cf_workDoneBtn" style="margin-top:4px;">✓ Listo</button>
           </div>
         </div>
         <div id="cf_studyBlock" class="hidden">
@@ -2375,7 +2374,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <label style="display:flex;align-items:center;justify-content:space-between;">
               <span>Tus ramos</span>
               <button type="button" class="btn btn-ghost btn-sm hidden" id="cf_subjectsEditBtn">✏️ Editar ramos</button>
-              <button type="button" class="btn btn-ghost btn-sm hidden" id="cf_subjectsDoneBtn">✓ Listo, ver como horario</button>
             </label>
             <div id="cf_subjectsGrid" style="margin-top:8px;"></div>
             <div id="cf_subjectsAiStatus"></div>
@@ -2900,7 +2898,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
                 <button type="button" data-dow="domingo">D</button>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm hidden" id="welcomeWorkDoneBtn" style="margin-top:4px;">✓ Listo</button>
           </div>
         </div>
         <div id="welcomeStudyBlock" class="hidden">
@@ -2912,7 +2909,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <label style="display:flex;align-items:center;justify-content:space-between;">
               <span>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(opcional)</span></span>
               <button type="button" class="btn btn-ghost btn-sm hidden" id="welcomeSubjectsEditBtn">✏️ Editar ramos</button>
-              <button type="button" class="btn btn-ghost btn-sm hidden" id="welcomeSubjectsDoneBtn">✓ Listo, ver como horario</button>
             </label>
             <div id="welcomeSubjectsGrid" style="margin-top:8px;"></div>
             <div id="welcomeSubjectsAiStatus"></div>
@@ -10940,7 +10936,7 @@ async function callClaudeAPI(content){
   return text;
 }
 function aiUnavailableMessage(){
-  return "No se pudo conectar con la IA en este momento. Esta función solo funciona mientras usas la app aquí en Claude.";
+  return "No se pudo conectar con la IA en este momento. Revisa tu conexión e intenta de nuevo en un momento.";
 }
 /* Estado honesto de integraciones (Módulo 14) — informativo, nada conectado aún */
 function integrationsStatus(){
@@ -12568,24 +12564,35 @@ function setCfWorkMode(mode){
   document.getElementById("cf_workSummary").classList.toggle("hidden", mode!=="summary");
   document.getElementById("cf_workEditWrap").classList.toggle("hidden", mode!=="edit");
   document.getElementById("cf_workEditBtn").classList.toggle("hidden", mode!=="summary");
-  document.getElementById("cf_workDoneBtn").classList.toggle("hidden", mode!=="edit");
 }
 document.getElementById("cf_workEditBtn").addEventListener("click", ()=>setCfWorkMode("edit"));
-document.getElementById("cf_workDoneBtn").addEventListener("click", ()=>{
-  renderWorkSummary("cf_workSummary", computeCfWorkScheduleFromForm());
-  setCfWorkMode("summary");
+document.getElementById("cf_workEditWrap").addEventListener("focusout", ()=>{
+  setTimeout(()=>{
+    const wrap = document.getElementById("cf_workEditWrap");
+    if(wrap.contains(document.activeElement)) return;
+    const ws = computeCfWorkScheduleFromForm();
+    if(!ws.mode || !ws.days.length) return; // aún incompleto, seguir editando
+    renderWorkSummary("cf_workSummary", ws);
+    setCfWorkMode("summary");
+  }, 250);
 });
 function setCfSubjectsMode(mode){
   document.getElementById("cf_subjectsGrid").classList.toggle("hidden", mode!=="grid");
   document.getElementById("cf_subjectsEditWrap").classList.toggle("hidden", mode!=="edit");
   document.getElementById("cf_subjectsEditBtn").classList.toggle("hidden", mode!=="grid");
-  document.getElementById("cf_subjectsDoneBtn").classList.toggle("hidden", mode!=="edit");
 }
 document.getElementById("cf_subjectsEditBtn").addEventListener("click", ()=>setCfSubjectsMode("edit"));
-document.getElementById("cf_subjectsDoneBtn").addEventListener("click", ()=>{
-  const subs = collectSubjects("cf_subjectsList");
-  renderSubjectsGrid("cf_subjectsGrid", subs);
-  setCfSubjectsMode(subs.length ? "grid" : "edit");
+// Sin botón "Listo": al dejar de tocar las filas (ningún campo con foco por
+// un momento), se cierra solo y muestra la grilla — automático de verdad.
+document.getElementById("cf_subjectsEditWrap").addEventListener("focusout", ()=>{
+  setTimeout(()=>{
+    const wrap = document.getElementById("cf_subjectsEditWrap");
+    if(wrap.contains(document.activeElement)) return; // el foco se movió a otro campo de la misma sección, no cerrar
+    const subs = collectSubjects("cf_subjectsList");
+    if(!subs.length) return; // nada válido todavía, déjala abierta para seguir escribiendo
+    renderSubjectsGrid("cf_subjectsGrid", subs);
+    setCfSubjectsMode("grid");
+  }, 250);
 });
 document.querySelectorAll("#cf_workMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -12778,6 +12785,7 @@ document.getElementById("cf_resetBtn").addEventListener("click", ()=>{
  * de verdad cómo vive la persona, no solo huecos vacíos en el calendario.
  * ---------------------------------------------------------------------- */
 const DOW_ORDER = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"];
+const DOW_SHORT = {lunes:"LUN",martes:"MAR","miércoles":"MIÉ",jueves:"JUE",viernes:"VIE",sábado:"SÁB",domingo:"DOM"};
 let wizardStep = 1;
 let welcomeRoutineSeq = 0;
 
@@ -13180,13 +13188,17 @@ function setWelcomeSubjectsMode(mode){
   document.getElementById("welcomeSubjectsGrid").classList.toggle("hidden", mode!=="grid");
   document.getElementById("welcomeSubjectsEditWrap").classList.toggle("hidden", mode!=="edit");
   document.getElementById("welcomeSubjectsEditBtn").classList.toggle("hidden", mode!=="grid");
-  document.getElementById("welcomeSubjectsDoneBtn").classList.toggle("hidden", mode!=="edit");
 }
 document.getElementById("welcomeSubjectsEditBtn").addEventListener("click", ()=>setWelcomeSubjectsMode("edit"));
-document.getElementById("welcomeSubjectsDoneBtn").addEventListener("click", ()=>{
-  const subs = collectSubjects("welcomeSubjectsList");
-  renderSubjectsGrid("welcomeSubjectsGrid", subs);
-  setWelcomeSubjectsMode(subs.length ? "grid" : "edit");
+document.getElementById("welcomeSubjectsEditWrap").addEventListener("focusout", ()=>{
+  setTimeout(()=>{
+    const wrap = document.getElementById("welcomeSubjectsEditWrap");
+    if(wrap.contains(document.activeElement)) return;
+    const subs = collectSubjects("welcomeSubjectsList");
+    if(!subs.length) return;
+    renderSubjectsGrid("welcomeSubjectsGrid", subs);
+    setWelcomeSubjectsMode("grid");
+  }, 250);
 });
 document.getElementById("welcomeCopyHoursBtn").addEventListener("click", ()=>{
   const rows = document.querySelectorAll("#welcomePerDayHours .pdh-row");
@@ -13225,12 +13237,17 @@ function setWelcomeWorkMode(mode){
   document.getElementById("welcomeWorkSummary").classList.toggle("hidden", mode!=="summary");
   document.getElementById("welcomeWorkEditWrap").classList.toggle("hidden", mode!=="edit");
   document.getElementById("welcomeWorkEditBtn").classList.toggle("hidden", mode!=="summary");
-  document.getElementById("welcomeWorkDoneBtn").classList.toggle("hidden", mode!=="edit");
 }
 document.getElementById("welcomeWorkEditBtn").addEventListener("click", ()=>setWelcomeWorkMode("edit"));
-document.getElementById("welcomeWorkDoneBtn").addEventListener("click", ()=>{
-  renderWorkSummary("welcomeWorkSummary", computeWelcomeWorkScheduleFromForm());
-  setWelcomeWorkMode("summary");
+document.getElementById("welcomeWorkEditWrap").addEventListener("focusout", ()=>{
+  setTimeout(()=>{
+    const wrap = document.getElementById("welcomeWorkEditWrap");
+    if(wrap.contains(document.activeElement)) return;
+    const ws = computeWelcomeWorkScheduleFromForm();
+    if(!ws.mode || !ws.days.length) return;
+    renderWorkSummary("welcomeWorkSummary", ws);
+    setWelcomeWorkMode("summary");
+  }, 250);
 });
 document.querySelectorAll("#welcomeWorkMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
