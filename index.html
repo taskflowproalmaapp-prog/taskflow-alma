@@ -2378,6 +2378,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <button type="button" class="btn btn-ghost btn-sm hidden" id="cf_subjectsDoneBtn">✓ Listo, ver como horario</button>
             </label>
             <div id="cf_subjectsGrid" style="margin-top:8px;"></div>
+            <div id="cf_subjectsAiStatus"></div>
             <div id="cf_subjectsEditWrap" style="margin-top:8px;">
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <button type="button" class="btn btn-ghost btn-sm" id="cf_addSubjectBtn">✍️ Escribir</button>
@@ -2386,7 +2387,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
                 <input type="file" accept="image/*" id="cf_subjectPhotoInput" class="hidden">
                 <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="cf_subjectExcelInput" class="hidden">
               </div>
-              <div id="cf_subjectsAiStatus"></div>
               <div id="cf_subjectsList" style="margin-top:8px;"></div>
             </div>
           </div>
@@ -2915,6 +2915,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <button type="button" class="btn btn-ghost btn-sm hidden" id="welcomeSubjectsDoneBtn">✓ Listo, ver como horario</button>
             </label>
             <div id="welcomeSubjectsGrid" style="margin-top:8px;"></div>
+            <div id="welcomeSubjectsAiStatus"></div>
             <div id="welcomeSubjectsEditWrap" style="margin-top:8px;">
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <button type="button" class="btn btn-ghost btn-sm" id="welcomeAddSubjectBtn">✍️ Escribir</button>
@@ -2923,7 +2924,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
                 <input type="file" accept="image/*" id="welcomeSubjectPhotoInput" class="hidden">
                 <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="welcomeSubjectExcelInput" class="hidden">
               </div>
-              <div id="welcomeSubjectsAiStatus"></div>
               <div id="welcomeSubjectsList" style="margin-top:8px;"></div>
             </div>
           </div>
@@ -6813,6 +6813,7 @@ function almaEntryMethod(method){
     const dz = document.getElementById("afEntryDropzone");
     const handle = (e)=>{ const f=e.target.files[0]; if(f) almaEntryReadImage(f); e.target.value=""; };
     document.getElementById("afEntryPhoto").addEventListener("change", handle);
+    enablePasteImage("#afEntryDropzone", almaEntryReadImage);
     const cam = document.getElementById("afEntryCam");
     if(cam) cam.addEventListener("change", handle);
     dz.addEventListener("paste", (e)=>{
@@ -7229,6 +7230,7 @@ function quickUpdateMethod(tid, method){
     const dz = document.getElementById("quDropzone");
     const handle = (e)=>{ const f=e.target.files[0]; if(f) quickUpdateAnalyze(tid, {imageFile:f}); e.target.value=""; };
     document.getElementById("quPhoto").addEventListener("change", handle);
+    enablePasteImage("#quDropzone", (f)=>quickUpdateAnalyze(tid, {imageFile:f}));
     const cam = document.getElementById("quCam");
     if(cam) cam.addEventListener("change", handle);
     dz.addEventListener("paste", (e)=>{
@@ -9708,6 +9710,7 @@ function openTaskModal(tid, opts){
     e.target.value = "";
   };
   document.getElementById("tf_emailPhotoInput").addEventListener("change", handlePickedImage);
+  enablePasteImage("#tf_emailDropzone", handlePickedImage);
   const camInput = document.getElementById("tf_emailCameraInput");
   if(camInput) camInput.addEventListener("change", handlePickedImage);
   dropzone.addEventListener("paste", (e)=>handleEmailPasteEvent(e, "tf_emailAiResult"));
@@ -12521,6 +12524,7 @@ document.getElementById("cf_addSubjectBtn").addEventListener("click", ()=>{
   addSubjectRow("cf_subjectsList");
 });
 document.getElementById("cf_subjectPhotoBtn").addEventListener("click", ()=>document.getElementById("cf_subjectPhotoInput").click());
+enablePasteImage("#cf_subjectPhotoBtn", (file)=>handleSubjectPhoto(file, "cf_subjectsList", "cf_subjectsAiStatus"));
 document.getElementById("cf_subjectPhotoInput").addEventListener("change", (e)=>{
   const file = e.target.files[0];
   if(file) handleSubjectPhoto(file, "cf_subjectsList", "cf_subjectsAiStatus");
@@ -12898,32 +12902,29 @@ const SUBJECT_COLORS = ["#FF6B45","#3F7DF2","#20AD7A","#8157EF","#ED3F7C","#E7A1
 // leer que 20 filas apiladas si tienes muchos ramos. Se genera a partir de
 // la lista de ramos ya guardada — es una vista de solo lectura; para editar
 // se usa el botón "✏️ Editar ramos" que muestra la lista de filas de siempre.
+// Grilla visual de horario (como una malla académica de verdad): tarjetas
+// del mismo tamaño, apiladas por orden de hora, una columna por día — NO
+// escalada por duración como un calendario (eso ya lo hace el Calendario
+// real de la app cuando se sincronice). Aquí es solo informativo: nombre +
+// hora de inicio, fácil de leer aunque tengas muchos ramos.
 function renderSubjectsGrid(containerId, subjects){
   const wrap = document.getElementById(containerId);
   if(!wrap) return;
   if(!subjects.length){ wrap.innerHTML = ""; return; }
   const activeDays = DOW_ORDER.filter(d=>subjects.some(s=>(s.days||[]).includes(d)));
-  let minMin = 24*60, maxMin = 0;
-  subjects.forEach(s=>{ minMin = Math.min(minMin, timeToMinutes(s.start)); maxMin = Math.max(maxMin, timeToMinutes(s.end)); });
-  minMin = Math.max(0, minMin - 30); maxMin = Math.min(24*60, maxMin + 30);
-  const totalMin = Math.max(60, maxMin - minMin);
-  const PX_PER_MIN = 1.1;
-  const gridHeight = Math.round(totalMin * PX_PER_MIN);
   const colorMap = {};
-  subjects.forEach((s,i)=>{ if(!colorMap[s.name]) colorMap[s.name] = SUBJECT_COLORS[Object.keys(colorMap).length % SUBJECT_COLORS.length]; });
+  subjects.forEach(s=>{ if(!colorMap[s.name]) colorMap[s.name] = SUBJECT_COLORS[Object.keys(colorMap).length % SUBJECT_COLORS.length]; });
 
   const cols = activeDays.map(d=>{
-    const blocks = subjects.filter(s=>(s.days||[]).includes(d)).map(s=>{
-      const top = Math.round((timeToMinutes(s.start)-minMin)*PX_PER_MIN);
-      const height = Math.max(24, Math.round((timeToMinutes(s.end)-timeToMinutes(s.start))*PX_PER_MIN)-2);
-      return `<div style="position:absolute;top:${top}px;height:${height}px;left:2px;right:2px;background:${colorMap[s.name]};border-radius:6px;padding:4px 6px;overflow:hidden;">
-        <div style="font-size:10.5px;font-weight:600;color:#fff;line-height:1.2;">${esc(s.name)}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.85);">${minutesTo12h(timeToMinutes(s.start))}</div>
-      </div>`;
-    }).join("");
-    return `<div style="flex:1;min-width:64px;">
+    const daySubjects = subjects.filter(s=>(s.days||[]).includes(d)).sort((a,b)=>timeToMinutes(a.start)-timeToMinutes(b.start));
+    const cards = daySubjects.map(s=>`
+      <div style="background:${colorMap[s.name]};border-radius:8px;padding:8px 9px;margin-bottom:5px;">
+        <div style="font-size:11px;font-weight:600;color:#fff;line-height:1.25;">${esc(s.name)}</div>
+        <div style="font-size:9.5px;color:rgba(255,255,255,.9);margin-top:2px;">${minutesTo12h(timeToMinutes(s.start))}</div>
+      </div>`).join("");
+    return `<div style="flex:1;min-width:88px;">
       <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-muted);padding:6px 2px;background:var(--surface-alt);border-radius:8px 8px 0 0;">${DOW_SHORT[d]}</div>
-      <div style="position:relative;height:${gridHeight}px;background:var(--surface-alt);border-radius:0 0 8px 8px;">${blocks}</div>
+      <div style="padding:6px;background:var(--surface-alt);border-radius:0 0 8px 8px;min-height:40px;">${cards}</div>
     </div>`;
   }).join("");
 
@@ -12951,6 +12952,9 @@ Los días deben ser exactamente: lunes, martes, miércoles, jueves, viernes, sá
 }
 async function extractSubjectsFromParsed(raw, listId, statusId){
   const statusEl = document.getElementById(statusId);
+  const isCf = listId.startsWith("cf_");
+  const gridId = isCf ? "cf_subjectsGrid" : "welcomeSubjectsGrid";
+  const setMode = isCf ? setCfSubjectsMode : setWelcomeSubjectsMode;
   try{
     const cleaned = raw.replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(cleaned);
@@ -12960,11 +12964,49 @@ async function extractSubjectsFromParsed(raw, listId, statusId){
       return;
     }
     ramos.forEach(r=>addSubjectRow(listId, { name:r.name||"", days:Array.isArray(r.days)?r.days:[], start:r.start||"18:00", end:r.end||"20:00" }));
-    statusEl.innerHTML = `<div class="t-sub" style="color:var(--success);margin:6px 0;">✓ Encontré ${ramos.length} ramo(s) — revísalos abajo antes de guardar, por si hay que corregir algo.</div>`;
+    // Apenas termina de leer, se minimiza solo y muestra la grilla — sin
+    // esperar que la persona apriete "Listo" a mano.
+    const subs = collectSubjects(listId);
+    renderSubjectsGrid(gridId, subs);
+    setMode("grid");
+    statusEl.innerHTML = `<div class="t-sub" style="color:var(--success);margin:6px 0;">✓ Encontré ${ramos.length} ramo(s). Si algo quedó mal, toca "Editar ramos" para corregirlo.</div>`;
   }catch(e){
     console.error("extractSubjectsFromParsed:", e.message);
     statusEl.innerHTML = `<div class="t-sub" style="color:var(--danger);margin:6px 0;">${aiUnavailableMessage()}</div>`;
   }
+}
+// Pegar una captura con Ctrl+V, sin depender de que algún elemento tenga el
+// foco (ese era el bug: un div con tabindex no se enfoca solo con solo
+// existir, así que el Ctrl+V no llegaba a ningún lado). Este escucha a
+// nivel de toda la página, y solo actúa si el botón/gatillo indicado está
+// visible en pantalla en ese momento — así no interfiere con otras
+// pantallas. Se registra UNA sola vez por gatillo (más abajo, junto a los
+// demás listeners globales), no cada vez que se vuelve a dibujar la vista.
+const _pasteImageHandlers = new Map();
+let _pasteImageListenerAttached = false;
+function enablePasteImage(triggerSelector, onImage){
+  // El handler se actualiza cada vez que se llama (algunos, como el de la
+  // ficha de tarea, cambian de contexto cada vez que se abre un modal
+  // distinto) — pero el listener real del documento solo se engancha una
+  // vez, para no acumular duplicados.
+  _pasteImageHandlers.set(triggerSelector, onImage);
+  if(_pasteImageListenerAttached) return;
+  _pasteImageListenerAttached = true;
+  document.addEventListener("paste", (e)=>{
+    for(const [selector, handler] of _pasteImageHandlers){
+      const trigger = document.querySelector(selector);
+      if(!trigger || trigger.offsetParent===null) continue; // ese gatillo no está visible ahora
+      const items = (e.clipboardData || window.clipboardData || {}).items || [];
+      for(const item of items){
+        if(item.type && item.type.indexOf("image")===0){
+          const file = item.getAsFile();
+          if(file){ handler(file); e.preventDefault(); }
+          return;
+        }
+      }
+      return; // encontramos el gatillo visible de esta pantalla, no seguir buscando otros
+    }
+  });
 }
 async function handleSubjectPhoto(file, listId, statusId){
   const statusEl = document.getElementById(statusId);
@@ -13122,6 +13164,7 @@ document.getElementById("welcomeAddSubjectBtn").addEventListener("click", ()=>{
   addSubjectRow("welcomeSubjectsList");
 });
 document.getElementById("welcomeSubjectPhotoBtn").addEventListener("click", ()=>document.getElementById("welcomeSubjectPhotoInput").click());
+enablePasteImage("#welcomeSubjectPhotoBtn", (file)=>handleSubjectPhoto(file, "welcomeSubjectsList", "welcomeSubjectsAiStatus"));
 document.getElementById("welcomeSubjectPhotoInput").addEventListener("change", (e)=>{
   const file = e.target.files[0];
   if(file) handleSubjectPhoto(file, "welcomeSubjectsList", "welcomeSubjectsAiStatus");
