@@ -2308,20 +2308,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <button type="button" data-daily="otro">✨ Otro</button>
           </div>
         </div>
-        <div id="cf_studyBlock" class="hidden">
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(para que Alma los respete al agendar, y aparezcan en tu Calendario)</span></label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_addSubjectBtn">✍️ Escribir</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectPhotoBtn">📷 Foto</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectExcelBtn">📥 Importar archivo</button>
-              <input type="file" accept="image/*" id="cf_subjectPhotoInput" class="hidden">
-              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="cf_subjectExcelInput" class="hidden">
-            </div>
-            <div id="cf_subjectsAiStatus"></div>
-            <div id="cf_subjectsList" style="margin-top:8px;"></div>
-          </div>
-        </div>
         <div id="cf_workBlock" class="hidden">
           <div class="form-field full" style="margin-bottom:12px;">
             <label>Modalidad de trabajo</label>
@@ -2367,6 +2353,20 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
               <button type="button" data-dow="domingo">D</button>
             </div>
+          </div>
+        </div>
+        <div id="cf_studyBlock" class="hidden">
+          <div class="form-field full" style="margin-bottom:12px;">
+            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(para que Alma los respete al agendar, y aparezcan en tu Calendario)</span></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_addSubjectBtn">✍️ Escribir</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectPhotoBtn">📷 Foto</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectExcelBtn">📥 Importar archivo</button>
+              <input type="file" accept="image/*" id="cf_subjectPhotoInput" class="hidden">
+              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="cf_subjectExcelInput" class="hidden">
+            </div>
+            <div id="cf_subjectsAiStatus"></div>
+            <div id="cf_subjectsList" style="margin-top:8px;"></div>
           </div>
         </div>
 
@@ -2824,20 +2824,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <button type="button" data-daily="otro">✨ Otro</button>
           </div>
         </div>
-        <div id="welcomeStudyBlock" class="hidden">
-          <div class="form-field full" style="margin-bottom:12px;">
-            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(opcional — lo puedes hacer después en Configuración)</span></label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeAddSubjectBtn">✍️ Escribir</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectPhotoBtn">📷 Foto</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectExcelBtn">📥 Importar archivo</button>
-              <input type="file" accept="image/*" id="welcomeSubjectPhotoInput" class="hidden">
-              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="welcomeSubjectExcelInput" class="hidden">
-            </div>
-            <div id="welcomeSubjectsAiStatus"></div>
-            <div id="welcomeSubjectsList" style="margin-top:8px;"></div>
-          </div>
-        </div>
         <div id="welcomeWorkBlock" class="hidden">
           <div class="form-field full" style="margin-bottom:12px;">
             <label>Modalidad de trabajo</label>
@@ -2882,6 +2868,20 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <button type="button" data-dow="viernes">V</button><button type="button" data-dow="sábado">S</button>
               <button type="button" data-dow="domingo">D</button>
             </div>
+          </div>
+        </div>
+        <div id="welcomeStudyBlock" class="hidden">
+          <div class="form-field full" style="margin-bottom:12px;">
+            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(opcional — lo puedes hacer después en Configuración)</span></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeAddSubjectBtn">✍️ Escribir</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectPhotoBtn">📷 Foto</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectExcelBtn">📥 Importar archivo</button>
+              <input type="file" accept="image/*" id="welcomeSubjectPhotoInput" class="hidden">
+              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="welcomeSubjectExcelInput" class="hidden">
+            </div>
+            <div id="welcomeSubjectsAiStatus"></div>
+            <div id="welcomeSubjectsList" style="margin-top:8px;"></div>
           </div>
         </div>
       </div>
