@@ -1633,6 +1633,11 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   .cal-grid{grid-template-columns:repeat(7,minmax(80px,1fr));overflow-x:auto;}
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
 </head>
 <body>
 
@@ -2293,7 +2298,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
         <div class="section-divider">Tu día a día</div>
         <div class="form-field full" style="margin-bottom:12px;">
-          <label>¿Cómo describes tu día a día?</label>
+          <label>¿Cómo describes tu día a día? <span style="font-weight:400;color:var(--text-faint);">(puedes marcar más de una)</span></label>
           <div class="daily-mode-grid" id="cf_dailyMode">
             <button type="button" data-daily="trabajo">💼 Trabajo</button>
             <button type="button" data-daily="casa">🏠 En casa</button>
@@ -2301,6 +2306,20 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <button type="button" data-daily="jubilado">🌿 Jubilado/a</button>
             <button type="button" data-daily="buscando">🔎 Buscando trabajo</button>
             <button type="button" data-daily="otro">✨ Otro</button>
+          </div>
+        </div>
+        <div id="cf_studyBlock" class="hidden">
+          <div class="form-field full" style="margin-bottom:12px;">
+            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(para que Alma los respete al agendar, y aparezcan en tu Calendario)</span></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_addSubjectBtn">✍️ Escribir</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectPhotoBtn">📷 Foto</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="cf_subjectExcelBtn">📥 Importar archivo</button>
+              <input type="file" accept="image/*" id="cf_subjectPhotoInput" class="hidden">
+              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="cf_subjectExcelInput" class="hidden">
+            </div>
+            <div id="cf_subjectsAiStatus"></div>
+            <div id="cf_subjectsList" style="margin-top:8px;"></div>
           </div>
         </div>
         <div id="cf_workBlock" class="hidden">
@@ -2322,6 +2341,17 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             </div>
           </div>
           <div class="form-field full" style="margin-bottom:12px;">
+            <label>¿Todos esos días tienen el mismo horario?</label>
+            <div class="tasktype-toggle" id="cf_sameHoursToggle">
+              <button type="button" data-same="si">Sí, el mismo</button>
+              <button type="button" data-same="no">No, varía por día</button>
+            </div>
+          </div>
+          <div class="form-grid hidden" id="cf_sameHoursWrap" style="margin-bottom:12px;">
+            <div class="form-field"><label>Hora de inicio</label><input type="time" id="cf_workStart" value="09:00"></div>
+            <div class="form-field"><label>Hora de término</label><input type="time" id="cf_workEnd" value="18:00"></div>
+          </div>
+          <div class="form-field full hidden" id="cf_perDayHoursWrap" style="margin-bottom:12px;">
             <label style="display:flex;align-items:center;justify-content:space-between;">
               <span>Horario por día</span>
               <button type="button" class="btn btn-ghost btn-sm" id="cf_copyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
@@ -2784,7 +2814,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <input type="text" id="welcomeCountryOther" class="hidden" placeholder="Escribe tu país" style="margin-top:8px;">
         </div>
         <div class="form-field full" style="margin-bottom:12px;">
-          <label>¿Cómo describes tu día a día?</label>
+          <label>¿Cómo describes tu día a día? <span style="font-weight:400;color:var(--text-faint);">(puedes marcar más de una)</span></label>
           <div class="daily-mode-grid" id="welcomeDailyMode">
             <button type="button" data-daily="trabajo">💼 Trabajo</button>
             <button type="button" data-daily="casa">🏠 En casa</button>
@@ -2792,6 +2822,20 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             <button type="button" data-daily="jubilado">🌿 Jubilado/a</button>
             <button type="button" data-daily="buscando">🔎 Buscando trabajo</button>
             <button type="button" data-daily="otro">✨ Otro</button>
+          </div>
+        </div>
+        <div id="welcomeStudyBlock" class="hidden">
+          <div class="form-field full" style="margin-bottom:12px;">
+            <label>Tus ramos <span style="font-weight:400;color:var(--text-faint);">(opcional — lo puedes hacer después en Configuración)</span></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeAddSubjectBtn">✍️ Escribir</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectPhotoBtn">📷 Foto</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeSubjectExcelBtn">📥 Importar archivo</button>
+              <input type="file" accept="image/*" id="welcomeSubjectPhotoInput" class="hidden">
+              <input type="file" accept=".xlsx,.xls,.csv,.pdf" id="welcomeSubjectExcelInput" class="hidden">
+            </div>
+            <div id="welcomeSubjectsAiStatus"></div>
+            <div id="welcomeSubjectsList" style="margin-top:8px;"></div>
           </div>
         </div>
         <div id="welcomeWorkBlock" class="hidden">
@@ -2812,9 +2856,23 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <button type="button" data-dow="domingo">D</button>
             </div>
           </div>
-          <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-field full" style="margin-bottom:12px;">
+            <label>¿Todos esos días tienen el mismo horario?</label>
+            <div class="tasktype-toggle" id="welcomeSameHoursToggle">
+              <button type="button" data-same="si">Sí, el mismo</button>
+              <button type="button" data-same="no">No, varía por día</button>
+            </div>
+          </div>
+          <div class="form-grid hidden" id="welcomeSameHoursWrap" style="margin-bottom:12px;">
             <div class="form-field"><label>Hora de inicio</label><input type="time" id="welcomeWorkStart" value="09:00"></div>
             <div class="form-field"><label>Hora de término</label><input type="time" id="welcomeWorkEnd" value="18:00"></div>
+          </div>
+          <div class="form-field full hidden" id="welcomePerDayHoursWrap" style="margin-bottom:12px;">
+            <label style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Horario por día</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="welcomeCopyHoursBtn" style="font-size:11.5px;padding:5px 9px;">📋 Copiar el primer día a todos</button>
+            </label>
+            <div id="welcomePerDayHours" style="margin-top:8px;"></div>
           </div>
           <div class="form-field full hidden" id="welcomeHybridDaysWrap">
             <label>¿Qué días vas presencial?</label>
@@ -4242,7 +4300,7 @@ function renderDashEmptyState(){
         <li>${iconCheck()} <span><b>4.</b> Vuelve aquí — el dashboard se completa solo con tus datos.</span></li>
       </div>
     </div>`;
-  document.getElementById("emptyNewTaskBtn").addEventListener("click", ()=>openTaskModal(null));
+  document.getElementById("emptyNewTaskBtn").addEventListener("click", ()=>openAlmaEntry());
   document.getElementById("emptyNewProjectBtn").addEventListener("click", ()=>openProjectModal(null));
   document.getElementById("emptyLoadSampleBtn").addEventListener("click", ()=>{
     const keepConfig = DB.config;
@@ -6487,6 +6545,12 @@ function busySlotsForDate(iso, taskType, allowException){
     slots.forEach(s=>{
       if((s.days||[]).includes(dow) && s.startTime && s.endTime) busy.push([timeToMinutes(s.startTime), timeToMinutes(s.endTime)]);
     });
+  });
+
+  // ramos (si la persona marcó "Estudio" en su día a día) — ocupan tiempo
+  // sin importar el tipo de tarea, igual que las rutinas.
+  ((DB.config.studySchedule && DB.config.studySchedule.subjects) || []).forEach(s=>{
+    if((s.days||[]).includes(dow) && s.start && s.end) busy.push([timeToMinutes(s.start), timeToMinutes(s.end)]);
   });
 
   const workWin = workWindowForDate(iso);
@@ -12120,9 +12184,11 @@ function renderConfiguracion(){
     document.getElementById("cf_countryOther").value = "";
     document.getElementById("cf_countryOther").classList.add("hidden");
   }
-  const dailyMode = c.dailyMode || (c.workSchedule && c.workSchedule.mode ? "trabajo" : "");
-  document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.toggle("active", b.dataset.daily===dailyMode));
-  document.getElementById("cf_workBlock").classList.toggle("hidden", dailyMode!=="trabajo");
+  const dailyModes = c.dailyModes || (c.dailyMode ? [c.dailyMode] : (c.workSchedule && c.workSchedule.mode ? ["trabajo"] : []));
+  document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.toggle("active", dailyModes.includes(b.dataset.daily)));
+  document.getElementById("cf_workBlock").classList.toggle("hidden", !dailyModes.includes("trabajo"));
+  document.getElementById("cf_studyBlock").classList.toggle("hidden", !dailyModes.includes("estudio"));
+  renderSubjectsList("cf_subjectsList", (c.studySchedule && c.studySchedule.subjects) || []);
   const ws = c.workSchedule || {};
   document.querySelectorAll("#cf_workMode button").forEach(b=>b.classList.toggle("active", b.dataset.mode===ws.mode));
   document.getElementById("cf_hybridDaysWrap").classList.toggle("hidden", ws.mode!=="hibrido");
@@ -12130,6 +12196,12 @@ function renderConfiguracion(){
   bindDowPicker(document.getElementById("cf_hybridDays"));
   setSelectedDows(document.getElementById("cf_workDays"), ws.days || ["lunes","martes","miércoles","jueves","viernes"]);
   setSelectedDows(document.getElementById("cf_hybridDays"), ws.hybridOfficeDays || []);
+  const sameHours = ws.sameHoursAllDays!==false; // por defecto "sí" — es el caso más común
+  document.querySelectorAll("#cf_sameHoursToggle button").forEach(b=>b.classList.toggle("active", (b.dataset.same==="si")===sameHours));
+  document.getElementById("cf_sameHoursWrap").classList.toggle("hidden", !sameHours);
+  document.getElementById("cf_perDayHoursWrap").classList.toggle("hidden", sameHours);
+  document.getElementById("cf_workStart").value = ws.startTime || "09:00";
+  document.getElementById("cf_workEnd").value = ws.endTime || "18:00";
   renderPerDayHours("cf_perDayHours", "cf_workDays", ws);
   const copyHoursBtn = document.getElementById("cf_copyHoursBtn");
   if(copyHoursBtn && !copyHoursBtn.dataset.bound){
@@ -12372,11 +12444,39 @@ document.getElementById("cf_country").addEventListener("change", (e)=>{
 });
 document.querySelectorAll("#cf_dailyMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
-    document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("cf_workBlock").classList.toggle("hidden", btn.dataset.daily!=="trabajo");
-    if(btn.dataset.daily==="trabajo") renderPerDayHours("cf_perDayHours","cf_workDays", DB.config.workSchedule||{});
+    btn.classList.toggle("active");
+    const hasWork = !!document.querySelector('#cf_dailyMode button[data-daily="trabajo"].active');
+    const hasStudy = !!document.querySelector('#cf_dailyMode button[data-daily="estudio"].active');
+    document.getElementById("cf_workBlock").classList.toggle("hidden", !hasWork);
+    document.getElementById("cf_studyBlock").classList.toggle("hidden", !hasStudy);
+    if(hasWork) renderPerDayHours("cf_perDayHours","cf_workDays", DB.config.workSchedule||{});
+    if(hasStudy && !document.getElementById("cf_subjectsList").children.length) renderSubjectsList("cf_subjectsList", (DB.config.studySchedule&&DB.config.studySchedule.subjects)||[]);
   });
+});
+document.querySelectorAll("#cf_sameHoursToggle button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("#cf_sameHoursToggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const same = btn.dataset.same==="si";
+    document.getElementById("cf_sameHoursWrap").classList.toggle("hidden", !same);
+    document.getElementById("cf_perDayHoursWrap").classList.toggle("hidden", same);
+    if(!same) renderPerDayHours("cf_perDayHours","cf_workDays", DB.config.workSchedule||{});
+  });
+});
+document.getElementById("cf_addSubjectBtn").addEventListener("click", ()=>{
+  addSubjectRow("cf_subjectsList");
+});
+document.getElementById("cf_subjectPhotoBtn").addEventListener("click", ()=>document.getElementById("cf_subjectPhotoInput").click());
+document.getElementById("cf_subjectPhotoInput").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(file) handleSubjectPhoto(file, "cf_subjectsList", "cf_subjectsAiStatus");
+  e.target.value = "";
+});
+document.getElementById("cf_subjectExcelBtn").addEventListener("click", ()=>document.getElementById("cf_subjectExcelInput").click());
+document.getElementById("cf_subjectExcelInput").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(file) handleSubjectExcel(file, "cf_subjectsList", "cf_subjectsAiStatus");
+  e.target.value = "";
 });
 document.querySelectorAll("#cf_workMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -12470,21 +12570,31 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
 
   const countrySel = document.getElementById("cf_country").value;
   DB.config.country = countrySel==="__other__" ? document.getElementById("cf_countryOther").value.trim() : countrySel;
-  const cfDailyBtn = document.querySelector("#cf_dailyMode button.active");
-  DB.config.dailyMode = cfDailyBtn ? cfDailyBtn.dataset.daily : "";
-  const cfIsWorker = DB.config.dailyMode==="trabajo";
+  DB.config.dailyModes = Array.from(document.querySelectorAll("#cf_dailyMode button.active")).map(b=>b.dataset.daily);
+  DB.config.dailyMode = DB.config.dailyModes[0] || ""; // por compatibilidad con código viejo
+  const cfIsWorker = DB.config.dailyModes.includes("trabajo");
+  const cfIsStudent = DB.config.dailyModes.includes("estudio");
+  DB.config.studySchedule = { subjects: cfIsStudent ? collectSubjects("cf_subjectsList") : [] };
   const cfModeBtn = document.querySelector("#cf_workMode button.active");
-  const cfPerDayHours = cfIsWorker ? collectPerDayHours("cf_perDayHours") : {};
-  const cfFirstDay = getSelectedDows(document.getElementById("cf_workDays"))[0];
+  const cfSameHoursBtn = document.querySelector("#cf_sameHoursToggle button.active");
+  const cfSameHours = !cfSameHoursBtn || cfSameHoursBtn.dataset.same==="si";
+  const cfWorkDays = getSelectedDows(document.getElementById("cf_workDays"));
+  const cfUniformStart = document.getElementById("cf_workStart").value || "09:00";
+  const cfUniformEnd = document.getElementById("cf_workEnd").value || "18:00";
+  const cfPerDayHours = cfIsWorker ? (cfSameHours
+    ? Object.fromEntries(cfWorkDays.map(d=>[d,{start:cfUniformStart,end:cfUniformEnd}]))
+    : collectPerDayHours("cf_perDayHours")) : {};
+  const cfFirstDay = cfWorkDays[0];
   DB.config.workSchedule = cfIsWorker ? {
     mode: cfModeBtn ? cfModeBtn.dataset.mode : "",
-    days: getSelectedDows(document.getElementById("cf_workDays")),
+    days: cfWorkDays,
+    sameHoursAllDays: cfSameHours,
     perDayHours: cfPerDayHours,
     // se mantienen por compatibilidad con código viejo que aún lea un horario único
-    startTime: (cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].start) || "09:00",
-    endTime: (cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].end) || "18:00",
+    startTime: cfSameHours ? cfUniformStart : ((cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].start) || "09:00"),
+    endTime: cfSameHours ? cfUniformEnd : ((cfFirstDay && cfPerDayHours[cfFirstDay] && cfPerDayHours[cfFirstDay].end) || "18:00"),
     hybridOfficeDays: cfModeBtn && cfModeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("cf_hybridDays")) : [],
-  } : { mode:"", days:[], perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
+  } : { mode:"", days:[], sameHoursAllDays:true, perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
   DB.config.routines = Array.from(document.querySelectorAll("#cf_routinesList .routine-row")).map(row=>({
     id: uid("rt"),
     name: row.querySelector(".routine-name").value.trim(),
@@ -12623,6 +12733,141 @@ function collectPerDayHours(containerId){
   });
   return out;
 }
+
+let subjectRowSeq = 0;
+// Dibuja las filas de "ramos" ya guardadas (nombre + días + horario), cada
+// una con su botón de eliminar. "Agregar ramo" usa addSubjectRow() para
+// sumar una fila vacía nueva sin perder las que ya estaban.
+function renderSubjectsList(containerId, subjects){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  (subjects||[]).forEach(s=>addSubjectRow(containerId, s));
+  if(!(subjects||[]).length) addSubjectRow(containerId);
+}
+function addSubjectRow(containerId, subject){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  const rid = "subj_"+(++subjectRowSeq);
+  subject = subject || {name:"", days:[], start:"18:00", end:"20:00"};
+  const row = document.createElement("div");
+  row.className = "subject-row";
+  row.dataset.rid = rid;
+  row.style.cssText = "background:var(--surface-alt);border-radius:10px;padding:10px 12px;margin-bottom:8px;";
+  row.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <input type="text" class="subj-name" placeholder="Ej: Cálculo II" value="${esc(subject.name)}" style="flex:1;">
+      <button type="button" class="qi-trash subj-remove" title="Quitar ramo" aria-label="Quitar">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="dow-picker subj-days">
+        <button type="button" data-dow="lunes" class="${subject.days.includes('lunes')?'active':''}">L</button>
+        <button type="button" data-dow="martes" class="${subject.days.includes('martes')?'active':''}">M</button>
+        <button type="button" data-dow="miércoles" class="${subject.days.includes('miércoles')?'active':''}">X</button>
+        <button type="button" data-dow="jueves" class="${subject.days.includes('jueves')?'active':''}">J</button>
+        <button type="button" data-dow="viernes" class="${subject.days.includes('viernes')?'active':''}">V</button>
+        <button type="button" data-dow="sábado" class="${subject.days.includes('sábado')?'active':''}">S</button>
+        <button type="button" data-dow="domingo" class="${subject.days.includes('domingo')?'active':''}">D</button>
+      </div>
+      <input type="time" class="subj-start" value="${subject.start}" style="width:110px;">
+      <span style="color:var(--text-faint);font-size:12px;">a</span>
+      <input type="time" class="subj-end" value="${subject.end}" style="width:110px;">
+    </div>`;
+  wrap.appendChild(row);
+  bindDowPicker(row.querySelector(".subj-days"));
+  row.querySelector(".subj-remove").addEventListener("click", ()=>row.remove());
+}
+function collectSubjects(containerId){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return [];
+  return Array.from(wrap.querySelectorAll(".subject-row")).map(row=>({
+    name: row.querySelector(".subj-name").value.trim(),
+    days: Array.from(row.querySelectorAll(".subj-days button.active")).map(b=>b.dataset.dow),
+    start: row.querySelector(".subj-start").value || "18:00",
+    end: row.querySelector(".subj-end").value || "20:00",
+  })).filter(s=>s.name && s.days.length);
+}
+
+// Instrucción compartida para que la IA saque los ramos, sea de una foto o
+// de una tabla de Excel — misma forma de respuesta en ambos casos, así el
+// código que la procesa después es uno solo.
+function subjectExtractionInstructions(){
+  return `Extrae los ramos/asignaturas de este horario académico. Para cada ramo, identifica su nombre, en qué día(s) de la semana se dicta, y su hora de inicio y término.
+Responde SOLO con un JSON válido (sin texto adicional, sin markdown), en este formato exacto:
+{"ramos":[{"name":"Nombre del ramo","days":["lunes","miércoles"],"start":"HH:MM","end":"HH:MM"}]}
+Los días deben ser exactamente: lunes, martes, miércoles, jueves, viernes, sábado o domingo (en minúsculas, con tilde donde corresponda). Las horas en formato 24h HH:MM. Si un ramo se repite en más de un día pero a la MISMA hora, agrúpalo en un solo objeto con varios días en "days". Si el mismo ramo tiene horarios DISTINTOS en días distintos, créalo como objetos separados. Si no logras leer algo con certeza, omítelo en vez de inventarlo.`;
+}
+async function extractSubjectsFromParsed(raw, listId, statusId){
+  const statusEl = document.getElementById(statusId);
+  try{
+    const cleaned = raw.replace(/```json|```/g,"").trim();
+    const parsed = JSON.parse(cleaned);
+    const ramos = (parsed && Array.isArray(parsed.ramos)) ? parsed.ramos : [];
+    if(!ramos.length){
+      statusEl.innerHTML = `<div class="t-sub" style="color:var(--danger);margin:6px 0;">No logré identificar ramos ahí. Puedes escribirlos a mano abajo.</div>`;
+      return;
+    }
+    ramos.forEach(r=>addSubjectRow(listId, { name:r.name||"", days:Array.isArray(r.days)?r.days:[], start:r.start||"18:00", end:r.end||"20:00" }));
+    statusEl.innerHTML = `<div class="t-sub" style="color:var(--success);margin:6px 0;">✓ Encontré ${ramos.length} ramo(s) — revísalos abajo antes de guardar, por si hay que corregir algo.</div>`;
+  }catch(e){
+    console.error("extractSubjectsFromParsed:", e.message);
+    statusEl.innerHTML = `<div class="t-sub" style="color:var(--danger);margin:6px 0;">${aiUnavailableMessage()}</div>`;
+  }
+}
+async function handleSubjectPhoto(file, listId, statusId){
+  const statusEl = document.getElementById(statusId);
+  statusEl.innerHTML = `<div class="t-sub" style="margin:6px 0;">🔎 Leyendo la foto de tu horario...</div>`;
+  try{
+    const base64 = await fileToBase64(file);
+    const mediaType = file.type || "image/png";
+    const content = [
+      { type:"image", source:{ type:"base64", media_type: mediaType, data: base64 } },
+      { type:"text", text: subjectExtractionInstructions() },
+    ];
+    const raw = await askAI(content);
+    await extractSubjectsFromParsed(raw, listId, statusId);
+  }catch(e){
+    console.error("handleSubjectPhoto:", e.message);
+    statusEl.innerHTML = `<div class="t-sub" style="color:var(--danger);margin:6px 0;">${aiUnavailableMessage()}</div>`;
+  }
+}
+async function handleSubjectExcel(file, listId, statusId){
+  const statusEl = document.getElementById(statusId);
+  const isPdf = (file.type==="application/pdf") || /\.pdf$/i.test(file.name||"");
+  statusEl.innerHTML = `<div class="t-sub" style="margin:6px 0;">🔎 Leyendo tu archivo...</div>`;
+  try{
+    let prompt;
+    if(isPdf){
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let text = "";
+      for(let p=1; p<=Math.min(pdf.numPages, 10); p++){
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        text += content.items.map(it=>it.str).join(" ") + "\n";
+      }
+      prompt = `${subjectExtractionInstructions()}\n\nEste es el texto extraído del PDF de tu horario:\n${text.slice(0,6000)}`;
+    }else{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type:"array" });
+      // convertimos TODAS las hojas a texto tipo tabla (CSV) — la IA es más
+      // flexible que reglas fijas de columna, porque cada universidad ordena
+      // su horario distinto.
+      const asText = wb.SheetNames.map(name=>{
+        const sheet = wb.Sheets[name];
+        return `Hoja "${name}":\n` + XLSX.utils.sheet_to_csv(sheet);
+      }).join("\n\n");
+      prompt = `${subjectExtractionInstructions()}\n\nEsta es la tabla del archivo Excel (formato CSV, puede tener columnas o filas por día):\n${asText.slice(0,6000)}`;
+    }
+    const raw = await askAI(prompt);
+    await extractSubjectsFromParsed(raw, listId, statusId);
+  }catch(e){
+    console.error("handleSubjectExcel:", e.message);
+    statusEl.innerHTML = `<div class="t-sub" style="color:var(--danger);margin:6px 0;">No pude leer ese archivo. ¿Es un Excel o PDF válido (.xlsx, .xls, .csv o .pdf)?</div>`;
+  }
+}
 function bindDowPicker(container, onChange){
   if(!container || container._dowBound) return;
   container._dowBound = true;
@@ -12646,11 +12891,17 @@ function openWelcomeModal(){
   document.getElementById("welcomeCountryOther").classList.add("hidden");
   document.querySelectorAll("#welcomeDailyMode button").forEach(b=>b.classList.remove("active"));
   document.getElementById("welcomeWorkBlock").classList.add("hidden");
+  document.getElementById("welcomeStudyBlock").classList.add("hidden");
+  document.getElementById("welcomeSubjectsList").innerHTML = "";
   document.querySelectorAll("#welcomeWorkMode button").forEach(b=>b.classList.remove("active"));
   document.getElementById("welcomeHybridDaysWrap").classList.add("hidden");
+  document.querySelectorAll("#welcomeSameHoursToggle button").forEach(b=>b.classList.toggle("active", b.dataset.same==="si"));
+  document.getElementById("welcomeSameHoursWrap").classList.remove("hidden");
+  document.getElementById("welcomePerDayHoursWrap").classList.add("hidden");
   document.getElementById("welcomeWorkStart").value = "09:00";
   document.getElementById("welcomeWorkEnd").value = "18:00";
-  bindDowPicker(document.getElementById("welcomeWorkDays"));
+  document.getElementById("welcomePerDayHours").innerHTML = "";
+  bindDowPicker(document.getElementById("welcomeWorkDays"), ()=>renderPerDayHours("welcomePerDayHours","welcomeWorkDays", DB.config.workSchedule||{}));
   bindDowPicker(document.getElementById("welcomeHybridDays"));
   setSelectedDows(document.getElementById("welcomeWorkDays"), ["lunes","martes","miércoles","jueves","viernes"]);
   setSelectedDows(document.getElementById("welcomeHybridDays"), []);
@@ -12697,11 +12948,46 @@ document.getElementById("welcomeCountry").addEventListener("change", (e)=>{
 });
 document.querySelectorAll("#welcomeDailyMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
-    document.querySelectorAll("#welcomeDailyMode button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    // el bloque de horario laboral solo aplica si la persona trabaja
-    document.getElementById("welcomeWorkBlock").classList.toggle("hidden", btn.dataset.daily!=="trabajo");
+    btn.classList.toggle("active");
+    const hasWork = !!document.querySelector('#welcomeDailyMode button[data-daily="trabajo"].active');
+    const hasStudy = !!document.querySelector('#welcomeDailyMode button[data-daily="estudio"].active');
+    document.getElementById("welcomeWorkBlock").classList.toggle("hidden", !hasWork);
+    document.getElementById("welcomeStudyBlock").classList.toggle("hidden", !hasStudy);
+    if(hasStudy && !document.getElementById("welcomeSubjectsList").children.length) addSubjectRow("welcomeSubjectsList");
   });
+});
+document.querySelectorAll("#welcomeSameHoursToggle button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("#welcomeSameHoursToggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const same = btn.dataset.same==="si";
+    document.getElementById("welcomeSameHoursWrap").classList.toggle("hidden", !same);
+    document.getElementById("welcomePerDayHoursWrap").classList.toggle("hidden", same);
+    if(!same) renderPerDayHours("welcomePerDayHours","welcomeWorkDays", DB.config.workSchedule||{});
+  });
+});
+document.getElementById("welcomeAddSubjectBtn").addEventListener("click", ()=>{
+  addSubjectRow("welcomeSubjectsList");
+});
+document.getElementById("welcomeSubjectPhotoBtn").addEventListener("click", ()=>document.getElementById("welcomeSubjectPhotoInput").click());
+document.getElementById("welcomeSubjectPhotoInput").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(file) handleSubjectPhoto(file, "welcomeSubjectsList", "welcomeSubjectsAiStatus");
+  e.target.value = "";
+});
+document.getElementById("welcomeSubjectExcelBtn").addEventListener("click", ()=>document.getElementById("welcomeSubjectExcelInput").click());
+document.getElementById("welcomeSubjectExcelInput").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(file) handleSubjectExcel(file, "welcomeSubjectsList", "welcomeSubjectsAiStatus");
+  e.target.value = "";
+});
+document.getElementById("welcomeCopyHoursBtn").addEventListener("click", ()=>{
+  const rows = document.querySelectorAll("#welcomePerDayHours .pdh-row");
+  if(!rows.length) return;
+  const first = rows[0];
+  const s = first.querySelector(".pdh-start").value, e = first.querySelector(".pdh-end").value;
+  rows.forEach(r=>{ r.querySelector(".pdh-start").value = s; r.querySelector(".pdh-end").value = e; });
+  toast("Copiado a todos los días.","success");
 });
 document.querySelectorAll("#welcomeWorkMode button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -12716,9 +13002,10 @@ function validateWizardStep(n){
     const country = document.getElementById("welcomeCountry").value;
     if(!country){ toast("Selecciona tu país para continuar.","error"); return false; }
     if(country==="__other__" && !document.getElementById("welcomeCountryOther").value.trim()){ toast("Escribe tu país para continuar.","error"); return false; }
-    const daily = document.querySelector("#welcomeDailyMode button.active");
-    if(!daily){ toast("Cuéntame cómo es tu día a día para continuar.","error"); return false; }
-    if(daily.dataset.daily==="trabajo"){
+    const dailyActive = document.querySelectorAll("#welcomeDailyMode button.active");
+    if(!dailyActive.length){ toast("Cuéntame cómo es tu día a día para continuar.","error"); return false; }
+    const isWorkerStep = Array.from(dailyActive).some(b=>b.dataset.daily==="trabajo");
+    if(isWorkerStep){
       const mode = document.querySelector("#welcomeWorkMode button.active");
       if(!mode){ toast("Selecciona tu modalidad de trabajo para continuar.","error"); return false; }
     }
@@ -12745,23 +13032,30 @@ function finishOnboarding(){
   const countrySel = document.getElementById("welcomeCountry").value;
   DB.config.country = countrySel==="__other__" ? document.getElementById("welcomeCountryOther").value.trim() : countrySel;
 
-  const dailyBtn = document.querySelector("#welcomeDailyMode button.active");
-  DB.config.dailyMode = dailyBtn ? dailyBtn.dataset.daily : "";
-  const isWorker = DB.config.dailyMode==="trabajo";
+  DB.config.dailyModes = Array.from(document.querySelectorAll("#welcomeDailyMode button.active")).map(b=>b.dataset.daily);
+  DB.config.dailyMode = DB.config.dailyModes[0] || "";
+  const isWorker = DB.config.dailyModes.includes("trabajo");
+  const isStudent = DB.config.dailyModes.includes("estudio");
+  DB.config.studySchedule = { subjects: isStudent ? collectSubjects("welcomeSubjectsList") : [] };
   const modeBtn = document.querySelector("#welcomeWorkMode button.active");
   const welcomeDays = getSelectedDows(document.getElementById("welcomeWorkDays"));
+  const welcomeSameBtn = document.querySelector("#welcomeSameHoursToggle button.active");
+  const welcomeSameHours = !welcomeSameBtn || welcomeSameBtn.dataset.same==="si";
   const welcomeStart = document.getElementById("welcomeWorkStart").value || "09:00";
   const welcomeEnd = document.getElementById("welcomeWorkEnd").value || "18:00";
-  const welcomePerDay = {};
-  welcomeDays.forEach(d=>{ welcomePerDay[d] = {start: welcomeStart, end: welcomeEnd}; });
+  const welcomePerDay = welcomeSameHours
+    ? Object.fromEntries(welcomeDays.map(d=>[d,{start:welcomeStart,end:welcomeEnd}]))
+    : collectPerDayHours("welcomePerDayHours");
+  const welcomeFirstDay = welcomeDays[0];
   DB.config.workSchedule = isWorker ? {
     mode: modeBtn ? modeBtn.dataset.mode : "",
     days: welcomeDays,
-    perDayHours: welcomePerDay, // uniforme por ahora; se puede personalizar día a día luego en Configuración
-    startTime: welcomeStart,
-    endTime: welcomeEnd,
+    sameHoursAllDays: welcomeSameHours,
+    perDayHours: welcomePerDay,
+    startTime: welcomeSameHours ? welcomeStart : ((welcomeFirstDay && welcomePerDay[welcomeFirstDay] && welcomePerDay[welcomeFirstDay].start) || "09:00"),
+    endTime: welcomeSameHours ? welcomeEnd : ((welcomeFirstDay && welcomePerDay[welcomeFirstDay] && welcomePerDay[welcomeFirstDay].end) || "18:00"),
     hybridOfficeDays: modeBtn && modeBtn.dataset.mode==="hibrido" ? getSelectedDows(document.getElementById("welcomeHybridDays")) : [],
-  } : { mode:"", days:[], perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
+  } : { mode:"", days:[], sameHoursAllDays:true, perDayHours:{}, startTime:"", endTime:"", hybridOfficeDays:[] };
 
   DB.config.routines = Array.from(document.querySelectorAll("#welcomeRoutinesList .routine-row")).map(row=>({
     id: uid("rt"),
