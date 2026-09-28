@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TaskFlow Pro</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#FF6B45">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TaskFlow">
 <style>
 /* ==========================================================================
    TASKFLOW PRO — Design tokens
@@ -13430,6 +13437,14 @@ function startTopbarClock(){
   setInterval(tick, 15000); // refresca cada 15s para que el minuto quede siempre al día
 }
 
+// Se registra solo, sin esperar a que la persona active las notificaciones
+// — eso es justamente lo que le faltaba a la app para poder "Instalarse"
+// de verdad en el celular, no solo quedar como un acceso directo.
+if("serviceWorker" in navigator && window.isSecureContext){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("/sw.js").catch(err=>console.error("SW register:", err.message));
+  });
+}
 function bootApp(){
   try{
     try{ ensureStickyToday(); }catch(e){ console.error("sticky init",e); }
