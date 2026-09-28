@@ -1463,7 +1463,12 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 #calHeaderSpacer{display:block;}
 #view-calendar .view-header{position:static;top:auto;margin-bottom:14px;padding-top:0;}
 #calStickyTop{padding-top:2px;}
-.cal-stats-caret{margin-left:auto;font-size:11px;color:var(--text-faint);transition:transform .15s ease;}
+/* Fila compacta de "Tu semana en números" — reemplaza las 3 líneas viejas
+   con desglose 💼/🌿. Ahora es tan chica que no hace falta plegarla ni en
+   celular; el desglose sigue disponible al pasar el mouse (title). */
+#calStatsPanel{padding:9px 14px;}
+.cal-stats-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--text);}
+.cal-stats-sep{color:var(--border);}
 @media (max-width:700px), (max-height:480px){
   /* El bloque fijo (título + fecha + pestañas + "Tu semana en números")
      ocupaba casi toda la pantalla en celular y dejaba muy poco espacio
@@ -1472,11 +1477,8 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
      landscape, donde el ancho puede superar 700px pero la altura es muy
      poca). */
   #calHeaderSticky .view-header{display:none;} /* ya sabes que estás en Calendario, no hace falta repetirlo aquí */
-  #calStatsPanel{padding:8px 12px;}
-  #calStatsPanel .panel-title{font-size:12px;}
-  #calStatsPanel .cal-stats-body{display:none;} /* plegado por defecto en celular */
-  #calStatsPanel.cal-stats-open .cal-stats-body{display:flex;} /* se despliega solo si lo tocas */
-  #calStatsPanel.cal-stats-open .cal-stats-caret{transform:rotate(180deg);}
+  #calStatsPanel{padding:7px 12px;}
+  .cal-stats-row{font-size:11px;gap:7px;}
 
   /* Toda la barra (‹ Hoy › + fecha + pestañas Semana/Día/Mes) ahora cabe
      en UNA sola fila compacta, como Google Calendar — antes eran 2 filas
@@ -8836,22 +8838,22 @@ function renderCalStats(range){
   const totalMeet = s.meetWork+s.meetPersonal+s.meetOther;
   const totalTask = s.taskWork+s.taskPersonal;
   const fmt = h => (Math.round(h*10)/10) + "h";
-  // El título ahora es un botón que pliega/despliega — en celular arranca
-  // plegado (ver CSS) para no comerse toda la pantalla fija; en escritorio
-  // el CSS lo ignora y siempre se ve expandido, sin cambiar nada ahí.
-  const toggleBtn = `<button type="button" class="panel-title cal-stats-toggle" id="calStatsToggle" style="margin-bottom:8px;background:none;border:none;padding:0;cursor:pointer;width:100%;text-align:left;display:flex;align-items:center;gap:6px;font:inherit;">📊 Tu semana en números <span class="cal-stats-caret">▾</span></button>`;
+  // Una sola fila compacta, siempre visible — sin plegar. Antes eran 3
+  // líneas con el desglose 💼/🌿 que hacían el panel bastante alto; el
+  // desglose se puede ver pasando el mouse (title) si hace falta.
   if(totalMeet+totalTask===0){
-    wrap.innerHTML = `${toggleBtn}<div class="cal-stats-body"><p class="t-sub" style="margin:0;">Todavía no hay reuniones ni tareas planificadas en este rango.</p></div>`;
-  }else{
-    wrap.innerHTML = `${toggleBtn}
-    <div class="cal-stats-body" style="display:flex;gap:22px;flex-wrap:wrap;font-size:13px;">
-      <div><b>${fmt(totalMeet)}</b> en reuniones <span class="t-sub">(💼 ${fmt(s.meetWork)} · 🌿 ${fmt(s.meetPersonal)})</span></div>
-      <div><b>${fmt(totalTask)}</b> en tareas planificadas <span class="t-sub">(💼 ${fmt(s.taskWork)} · 🌿 ${fmt(s.taskPersonal)})</span></div>
-      <div><b>${fmt(totalMeet+totalTask)}</b> comprometidas en total</div>
-    </div>`;
+    wrap.innerHTML = `<div class="cal-stats-row"><span>📊</span><span class="t-sub">Todavía no hay reuniones ni tareas planificadas en este rango.</span></div>`;
+    return;
   }
-  const btn = document.getElementById("calStatsToggle");
-  if(btn) btn.addEventListener("click", ()=>{ wrap.classList.toggle("cal-stats-open"); });
+  wrap.innerHTML = `
+    <div class="cal-stats-row">
+      <span>📊</span>
+      <span title="💼 ${fmt(s.meetWork)} trabajo · 🌿 ${fmt(s.meetPersonal)} personal">🗓️ <b>${fmt(totalMeet)}</b> reuniones</span>
+      <span class="cal-stats-sep">·</span>
+      <span title="💼 ${fmt(s.taskWork)} trabajo · 🌿 ${fmt(s.taskPersonal)} personal">✅ <b>${fmt(totalTask)}</b> tareas</span>
+      <span class="cal-stats-sep">·</span>
+      <span><b>${fmt(totalMeet+totalTask)}</b> total</span>
+    </div>`;
 }
 function renderCalendar(){
   const range = calendarViewRange();
