@@ -6717,7 +6717,11 @@ function slotDayLabel(iso, date){
   const tmrw = new Date(); tmrw.setDate(tmrw.getDate()+1);
   if(iso===isoOf(tmrw)) return "Mañana";
   const dowLabels = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
-  return dowLabels[date.getDay()].charAt(0).toUpperCase()+dowLabels[date.getDay()].slice(1)+" "+date.getDate();
+  const monthShort = MONTH_LABELS[date.getMonth()].slice(0,3).toLowerCase();
+  // Siempre con el mes (no solo "Viernes 2") — si la fecha límite está
+  // lejos, las sugerencias pueden cruzar varios meses y "2" solo, sin más
+  // contexto, se presta para confundirse de cuál mes es.
+  return dowLabels[date.getDay()].charAt(0).toUpperCase()+dowLabels[date.getDay()].slice(1)+" "+date.getDate()+" "+monthShort;
 }
 const calSuggestOffsets = {}; // taskId -> offset de días usado en la última búsqueda (para "buscar próxima semana")
 /* ====================================================================== *
