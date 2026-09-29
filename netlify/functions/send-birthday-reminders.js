@@ -35,12 +35,12 @@ function daysUntilBirthday(b, todayParts) {
   return { daysLeft: Math.round((occUTC - todayUTC) / 86400000), occYear };
 }
 
-async function sendBirthdayEmail(toEmail, b, occYear) {
+async function sendBirthdayEmail(toEmail, b, occYear, matchedLead) {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) throw new Error("Falta configurar GMAIL_USER / GMAIL_APP_PASSWORD en Netlify");
   const transporter = nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
-  const whenText = b.remindDaysBefore === 0 ? "es hoy" : b.remindDaysBefore === 1 ? "es mañana" : `es en ${b.remindDaysBefore} días`;
+  const whenText = matchedLead === 0 ? "es hoy" : matchedLead === 1 ? "es mañana" : `es en ${matchedLead} días`;
   const ageText = b.year ? ` · cumple ${occYear - b.year} años` : "";
   const html = `
     <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;">
@@ -86,20 +86,23 @@ exports.handler = async function () {
 
       for (const b of birthdays) {
         if (!b || !b.day || !b.month) continue;
-        const lead = typeof b.remindDaysBefore === "number" ? b.remindDaysBefore : 3;
+        // remindDaysBefore puede ser un número suelto (cumpleaños guardados
+        // antes de que esto se volviera de selección múltiple) o un arreglo.
+        const leadArr = Array.isArray(b.remindDaysBefore) ? b.remindDaysBefore : [typeof b.remindDaysBefore === "number" ? b.remindDaysBefore : 3];
         const { daysLeft, occYear } = daysUntilBirthday(b, todayParts);
-        if (daysLeft !== lead) continue; // hoy no toca avisar de este
+        const matchedLead = leadArr.find(lead => lead === daysLeft);
+        if (matchedLead === undefined) continue; // hoy no toca avisar de este
 
         const channels = b.channels || {};
         if (channels.email && toEmail) {
-          try { await sendBirthdayEmail(toEmail, b, occYear); emailsSent++; }
+          try { await sendBirthdayEmail(toEmail, b, occYear, matchedLead); emailsSent++; }
           catch (err) { failed++; console.error(`Email cumpleaños (${username} → ${b.name}):`, err.message); }
         }
         if (channels.push) {
           try {
             const subscription = await pushSubs.get(username, { type: "json" });
             if (subscription) {
-              const whenText = lead === 0 ? "es hoy" : lead === 1 ? "es mañana" : `es en ${lead} días`;
+              const whenText = matchedLead === 0 ? "es hoy" : matchedLead === 1 ? "es mañana" : `es en ${matchedLead} días`;
               const payload = JSON.stringify({
                 title: "🎂 Cumpleaños",
                 body: `El cumpleaños de ${b.name} ${whenText} (${b.day} de ${MONTH_LABELS[b.month-1]}).`,
