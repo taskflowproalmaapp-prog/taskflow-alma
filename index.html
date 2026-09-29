@@ -1933,6 +1933,9 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <!-- Contenido principal (se oculta si no hay datos) -->
         <div id="dashMainContent">
 
+          <!-- Aviso grande de cumpleaños — solo aparece si alguno es hoy o mañana -->
+          <div id="dashBirthdayAlert" class="hidden" style="margin-bottom:16px;"></div>
+
           <!-- 2. Impulso del día (capacidad + logro de hoy, en una sola tarjeta) -->
           <div class="panel dash-impulso-card" id="dashImpulsoPanel" style="margin-bottom:16px;">
             <div class="dash-impulso-badge" id="dashImpulsoBadge">–</div>
@@ -4263,6 +4266,34 @@ function dashGoFiltered(kind){
   showView("mytasks");
 }
 
+// Aviso grande y festivo en Inicio — solo aparece si algún cumpleaños es
+// HOY o MAÑANA (no satura el dashboard el resto del año).
+function renderDashBirthdayAlert(){
+  const wrap = document.getElementById("dashBirthdayAlert");
+  if(!wrap) return;
+  const relevant = (DB.birthdays||[])
+    .map(b=>({ b, occ: nextBirthdayOccurrence(b) }))
+    .filter(x=>x.occ.daysUntil===0 || x.occ.daysUntil===1)
+    .sort((a,c)=>a.occ.daysUntil-c.occ.daysUntil);
+  if(!relevant.length){ wrap.classList.add("hidden"); wrap.innerHTML=""; return; }
+
+  const cards = relevant.map(({b,occ})=>{
+    const age = b.year ? (occ.date.getFullYear() - b.year) : null;
+    const whenLabel = occ.daysUntil===0 ? "🎉 ¡Es hoy!" : "Es mañana";
+    return `<div style="flex:1;min-width:200px;background:rgba(255,255,255,.16);border-radius:14px;padding:14px 16px;">
+      <div style="font-size:12px;font-weight:600;opacity:.9;">${whenLabel}</div>
+      <div style="font-size:17px;font-weight:700;margin-top:2px;">${esc(b.name)}${age!==null?` cumple ${age}`:""}</div>
+      ${b.relationship?`<div style="font-size:12.5px;opacity:.85;margin-top:2px;">${esc(b.relationship)}</div>`:""}
+    </div>`;
+  }).join("");
+
+  wrap.innerHTML = `
+    <div class="panel" style="background:var(--gradient-impulso);color:#fff;border:none;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="font-size:38px;flex:none;">🎂</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;flex:1;">${cards}</div>
+    </div>`;
+  wrap.classList.remove("hidden");
+}
 function renderDashboard(){
   try{ renderDashHeader(); }catch(e){ console.error("dash header",e); }
   try{ refreshCatchUpButton(); }catch(e){}
@@ -4272,6 +4303,7 @@ function renderDashboard(){
   document.getElementById("dashEmptyState").classList.toggle("hidden", hasData);
   document.getElementById("dashMainContent").classList.toggle("hidden", !hasData);
   if(!hasData){ try{ renderDashEmptyState(); }catch(e){ console.error(e); } }
+  try{ renderDashBirthdayAlert(); }catch(e){ console.error("dash birthday alert",e); }
 
   if(!hasData) return;
 
@@ -10351,6 +10383,12 @@ function nextBirthdayOccurrence(b, fromDate){
   const daysUntil = Math.round((occ - todayNoTime)/86400000);
   return { date: occ, daysUntil };
 }
+function formatLeadDaysList(remindDaysBefore){
+  const arr = Array.isArray(remindDaysBefore) ? remindDaysBefore : [typeof remindDaysBefore==="number"?remindDaysBefore:3];
+  if(!arr.length) return "Sin aviso configurado";
+  const labels = arr.slice().sort((a,b)=>a-b).map(n=>n===0?"el mismo día":`${n} día${n===1?"":"s"} antes`);
+  return "Aviso " + labels.join(" y ");
+}
 function renderBirthdays(){
   const listEl = document.getElementById("birthdayList");
   const emptyEl = document.getElementById("birthdayEmptyState");
@@ -10379,7 +10417,7 @@ function renderBirthdays(){
       </div>
       <div class="project-desc">🗓️ ${b.day} de ${MONTH_LABELS[b.month-1]}${age!==null?` · cumple ${age}`:""}</div>
       <div class="project-meta">
-        <span class="tag">Aviso ${b.remindDaysBefore} día${b.remindDaysBefore===1?"":"s"} antes</span>
+        <span class="tag">${formatLeadDaysList(b.remindDaysBefore)}</span>
         ${chans.length?`<span class="tag">${chans.join(" ")}</span>`:`<span class="tag" style="color:var(--text-faint);">Sin recordatorio activo</span>`}
       </div>
       <div class="project-actions">
@@ -10416,6 +10454,11 @@ const FAMILY_RELATIONS = ["Mamá","Papá","Hijo/a","Hermano/a","Pareja / Cónyug
 let birthdayFormState = null;
 function openBirthdayConversation(bid){
   const b = bid ? DB.birthdays.find(x=>x.id===bid) : null;
+  // remindDaysBefore puede venir como número suelto (cumpleaños guardados
+  // antes de este cambio) o como arreglo — en ambos casos lo convertimos al
+  // objeto {valor:true} que usa la selección múltiple del formulario.
+  const leadArr = b ? (Array.isArray(b.remindDaysBefore) ? b.remindDaysBefore : [typeof b.remindDaysBefore==="number"?b.remindDaysBefore:3]) : [3];
+  const leadObj = {}; leadArr.forEach(n=>{ leadObj[n]=true; });
   birthdayFormState = {
     id: b ? b.id : null,
     step: 0,
@@ -10423,9 +10466,9 @@ function openBirthdayConversation(bid){
       name: b.name, day: b.day, month: b.month, year: b.year||"",
       relationship: FAMILY_RELATIONS.includes(b.relationship) ? "Familiar" : (b.relationship||""),
       familyRelation: FAMILY_RELATIONS.includes(b.relationship) ? b.relationship : "",
-      remindDaysBefore: typeof b.remindDaysBefore==="number" ? b.remindDaysBefore : 3,
+      remindDaysBefore: leadObj,
       channels: {...(b.channels||{email:true,push:true})},
-    } : { name:"", day:"", month:new Date().getMonth()+1, year:"", relationship:"", familyRelation:"", remindDaysBefore:3, channels:{email:true,push:true} },
+    } : { name:"", day:"", month:new Date().getMonth()+1, year:"", relationship:"", familyRelation:"", remindDaysBefore:{3:true}, channels:{email:true,push:true} },
   };
   renderBirthdayFormStep();
 }
@@ -10439,7 +10482,7 @@ function birthdaySteps(){
     // Solo se pregunta si eligió "Familiar" — hasta bisabuela/o, sin ir más atrás.
     { key:"familyRelation", q:"¿Qué parentesco exactamente?", hint:"Hasta bisabuela/o — no te voy a pedir tatarabuelos 😉", type:"choicelist",
       options: FAMILY_RELATIONS.map(f=>({v:f,label:f})), onlyIf:(d)=>d.relationship==="Familiar" },
-    { key:"remindDaysBefore", q:"¿Con cuánto tiempo de anticipación te aviso?", type:"choice",
+    { key:"remindDaysBefore", q:"¿Con cuánto tiempo de anticipación te aviso?", hint:"Puedes elegir más de una — te avisaría varias veces.", type:"multichoice",
       options:[{v:0,label:"El mismo día"},{v:3,label:"3 días antes"},{v:7,label:"1 semana antes"}] },
     { key:"channels", q:"¿Cómo quieres que te avise?", type:"multichoice",
       options:[{v:"email",label:"📧 Email"},{v:"push",label:"🔔 Notificación push"}] },
@@ -10475,10 +10518,11 @@ function renderBirthdayFormStep(){
   } else if(step.type==="choicelist"){
     control = `<div class="af-choices" style="flex-direction:column;max-height:280px;overflow-y:auto;">${step.options.map(o=>`<button class="af-choice ${val===o.v?'sel':''}" data-choice="${o.v}" style="text-align:left;">${o.label}</button>`).join("")}</div>`;
   } else if(step.type==="multichoice"){
-    const chosen = st.data.channels || {};
+    const chosen = st.data[step.key] || {};
+    const whatsappHint = step.key==="channels" ? `<button class="af-choice" style="opacity:.45;cursor:not-allowed;" title="Necesita WhatsApp Business conectado — todavía no disponible">💬 WhatsApp <span style="font-size:9px;">Próximamente</span></button>` : "";
     control = `<div class="af-choices">
-      ${step.options.map(o=>`<button class="af-choice ${chosen[o.v]?'sel':''}" data-multichoice="${o.v}">${o.label}</button>`).join("")}
-      <button class="af-choice" style="opacity:.45;cursor:not-allowed;" title="Necesita WhatsApp Business conectado — todavía no disponible">💬 WhatsApp <span style="font-size:9px;">Próximamente</span></button>
+      ${step.options.map(o=>`<button class="af-choice ${chosen[o.v]?'sel':''}" data-multichoice-key="${step.key}" data-multichoice="${o.v}">${o.label}</button>`).join("")}
+      ${whatsappHint}
     </div>`;
   }
   const html = `
@@ -10510,9 +10554,10 @@ function bindBirthdayFormStep(step){
     advanceBirthdayForm();
   }));
   document.querySelectorAll(".af-choice[data-multichoice]").forEach(b=>b.addEventListener("click", ()=>{
-    const key = b.dataset.multichoice;
-    if(!st.data.channels) st.data.channels = {};
-    st.data.channels[key] = !st.data.channels[key];
+    const fieldKey = b.dataset.multichoiceKey;
+    const val = b.dataset.multichoice;
+    if(!st.data[fieldKey]) st.data[fieldKey] = {};
+    st.data[fieldKey][val] = !st.data[fieldKey][val];
     renderBirthdayFormStep(); // solo redibuja este mismo paso (multi-selección, no avanza solo)
   }));
   const back = document.getElementById("bfBack");
@@ -10539,11 +10584,14 @@ function finishBirthdayForm(){
   const d = st.data;
   if(!d.name || !d.day || !d.month){ toast("Falta el nombre o la fecha.","error"); return; }
   const relationship = (d.relationship==="Familiar" && d.familyRelation) ? d.familyRelation : (d.relationship||"");
+  // remindDaysBefore ahora es multi-selección — se guarda como arreglo de
+  // números (ej. [0,3,7]) para poder avisar varias veces si eligió más de una.
+  const leadDays = Object.keys(d.remindDaysBefore||{}).filter(k=>d.remindDaysBefore[k]).map(Number).sort((a,b)=>a-b);
   const data = {
     id: st.id || uid("bd"),
     name: d.name, day: Number(d.day), month: Number(d.month), year: d.year?Number(d.year):null,
     relationship,
-    remindDaysBefore: typeof d.remindDaysBefore==="number" ? d.remindDaysBefore : 3,
+    remindDaysBefore: leadDays.length ? leadDays : [3],
     channels: d.channels || {email:true, push:true},
   };
   if(st.id){
