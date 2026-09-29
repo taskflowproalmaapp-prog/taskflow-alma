@@ -1819,6 +1819,11 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <span>Notificaciones</span>
         <span class="nav-badge" id="navNotifBadge">0</span>
       </li>
+      <li class="nav-item" data-view="cumpleanos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6a2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 0-2 4Zm0 0a2.5 2.5 0 0 1-2-4 2.5 2.5 0 0 1 2 4Z"/><path d="M4 10.5C4 9 5 8 6.5 8S9 9 9 10.5m6 0C15 9 16 8 17.5 8S20 9 20 10.5"/><path d="M3 10.5h18v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3Z"/><path d="M4 15.5h16V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3.5Z"/></svg>
+        <span>Cumpleaños</span>
+        <span class="nav-badge queue hidden" id="navBirthdayBadge">0</span>
+      </li>
       <li class="nav-item" data-view="configuracion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
         <span>Configuración</span>
@@ -2242,6 +2247,26 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
       </div>
       <div id="notifGroups"></div>
+    </section>
+
+    <!-- ---------- CUMPLEAÑOS ---------- -->
+    <section class="view hidden" id="view-cumpleanos">
+      <div class="view-header">
+        <div>
+          <h1>Cumpleaños</h1>
+          <p>Agenda los cumpleaños importantes — Alma te avisa antes de que se pasen</p>
+        </div>
+        <button class="btn btn-primary" id="addBirthdayBtn">🎂 Agregar cumpleaños</button>
+      </div>
+      <div id="birthdayEmptyState" class="hidden">
+        <div class="empty-state">
+          <div style="font-size:34px;">🎂</div>
+          <h3>Aún no tienes cumpleaños agendados</h3>
+          <p>Agrega a las personas importantes para que Alma te avise antes de que se te pase.</p>
+          <button class="btn btn-primary" id="addBirthdayBtnEmpty">🎂 Agregar el primero</button>
+        </div>
+      </div>
+      <div id="birthdayList" class="projects-grid"></div>
     </section>
 
     <!-- ---------- CONFIGURACIÓN ---------- -->
@@ -3513,7 +3538,7 @@ const DATA_VERSION = 2;
 
 function emptyData(){
   return {
-    projects: [], tasks: [], responsables: [], trash: [],
+    projects: [], tasks: [], responsables: [], trash: [], birthdays: [],
     stickyNote: { date:"", lines:[] },
     stickyHistory: [],
     config: { orgName:"Mi Organización", userName:"Usuario Demo", dateFormat:"dd/mm/aaaa", weekStart:"lunes", theme:"light", notificationsEnabled:true, reminderLeadDays:3, customTags:[], requestAreas:DEFAULT_REQUEST_AREAS.slice(), lifeAreas:DEFAULT_LIFE_AREAS.map(a=>({...a})), customLabels:{priorities:{}, taskStatuses:{}, projectStatuses:{}}, emailNotifications:{}, dailyMode:"", alma:{assistantName:"Alma", userPreferredName:"", setupDate:"", personalizationDone:false, personalizationPostponed:false, cloudMinimized:false, checkEnabled:true, checkPrefs:{sleep:true, energy:true, mood:true}, wellbeing:{lastCheckDate:"", today:null, history:[]}, weeklyReview:{lastReviewDate:"", intention:"", history:[]}, checkEnabled:true, checkPrefs:{sleep:true, energy:true, mood:true}}, stickyCutoffHour:"00:00", stickyStyle:{model:"moderna", paper:"", ink:"", font:"sans", title:"Mi libreta"} },
@@ -3539,6 +3564,7 @@ function normalizeAndAdoptDB(parsed){
   if(!DB.config.lifeAreas || !DB.config.lifeAreas.length) DB.config.lifeAreas = DEFAULT_LIFE_AREAS.map(a=>({...a}));
   if(!Array.isArray(DB.activityLog)) DB.activityLog = [];
   if(!Array.isArray(DB.trash)) DB.trash = [];
+  if(!Array.isArray(DB.birthdays)) DB.birthdays = [];
   if(!DB.stickyNote || typeof DB.stickyNote!=="object") DB.stickyNote = { date:"", lines:[] };
   if(!Array.isArray(DB.stickyHistory)) DB.stickyHistory = [];
   if(!DB.config.stickyCutoffHour) DB.config.stickyCutoffHour = "00:00";
@@ -3977,7 +4003,7 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 /* ---------------------------------------------------------------------- *
  * Navegación entre vistas
  * ---------------------------------------------------------------------- */
-const VIEWS = ["dashboard","projects","notas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","usuarios","configuracion"];
+const VIEWS = ["dashboard","projects","notas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
 function showView(view){
   selectedTaskIds.clear();
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
@@ -10307,6 +10333,141 @@ function renderReportes(){
 /* ---------------------------------------------------------------------- *
  * NOTIFICACIONES
  * ---------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------- *
+ * CUMPLEAÑOS — agenda personas importantes; Alma avisa antes de que se
+ * pase la fecha. Solo se guarda día + mes (+ año opcional, para la edad),
+ * no una fecha completa — un cumpleaños se repite cada año.
+ * ---------------------------------------------------------------------- */
+const MONTH_SHORT_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+// Próxima ocurrencia de un cumpleaños desde hoy (si ya pasó este año, cae en
+// el año que viene) — se usa tanto para ordenar la lista como para calcular
+// "en cuántos días" y para que el recordatorio del servidor sepa cuándo avisar.
+function nextBirthdayOccurrence(b, fromDate){
+  fromDate = fromDate || new Date();
+  const todayNoTime = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+  let year = todayNoTime.getFullYear();
+  let occ = new Date(year, b.month-1, b.day);
+  if(occ < todayNoTime) occ = new Date(year+1, b.month-1, b.day);
+  const daysUntil = Math.round((occ - todayNoTime)/86400000);
+  return { date: occ, daysUntil };
+}
+function renderBirthdays(){
+  const listEl = document.getElementById("birthdayList");
+  const emptyEl = document.getElementById("birthdayEmptyState");
+  const list = DB.birthdays || [];
+  emptyEl.classList.toggle("hidden", list.length>0);
+  listEl.classList.toggle("hidden", list.length===0);
+  if(!list.length){ listEl.innerHTML=""; }
+
+  const enriched = list.map(b=>({ b, occ: nextBirthdayOccurrence(b) })).sort((a,c)=>a.occ.daysUntil-c.occ.daysUntil);
+
+  listEl.innerHTML = enriched.map(({b,occ})=>{
+    const soon = occ.daysUntil<=7;
+    const whenLabel = occ.daysUntil===0 ? "🎉 ¡Hoy!" : occ.daysUntil===1 ? "Mañana" : `En ${occ.daysUntil} días`;
+    const age = b.year ? (occ.date.getFullYear() - b.year) : null;
+    const chans = [];
+    if(b.channels && b.channels.email) chans.push("📧");
+    if(b.channels && b.channels.push) chans.push("🔔");
+    return `<div class="project-card" style="--card-color:${soon?'#ED3F7C':'#8157EF'}" data-bid="${b.id}">
+      <div class="project-card-head">
+        <span class="chip-avatar" style="width:46px;height:46px;font-size:16px;background:${soon?'#ED3F7C':'#8157EF'};flex:none;">🎂</span>
+        <div style="flex:1;min-width:0;">
+          <div class="project-name">${esc(b.name)}</div>
+          <div class="t-sub">${esc(b.relationship||"Sin relación indicada")}</div>
+        </div>
+        <span class="badge" style="background:color-mix(in srgb, ${soon?'#ED3F7C':'#8157EF'} 16%, transparent);color:${soon?'#ED3F7C':'#8157EF'};white-space:nowrap;">${whenLabel}</span>
+      </div>
+      <div class="project-desc">🗓️ ${b.day} de ${MONTH_LABELS[b.month-1]}${age!==null?` · cumple ${age}`:""}</div>
+      <div class="project-meta">
+        <span class="tag">Aviso ${b.remindDaysBefore} día${b.remindDaysBefore===1?"":"s"} antes</span>
+        ${chans.length?`<span class="tag">${chans.join(" ")}</span>`:`<span class="tag" style="color:var(--text-faint);">Sin recordatorio activo</span>`}
+      </div>
+      <div class="project-actions">
+        <button class="btn btn-ghost btn-sm" data-act="edit">${iconEdit()} Editar</button>
+        <button class="btn btn-danger btn-sm" data-act="delete">${iconTrash()}</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  listEl.querySelectorAll("[data-bid]").forEach(card=>{
+    const bid = card.dataset.bid;
+    card.querySelector('[data-act="edit"]').addEventListener("click", ()=>openBirthdayModal(bid));
+    card.querySelector('[data-act="delete"]').addEventListener("click", ()=>{
+      const b = DB.birthdays.find(x=>x.id===bid);
+      if(!b) return;
+      if(!confirm(`¿Eliminar el cumpleaños de "${b.name}"?`)) return;
+      DB.birthdays = DB.birthdays.filter(x=>x.id!==bid);
+      saveDB(); renderBirthdays(); refreshBirthdayBadge();
+      toast(`Eliminaste el cumpleaños de "${b.name}".`,"success");
+    });
+  });
+  refreshBirthdayBadge();
+}
+// El numerito rojo del menú lateral: cuántos cumpleaños caen dentro de los
+// próximos 7 días — un aviso visual rápido, sin tener que entrar a revisar.
+function refreshBirthdayBadge(){
+  const badge = document.getElementById("navBirthdayBadge");
+  if(!badge) return;
+  const soon = (DB.birthdays||[]).filter(b=>nextBirthdayOccurrence(b).daysUntil<=7).length;
+  badge.textContent = soon;
+  badge.classList.toggle("hidden", soon===0);
+}
+function openBirthdayModal(bid){
+  const b = bid ? DB.birthdays.find(x=>x.id===bid) : null;
+  const html = `
+    <div class="form-grid">
+      <div class="form-field full"><label>Nombre <span class="req">*</span></label><input type="text" id="bf_name" placeholder="Ej: Nicole Contreras" value="${b?esc(b.name):""}"></div>
+      <div class="form-field"><label>Día <span class="req">*</span></label><input type="number" id="bf_day" min="1" max="31" value="${b?b.day:""}"></div>
+      <div class="form-field"><label>Mes <span class="req">*</span></label>
+        <select id="bf_month">${MONTH_LABELS.map((m,i)=>`<option value="${i+1}" ${b&&b.month===i+1?"selected":""}>${m}</option>`).join("")}</select>
+      </div>
+      <div class="form-field"><label>Año de nacimiento <span style="font-weight:400;color:var(--text-faint);">(opcional, para calcular la edad)</span></label><input type="number" id="bf_year" min="1900" max="2100" placeholder="Ej: 1990" value="${b&&b.year?b.year:""}"></div>
+      <div class="form-field"><label>Relación</label><input type="text" id="bf_relationship" placeholder="Ej: Hermana, Cliente, Amigo…" value="${b?esc(b.relationship||""):""}"></div>
+      <div class="form-field full"><label>Avisarme con cuántos días de anticipación</label><input type="number" id="bf_lead" min="0" max="30" value="${b?b.remindDaysBefore:3}"></div>
+      <div class="form-field full">
+        <label>¿Cómo quieres que te avise?</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="bf_chEmail" ${!b||b.channels&&b.channels.email?"checked":""}> 📧 Email</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="bf_chPush" ${!b||b.channels&&b.channels.push?"checked":""}> 🔔 Notificación push</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-faint);opacity:.6;cursor:not-allowed;" title="Necesita una cuenta de WhatsApp Business — todavía no está conectada"><input type="checkbox" disabled> 💬 WhatsApp <span class="badge" style="background:var(--surface-alt);font-size:10px;">Próximamente</span></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-faint);opacity:.6;cursor:not-allowed;" title="Necesita una cuenta de SMS (ej. Twilio) — todavía no está conectada"><input type="checkbox" disabled> 📱 SMS <span class="badge" style="background:var(--surface-alt);font-size:10px;">Próximamente</span></label>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+      <button class="btn btn-ghost" id="bfCancel">Cancelar</button>
+      <button class="btn btn-primary" id="bfSave">${b?"Guardar cambios":"Agregar cumpleaños"}</button>
+    </div>`;
+  openGenericModal(b?"Editar cumpleaños":"Nuevo cumpleaños", html);
+  document.getElementById("bfCancel").addEventListener("click", closeGenericModal);
+  document.getElementById("bfSave").addEventListener("click", ()=>{
+    const name = document.getElementById("bf_name").value.trim();
+    const day = Number(document.getElementById("bf_day").value);
+    const month = Number(document.getElementById("bf_month").value);
+    if(!name){ toast("Ponle un nombre.","error"); return; }
+    if(!day || day<1 || day>31){ toast("El día tiene que ser entre 1 y 31.","error"); return; }
+    const yearVal = document.getElementById("bf_year").value;
+    const data = {
+      id: b?b.id:uid("bd"),
+      name, day, month,
+      year: yearVal?Number(yearVal):null,
+      relationship: document.getElementById("bf_relationship").value.trim(),
+      remindDaysBefore: Number(document.getElementById("bf_lead").value)||0,
+      channels: { email: document.getElementById("bf_chEmail").checked, push: document.getElementById("bf_chPush").checked },
+    };
+    if(b){
+      const idx = DB.birthdays.findIndex(x=>x.id===b.id);
+      DB.birthdays[idx] = data;
+    }else{
+      DB.birthdays.push(data);
+    }
+    saveDB(); closeGenericModal(); renderBirthdays();
+    toast(`✓ Guardado el cumpleaños de "${name}".`,"success");
+  });
+}
+document.getElementById("addBirthdayBtn").addEventListener("click", ()=>openBirthdayModal(null));
+document.getElementById("addBirthdayBtnEmpty").addEventListener("click", ()=>openBirthdayModal(null));
+
 function renderNotificaciones(){
   const wrap = document.getElementById("notifGroups");
   if(DB.config.notificationsEnabled===false){
@@ -11412,6 +11573,7 @@ function renderSidebarCounters(){
   notifBadge.textContent = notifTotal;
   notifBadge.classList.toggle("alert", notifTotal>0);
   document.getElementById("notifBellDot").classList.toggle("hidden", notifTotal===0);
+  refreshBirthdayBadge();
 }
 function render(){
   try{ recomputeAll(); }catch(e){ console.error("recomputeAll",e); notifyUnexpectedError(); }
@@ -11426,7 +11588,7 @@ function render(){
   const renderers = {
     dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, mytasks: renderTaskList, kanban: renderKanban,
     agendar: renderPorAgendar, calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
-    reportes: renderReportes, notificaciones: renderNotificaciones, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
+    reportes: renderReportes, notificaciones: renderNotificaciones, cumpleanos: renderBirthdays, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
   };
   const fn = renderers[activeView];
   if(fn){
