@@ -10391,7 +10391,7 @@ function renderBirthdays(){
 
   listEl.querySelectorAll("[data-bid]").forEach(card=>{
     const bid = card.dataset.bid;
-    card.querySelector('[data-act="edit"]').addEventListener("click", ()=>openBirthdayModal(bid));
+    card.querySelector('[data-act="edit"]').addEventListener("click", ()=>openBirthdayConversation(bid));
     card.querySelector('[data-act="delete"]').addEventListener("click", ()=>{
       const b = DB.birthdays.find(x=>x.id===bid);
       if(!b) return;
@@ -10412,61 +10412,151 @@ function refreshBirthdayBadge(){
   badge.textContent = soon;
   badge.classList.toggle("hidden", soon===0);
 }
-function openBirthdayModal(bid){
+const FAMILY_RELATIONS = ["Mamá","Papá","Hijo/a","Hermano/a","Pareja / Cónyuge","Abuelo/a","Nieto/a","Tío/a","Sobrino/a","Primo/a","Suegro/a","Yerno / Nuera","Cuñado/a","Padrino / Madrina","Ahijado/a","Bisabuelo/a","Bisnieto/a","Otro familiar"];
+let birthdayFormState = null;
+function openBirthdayConversation(bid){
   const b = bid ? DB.birthdays.find(x=>x.id===bid) : null;
+  birthdayFormState = {
+    id: b ? b.id : null,
+    step: 0,
+    data: b ? {
+      name: b.name, day: b.day, month: b.month, year: b.year||"",
+      relationship: FAMILY_RELATIONS.includes(b.relationship) ? "Familiar" : (b.relationship||""),
+      familyRelation: FAMILY_RELATIONS.includes(b.relationship) ? b.relationship : "",
+      remindDaysBefore: typeof b.remindDaysBefore==="number" ? b.remindDaysBefore : 3,
+      channels: {...(b.channels||{email:true,push:true})},
+    } : { name:"", day:"", month:new Date().getMonth()+1, year:"", relationship:"", familyRelation:"", remindDaysBefore:3, channels:{email:true,push:true} },
+  };
+  renderBirthdayFormStep();
+}
+function birthdaySteps(){
+  return [
+    { key:"name", q:"¿De quién es este cumpleaños?", type:"text", placeholder:"Nombre" },
+    { key:"daymonth", q:"¿Qué día y mes es?", hint:"El año lo preguntamos después, y es opcional.", type:"daymonth" },
+    { key:"year", q:"¿Sabes en qué año nació?", hint:"Así te puedo decir qué edad cumple — pero es opcional.", type:"number", placeholder:"Ej: 1990", skip:"No lo sé / prefiero no decirlo" },
+    { key:"relationship", q:"¿Qué es él/ella de ti?", hint:"Opcional, para ordenarlos mejor.", type:"choice",
+      options:[{v:"Familiar",label:"👪 Familiar"},{v:"Amigo/a",label:"🤝 Amigo/a"},{v:"Colega",label:"💼 Colega"},{v:"Otro",label:"✨ Otro"}], skip:"Prefiero no decirlo" },
+    // Solo se pregunta si eligió "Familiar" — hasta bisabuela/o, sin ir más atrás.
+    { key:"familyRelation", q:"¿Qué parentesco exactamente?", hint:"Hasta bisabuela/o — no te voy a pedir tatarabuelos 😉", type:"choicelist",
+      options: FAMILY_RELATIONS.map(f=>({v:f,label:f})), onlyIf:(d)=>d.relationship==="Familiar" },
+    { key:"remindDaysBefore", q:"¿Con cuánto tiempo de anticipación te aviso?", type:"choice",
+      options:[{v:0,label:"El mismo día"},{v:3,label:"3 días antes"},{v:7,label:"1 semana antes"}] },
+    { key:"channels", q:"¿Cómo quieres que te avise?", type:"multichoice",
+      options:[{v:"email",label:"📧 Email"},{v:"push",label:"🔔 Notificación push"}] },
+  ];
+}
+function renderBirthdayFormStep(){
+  const st = birthdayFormState;
+  if(!st) return;
+  const steps = birthdaySteps();
+  while(st.step < steps.length && steps[st.step].onlyIf && !steps[st.step].onlyIf(st.data)){
+    st.step += st._dir || 1;
+    if(st.step < 0){ st.step = 0; break; }
+  }
+  st._dir = 1;
+  if(st.step >= steps.length){ finishBirthdayForm(); return; }
+  const visibleSteps = steps.filter(s=>!s.onlyIf || s.onlyIf(st.data));
+  const visibleIndex = visibleSteps.findIndex(s=>s.key===steps[st.step].key);
+  const step = steps[st.step];
+  const total = visibleSteps.length;
+  const val = st.data[step.key];
+  let control = "";
+  if(step.type==="text"){
+    control = `<input type="text" id="bfInput" class="af-input" placeholder="${step.placeholder||""}" value="${esc(val||"")}">`;
+  } else if(step.type==="number"){
+    control = `<input type="number" id="bfInput" class="af-input" placeholder="${step.placeholder||""}" value="${val||""}">`;
+  } else if(step.type==="daymonth"){
+    control = `<div style="display:flex;gap:10px;">
+      <input type="number" id="bfDay" class="af-input" min="1" max="31" placeholder="Día" value="${st.data.day||""}" style="max-width:100px;">
+      <select id="bfMonth" class="af-input" style="flex:1;">${MONTH_LABELS.map((m,i)=>`<option value="${i+1}" ${Number(st.data.month)===i+1?"selected":""}>${m}</option>`).join("")}</select>
+    </div>`;
+  } else if(step.type==="choice"){
+    control = `<div class="af-choices">${step.options.map(o=>`<button class="af-choice ${val===o.v?'sel':''}" data-choice="${o.v}">${o.label}</button>`).join("")}</div>`;
+  } else if(step.type==="choicelist"){
+    control = `<div class="af-choices" style="flex-direction:column;max-height:280px;overflow-y:auto;">${step.options.map(o=>`<button class="af-choice ${val===o.v?'sel':''}" data-choice="${o.v}" style="text-align:left;">${o.label}</button>`).join("")}</div>`;
+  } else if(step.type==="multichoice"){
+    const chosen = st.data.channels || {};
+    control = `<div class="af-choices">
+      ${step.options.map(o=>`<button class="af-choice ${chosen[o.v]?'sel':''}" data-multichoice="${o.v}">${o.label}</button>`).join("")}
+      <button class="af-choice" style="opacity:.45;cursor:not-allowed;" title="Necesita WhatsApp Business conectado — todavía no disponible">💬 WhatsApp <span style="font-size:9px;">Próximamente</span></button>
+    </div>`;
+  }
   const html = `
-    <div class="form-grid">
-      <div class="form-field full"><label>Nombre <span class="req">*</span></label><input type="text" id="bf_name" placeholder="Ej: Nicole Contreras" value="${b?esc(b.name):""}"></div>
-      <div class="form-field"><label>Día <span class="req">*</span></label><input type="number" id="bf_day" min="1" max="31" value="${b?b.day:""}"></div>
-      <div class="form-field"><label>Mes <span class="req">*</span></label>
-        <select id="bf_month">${MONTH_LABELS.map((m,i)=>`<option value="${i+1}" ${b&&b.month===i+1?"selected":""}>${m}</option>`).join("")}</select>
+    <div class="alma-form manual">
+      <div class="af-head">
+        <div class="af-orb"></div>
+        <div><div class="af-name">Alma</div><div class="af-sub">agendemos este cumpleaños</div></div>
+        <span class="af-progress">${visibleIndex+1} de ${total}</span>
       </div>
-      <div class="form-field"><label>Año de nacimiento <span style="font-weight:400;color:var(--text-faint);">(opcional, para calcular la edad)</span></label><input type="number" id="bf_year" min="1900" max="2100" placeholder="Ej: 1990" value="${b&&b.year?b.year:""}"></div>
-      <div class="form-field"><label>Relación</label><input type="text" id="bf_relationship" placeholder="Ej: Hermana, Cliente, Amigo…" value="${b?esc(b.relationship||""):""}"></div>
-      <div class="form-field full"><label>Avisarme con cuántos días de anticipación</label><input type="number" id="bf_lead" min="0" max="30" value="${b?b.remindDaysBefore:3}"></div>
-      <div class="form-field full">
-        <label>¿Cómo quieres que te avise?</label>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="bf_chEmail" ${!b||b.channels&&b.channels.email?"checked":""}> 📧 Email</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="bf_chPush" ${!b||b.channels&&b.channels.push?"checked":""}> 🔔 Notificación push</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-faint);opacity:.6;cursor:not-allowed;" title="Necesita una cuenta de WhatsApp Business — todavía no está conectada"><input type="checkbox" disabled> 💬 WhatsApp <span class="badge" style="background:var(--surface-alt);font-size:10px;">Próximamente</span></label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-faint);opacity:.6;cursor:not-allowed;" title="Necesita una cuenta de SMS (ej. Twilio) — todavía no está conectada"><input type="checkbox" disabled> 📱 SMS <span class="badge" style="background:var(--surface-alt);font-size:10px;">Próximamente</span></label>
+      <div class="af-question">${step.q}</div>
+      ${step.hint?`<div class="af-hint">${step.hint}</div>`:""}
+      <div class="af-control">${control}</div>
+      <div class="af-actions">
+        <button class="af-back" ${st.step===0?'style="visibility:hidden"':''} id="bfBack">← Atrás</button>
+        <div style="display:flex;gap:8px;">
+          ${step.skip?`<button class="af-skip" id="bfSkip">${step.skip}</button>`:""}
+          <button class="af-next" id="bfNext">${visibleIndex===total-1?"🎂 Agendar":"Siguiente"} →</button>
         </div>
       </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
-      <button class="btn btn-ghost" id="bfCancel">Cancelar</button>
-      <button class="btn btn-primary" id="bfSave">${b?"Guardar cambios":"Agregar cumpleaños"}</button>
     </div>`;
-  openGenericModal(b?"Editar cumpleaños":"Nuevo cumpleaños", html);
-  document.getElementById("bfCancel").addEventListener("click", closeGenericModal);
-  document.getElementById("bfSave").addEventListener("click", ()=>{
-    const name = document.getElementById("bf_name").value.trim();
-    const day = Number(document.getElementById("bf_day").value);
-    const month = Number(document.getElementById("bf_month").value);
-    if(!name){ toast("Ponle un nombre.","error"); return; }
-    if(!day || day<1 || day>31){ toast("El día tiene que ser entre 1 y 31.","error"); return; }
-    const yearVal = document.getElementById("bf_year").value;
-    const data = {
-      id: b?b.id:uid("bd"),
-      name, day, month,
-      year: yearVal?Number(yearVal):null,
-      relationship: document.getElementById("bf_relationship").value.trim(),
-      remindDaysBefore: Number(document.getElementById("bf_lead").value)||0,
-      channels: { email: document.getElementById("bf_chEmail").checked, push: document.getElementById("bf_chPush").checked },
-    };
-    if(b){
-      const idx = DB.birthdays.findIndex(x=>x.id===b.id);
-      DB.birthdays[idx] = data;
-    }else{
-      DB.birthdays.push(data);
-    }
-    saveDB(); closeGenericModal(); renderBirthdays();
-    toast(`✓ Guardado el cumpleaños de "${name}".`,"success");
-  });
+  openGenericModal("", html);
+  document.getElementById("genericModalTitle").style.display = "none";
+  bindBirthdayFormStep(step);
 }
-document.getElementById("addBirthdayBtn").addEventListener("click", ()=>openBirthdayModal(null));
-document.getElementById("addBirthdayBtnEmpty").addEventListener("click", ()=>openBirthdayModal(null));
+function bindBirthdayFormStep(step){
+  const st = birthdayFormState;
+  document.querySelectorAll(".af-choice[data-choice]").forEach(b=>b.addEventListener("click", ()=>{
+    st.data[step.key] = b.dataset.choice;
+    advanceBirthdayForm();
+  }));
+  document.querySelectorAll(".af-choice[data-multichoice]").forEach(b=>b.addEventListener("click", ()=>{
+    const key = b.dataset.multichoice;
+    if(!st.data.channels) st.data.channels = {};
+    st.data.channels[key] = !st.data.channels[key];
+    renderBirthdayFormStep(); // solo redibuja este mismo paso (multi-selección, no avanza solo)
+  }));
+  const back = document.getElementById("bfBack");
+  if(back) back.addEventListener("click", ()=>{ if(st.step>0){ st.step--; st._dir=-1; renderBirthdayFormStep(); } });
+  const skip = document.getElementById("bfSkip");
+  if(skip) skip.addEventListener("click", ()=>{ st.data[step.key] = ""; advanceBirthdayForm(); });
+  const next = document.getElementById("bfNext");
+  if(next) next.addEventListener("click", ()=>{
+    if(step.type==="text" || step.type==="number"){
+      const inp = document.getElementById("bfInput");
+      if(inp) st.data[step.key] = step.type==="number" ? (inp.value?Number(inp.value):"") : inp.value;
+    } else if(step.type==="daymonth"){
+      st.data.day = Number(document.getElementById("bfDay").value)||"";
+      st.data.month = Number(document.getElementById("bfMonth").value)||"";
+    }
+    advanceBirthdayForm();
+  });
+  const inp = document.getElementById("bfInput");
+  if(inp){ inp.focus(); inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); document.getElementById("bfNext").click(); } }); }
+}
+function advanceBirthdayForm(){ birthdayFormState.step++; renderBirthdayFormStep(); }
+function finishBirthdayForm(){
+  const st = birthdayFormState;
+  const d = st.data;
+  if(!d.name || !d.day || !d.month){ toast("Falta el nombre o la fecha.","error"); return; }
+  const relationship = (d.relationship==="Familiar" && d.familyRelation) ? d.familyRelation : (d.relationship||"");
+  const data = {
+    id: st.id || uid("bd"),
+    name: d.name, day: Number(d.day), month: Number(d.month), year: d.year?Number(d.year):null,
+    relationship,
+    remindDaysBefore: typeof d.remindDaysBefore==="number" ? d.remindDaysBefore : 3,
+    channels: d.channels || {email:true, push:true},
+  };
+  if(st.id){
+    const idx = DB.birthdays.findIndex(x=>x.id===st.id);
+    DB.birthdays[idx] = data;
+  }else{
+    DB.birthdays.push(data);
+  }
+  saveDB(); closeGenericModal(); birthdayFormState = null; renderBirthdays();
+  toast(`✓ Guardado el cumpleaños de "${data.name}".`,"success");
+}
+document.getElementById("addBirthdayBtn").addEventListener("click", ()=>openBirthdayConversation(null));
+document.getElementById("addBirthdayBtnEmpty").addEventListener("click", ()=>openBirthdayConversation(null));
 
 function renderNotificaciones(){
   const wrap = document.getElementById("notifGroups");
