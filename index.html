@@ -390,6 +390,71 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .dash-header-hero .btn-ghost:hover{background:rgba(255,255,255,.26);}
 .dash-header-hero .btn-primary{background:#fff;color:var(--accent-2);}
 
+/* ---------------------------------------------------------------------- *
+ * "RUTA DEL DÍA" — rediseño de Inicio aprobado por el usuario a partir de
+ * su propio boceto. Reusa los tokens de siempre (--bg,--surface,--text,
+ * etc.) para que el modo oscuro funcione solo, sin reglas nuevas.
+ * ---------------------------------------------------------------------- */
+.route-hero-top{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;}
+.route-eyebrow{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;opacity:.85;margin-bottom:4px;}
+.route-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.route-btn-glass{background:rgba(255,255,255,.16)!important;color:#fff!important;border:1px solid rgba(255,255,255,.3)!important;}
+.route-btn-glass:hover{background:rgba(255,255,255,.26)!important;}
+.route-ring{width:92px;height:92px;border-radius:50%;background:conic-gradient(#fff var(--pct,0%),rgba(255,255,255,.22) 0);padding:6px;flex:none;}
+.route-ring-inner{height:100%;border-radius:50%;background:rgba(0,0,0,.14);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff!important;}
+.route-ring-inner strong{font-family:var(--font-display);font-size:21px;color:#fff!important;}
+.route-ring-inner small{font-size:9.5px;color:#fff!important;opacity:.9;text-align:center;padding:0 6px;line-height:1.25;}
+
+.route-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0;}
+.route-toolbar .dash-actions-secondary{position:relative;}
+
+.route-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;}
+.route-panel{min-width:0;}
+.dash-rowhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+.dash-rowhead h2{font-family:var(--font-display);font-size:15px;font-weight:500;margin:0;color:var(--text);}
+
+.route-now{display:flex;align-items:center;gap:8px;color:var(--accent-2);font-size:11.5px;font-weight:600;margin:2px 0 12px;}
+.route-now::after{content:'';height:1px;flex:1;background:color-mix(in srgb, var(--accent-2) 35%, transparent);}
+.route-timeline{position:relative;}
+.route-slot{display:grid;grid-template-columns:48px 1fr;gap:12px;margin-bottom:12px;}
+.route-slot-time{color:var(--text-faint);font-size:11px;padding-top:12px;}
+.route-slot-box{padding:12px 14px;background:var(--surface-alt);border-left:3px solid var(--accent-3);border-radius:8px;font-size:12.5px;color:var(--text);}
+.route-slot-box.focus{background:color-mix(in srgb, var(--accent) 10%, var(--surface-alt));border-left-color:var(--accent);}
+.route-slot-box.ongoing{border-left-color:var(--success);box-shadow:0 0 0 1px color-mix(in srgb, var(--success) 35%, transparent);}
+.route-slot-box small{display:block;color:var(--text-muted);font-size:11px;margin-top:4px;}
+.route-closeday{padding:18px;background:var(--surface-alt);border-radius:12px;margin:12px 0;}
+.route-closeday strong{display:block;font-family:var(--font-display);font-size:19px;margin:6px 0;color:var(--text);}
+.route-closeday .t-sub{color:var(--text-muted);}
+
+.route-alma{display:flex;align-items:center;gap:12px;font-size:12.5px;padding:14px 16px;background:var(--surface-alt);border-radius:12px;margin-top:14px;color:var(--text);}
+.route-alma .tf-orb{width:30px;height:30px;flex:none;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fbeafb,#c9a7f5 45%,#8b9df0 80%);box-shadow:0 3px 10px rgba(129,87,239,.2);}
+
+.route-attention{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+
+.route-progress-box{margin-top:14px;padding:14px;background:var(--surface-alt);border-radius:10px;}
+.route-progress-box strong{display:block;font-family:var(--font-display);font-size:18px;margin:4px 0 8px;color:var(--text);}
+
+.route-chart-legend{display:flex;gap:14px;font-size:11px;color:var(--text-muted);margin-bottom:8px;}
+.route-chart-dot{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;background:var(--accent);}
+.route-chart-dot.pink{background:var(--accent-2);}
+.route-chart-note{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;border-top:1px solid var(--border);padding-top:10px;margin-top:8px;color:var(--text-muted);}
+.route-chart-note b{color:var(--accent-2);}
+
+.route-project{padding:11px 0;font-size:12.5px;border-bottom:1px solid var(--border);}
+.route-project:last-child{border-bottom:none;}
+.route-project-top{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--text);}
+
+@media (max-width:860px){
+  .route-grid{grid-template-columns:1fr;}
+  .route-ring{width:76px;height:76px;}
+  .route-ring-inner strong{font-size:18px;}
+}
+@media (max-width:700px){
+  .route-hero-top{align-items:flex-start;}
+  .route-actions{width:100%;}
+  .route-actions .btn{flex:1;min-width:0;justify-content:center;}
+}
+
 /* Impulso del día: insignia circular + titular corto */
 .dash-impulso-card{display:flex;align-items:center;gap:16px;}
 .dash-impulso-badge{
@@ -1878,51 +1943,52 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
     <section class="view" id="view-dashboard">
       <div class="dash-wrap" id="dashWrap">
 
-        <!-- 1. Encabezado — hero con degradado Impulso -->
+        <!-- 1. Encabezado — hero compacto con degradado Impulso -->
         <div class="dash-header dash-header-hero" id="dashHeader">
-          <div class="dash-header-text">
-            <div class="dash-greeting-row">
-              <label class="dash-avatar" id="dashAvatarLabel" title="Cambiar foto de perfil">
-                <img id="dashAvatarImg" class="hidden" alt="Tu foto">
-                <span id="dashAvatarInitial">M</span>
-                <input type="file" accept="image/*" id="dashAvatarInput" class="hidden">
-              </label>
-              <h1 id="dashGreeting">Hola</h1>
+          <div class="route-hero-top">
+            <div class="dash-header-text">
+              <div class="dash-greeting-row">
+                <label class="dash-avatar" id="dashAvatarLabel" title="Cambiar foto de perfil">
+                  <img id="dashAvatarImg" class="hidden" alt="Tu foto">
+                  <span id="dashAvatarInitial">M</span>
+                  <input type="file" accept="image/*" id="dashAvatarInput" class="hidden">
+                </label>
+                <div>
+                  <div class="route-eyebrow" id="dashDateFull"></div>
+                  <h1 id="dashGreeting">Hola</h1>
+                </div>
+              </div>
+              <p id="dashSubtitle">Este es el estado general de tu trabajo</p>
+              <div class="route-actions">
+                <button class="btn btn-primary" id="dashPlanDayBtn" title="Deja que Alma te proponga un orden para hoy">🗓️ Organizar mi día</button>
+                <button class="btn route-btn-glass" id="dashSpeakBtn" title="Crear tarea hablando">🎙️ Hablar</button>
+                <button class="btn route-btn-glass" id="dashCaptureBtn" title="Crear tarea desde una foto o captura">📋 Agregar captura</button>
+              </div>
             </div>
-            <p id="dashSubtitle">Este es el estado general de tu trabajo</p>
-            <div class="dash-meta-row">
-              <span id="dashDateFull"></span>
-              <span class="dash-meta-dot">•</span>
-              <span id="dashLastUpdate"></span>
+            <div class="route-ring" id="dashImpulsoRing" style="--pct:0%;">
+              <div class="route-ring-inner">
+                <strong id="dashRingPct">–</strong>
+                <small id="dashRingSub">Cargando…</small>
+              </div>
             </div>
           </div>
-          <div class="dash-header-actions">
-            <div class="period-toggle" id="dashPeriodToggle">
-              <button data-period="today">Hoy</button>
-              <button data-period="week">Semana</button>
-              <button data-period="month">Mes</button>
-            </div>
-            <button class="btn btn-primary" id="dashPlanDayBtn" title="Deja que Alma te proponga un orden para hoy">
-              🗓️ Organizar mi día
-            </button>
-            <button class="btn btn-mic-featured" id="dashSpeakBtn" title="Crear tarea hablando">
-              🎙️ Hablar
-            </button>
+        </div>
+
+        <!-- Barra secundaria: ya fuera del degradado, como pidió el usuario -->
+        <div class="route-toolbar">
+          <div class="period-toggle" id="dashPeriodToggle">
+            <button data-period="today">Hoy</button>
+            <button data-period="week">Semana</button>
+            <button data-period="month">Mes</button>
+          </div>
+          <span id="dashLastUpdate" class="t-sub"></span>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost hidden" id="dashCatchUpBtn" title="Ponte al día con lo atrasado, con calma">🔄 Ponerme al día</button>
             <button class="btn btn-ghost dash-more-toggle" id="dashMoreBtn" title="Más acciones">⋯ Más</button>
             <div class="dash-actions-secondary" id="dashSecondaryActions">
               <button class="btn btn-ghost" id="dashNewProjectBtn">Crear proyecto</button>
-              <button class="btn btn-ghost hidden" id="dashCatchUpBtn" title="Ponte al día con lo atrasado, con calma">
-                🔄 Ponerme al día
-              </button>
-              <button class="btn btn-ghost" id="dashLightenBtn" title="Un día difícil: deja solo lo esencial">
-                🌙 Hoy no puedo con todo
-              </button>
-              <button class="btn btn-ghost" id="dashWeeklyBtn" title="Cierra tu semana con calma">
-                📅 Cerrar mi semana
-              </button>
-              <button class="btn btn-ghost" id="dashCaptureBtn" title="Crear tarea desde una foto o captura">
-                📋 Agregar captura
-              </button>
+              <button class="btn btn-ghost" id="dashLightenBtn" title="Un día difícil: deja solo lo esencial">🌙 Hoy no puedo con todo</button>
+              <button class="btn btn-ghost" id="dashWeeklyBtn" title="Cierra tu semana con calma">📅 Cerrar mi semana</button>
             </div>
           </div>
         </div>
@@ -1936,55 +2002,52 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <!-- Aviso grande de cumpleaños — solo aparece si alguno es hoy o mañana -->
           <div id="dashBirthdayAlert" class="hidden" style="margin-bottom:16px;"></div>
 
-          <!-- 2. Impulso del día (capacidad + logro de hoy, en una sola tarjeta) -->
-          <div class="panel dash-impulso-card" id="dashImpulsoPanel" style="margin-bottom:16px;">
-            <div class="dash-impulso-badge" id="dashImpulsoBadge">–</div>
-            <div class="dash-impulso-text">
-              <div class="dash-impulso-eyebrow">Impulso del día</div>
-              <div class="dash-impulso-headline" id="dashImpulsoHeadline">Cargando…</div>
+          <!-- Grilla principal: Ruta de hoy | Tus 3 prioridades -->
+          <div class="route-grid">
+            <div class="panel route-panel">
+              <div class="dash-rowhead"><h2>Tu ruta de hoy</h2><span class="tag" id="dashRouteNowPill"></span></div>
+              <div class="route-now"><span id="dashRouteNowLabel">Estás aquí</span></div>
+              <div class="route-timeline" id="dashRouteTimeline"></div>
+              <!-- Alma dice (un solo mensaje, no tres) -->
+              <div class="route-alma">
+                <span class="tf-orb"></span>
+                <div id="dashAlmaDice" style="flex:1;"></div>
+              </div>
+            </div>
+
+            <div class="panel route-panel">
+              <div class="dash-rowhead">
+                <h2>Tus 3 prioridades</h2>
+                <button class="btn btn-ghost btn-sm" id="dashViewAllTasksBtn">Ver todas</button>
+              </div>
+              <div id="dashPriorityToday"></div>
+              <div class="route-attention" id="dashAttentionBar"></div>
+              <div class="route-progress-box">
+                <span class="t-sub">Avance de hoy</span>
+                <strong id="dashTodayProgressLabel">– de –</strong>
+                <div class="cap-bar"><div class="cap-bar-fill" id="dashTodayProgressFill" style="width:0%;"></div></div>
+              </div>
             </div>
           </div>
 
-          <!-- 3. Necesita tu atención -->
-          <div class="panel" id="dashAttentionPanel" style="margin-bottom:16px;">
-            <div class="panel-title">Necesita tu atención</div>
-            <div id="dashAttentionBar"></div>
-          </div>
-
-          <!-- 4. Prioridades de hoy -->
-          <div class="panel" style="margin-bottom:16px;">
-            <div class="panel-title-row">
-              <div class="panel-title">Prioridades de hoy</div>
-              <button class="btn btn-ghost btn-sm" id="dashViewAllTasksBtn">Ver todas mis tareas</button>
+          <!-- Grilla secundaria: Resumen semanal | Proyectos -->
+          <div class="route-grid">
+            <div class="panel route-panel">
+              <div id="dashWeeklyChart"></div>
             </div>
-            <div id="dashPriorityToday"></div>
-          </div>
-
-          <!-- 5. Alma dice (un solo mensaje, no tres) -->
-          <div class="panel dash-alma-card" style="margin-bottom:16px;">
-            <div class="panel-title">💜 Alma dice</div>
-            <div id="dashAlmaDice"></div>
-          </div>
-
-          <!-- 6. Resumen semanal -->
-          <div class="panel" style="margin-bottom:16px;">
-            <div class="panel-title">Resumen semanal</div>
-            <div id="dashWeeklyChart"></div>
-          </div>
-
-          <!-- 7. Equipo y proyectos — segundo nivel, más discreto -->
-          <div class="dash-grid-2 dash-secondary-level">
-            <div class="panel">
-              <div class="panel-title-row">
-                <div class="panel-title">Proyectos</div>
+            <div class="panel route-panel">
+              <div class="dash-rowhead">
+                <h2>Proyectos en marcha</h2>
                 <button class="btn btn-ghost btn-sm" id="dashViewAllProjectsBtn">Ver todos</button>
               </div>
               <div id="dashProjectStatus"></div>
             </div>
-            <div class="panel">
-              <div class="panel-title">Carga del equipo</div>
-              <div id="dashTeamLoad"></div>
-            </div>
+          </div>
+
+          <!-- Carga del equipo — se conserva, segundo nivel más discreto -->
+          <div class="panel dash-secondary-level" style="margin-bottom:16px;">
+            <div class="panel-title">Carga del equipo</div>
+            <div id="dashTeamLoad"></div>
           </div>
 
         </div>
@@ -3328,7 +3391,7 @@ async function refreshGoogleEventsForRange(startIso, endIso){
       });
     }
     googleEventsRangeCache = { start: startIso, end: endIso, byDate };
-    if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashImpulsoDelDia();
+    if(!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashRing();
     if(!document.getElementById("view-calendar").classList.contains("hidden")) renderCalendar();
   }catch(e){
     console.warn("No se pudieron traer eventos de Google Calendar:", e.message);
@@ -3889,7 +3952,7 @@ function recomputeAll(){
       }else{
         const done = t.subtasks.filter(s=>s.done).length;
         t.progress = Math.round((done / t.subtasks.length) * 100);
-        if(t.progress===100) t.status="completada";
+        if(t.progress===100 && t.status!=="completada"){ t.status="completada"; t.completedAt = TODAY(); }
       }
     }else if(t.status==="completada"){
       t.progress = 100;
@@ -4308,7 +4371,8 @@ function renderDashboard(){
   if(!hasData) return;
 
   try{ renderDashAttentionBar(); }catch(e){ console.error("dash attention",e); }
-  try{ renderDashImpulsoDelDia(); }catch(e){ console.error("dash impulso",e); }
+  try{ renderDashRing(); }catch(e){ console.error("dash impulso",e); }
+  try{ renderDashRouteTimeline(); }catch(e){ console.error("dash route timeline",e); }
   try{ renderDashPriorityToday(); }catch(e){ console.error("dash priority today",e); }
   try{ renderDashAlmaDice(); }catch(e){ console.error("dash alma dice",e); }
   try{ renderDashWeeklyChart(); }catch(e){ console.error("dash weekly chart",e); }
@@ -4603,7 +4667,7 @@ function renderDashMiDia(){
     e.stopPropagation();
     const t = byId(DB.tasks, b.dataset.retomarDone);
     if(!t) return;
-    t.status = "completada"; t.progress = 100; t.updatedAt = TODAY();
+    t.status = "completada"; t.progress = 100; t.updatedAt = TODAY(); t.completedAt = TODAY();
     logActivity("task_completed", `Completaste "${t.title}".`);
     recomputeAll(); saveDB(); render();
     toast(`✓ ¡Hecho! Marqué "${t.title}" como completada.`,"success");
@@ -4801,7 +4865,7 @@ function computeDayAchievement(){
   const meetingsFinished = events.filter(ev=>isEventFinished(ev)).length;
   const meetingsPending = events.length - meetingsFinished;
   // horas de reunión (total y ya cursadas)
-  const evHours = (ev)=>{ if(!ev.start||!ev.end) return 0; const [sh,sm]=ev.start.split(":").map(Number); const [eh,em]=ev.end.split(":").map(Number); return Math.max(0,((eh*60+em)-(sh*60+sm))/60); };
+  const evHours = (ev)=>{ if(!ev.startTime||!ev.endTime) return 0; return Math.max(0,(timeToMinutes(ev.endTime)-timeToMinutes(ev.startTime))/60); };
   const meetingHoursTotal = events.reduce((s,ev)=>s+evHours(ev),0);
   const meetingHoursDone = events.filter(ev=>isEventFinished(ev)).reduce((s,ev)=>s+evHours(ev),0);
   // tareas de HOY: por fecha de vencimiento hoy (incluye completadas, que isTaskToday excluye)
@@ -4876,34 +4940,97 @@ function renderDashAchievement(){
  * energía/ánimo) sigue siendo el mismo — solo cambia dónde y cómo se
  * muestra.
  * ---------------------------------------------------------------------- */
-function renderDashImpulsoDelDia(){
-  const badge = document.getElementById("dashImpulsoBadge");
-  const headline = document.getElementById("dashImpulsoHeadline");
-  if(!badge || !headline) return;
-  refreshGoogleEventsForToday(); // se actualiza solo (async); si trae datos nuevos, vuelve a llamar a renderDashImpulsoDelDia()
-
+// Anillo de progreso del hero — mismo cálculo real de siempre
+// (computeDayAchievement: tareas de hoy + reuniones reales de Google
+// Calendar), solo que ahora se muestra como anillo en vez de insignia.
+function renderDashRing(){
+  const ring = document.getElementById("dashImpulsoRing");
+  const pctEl = document.getElementById("dashRingPct");
+  const subEl = document.getElementById("dashRingSub");
+  const progLabel = document.getElementById("dashTodayProgressLabel");
+  const progFill = document.getElementById("dashTodayProgressFill");
+  if(!ring) return;
+  refreshGoogleEventsForToday(); // se actualiza solo (async); si trae datos nuevos, vuelve a llamar a renderDashRing()
   const a = computeDayAchievement();
-  const iso = TODAY();
-  const tasksToday = DB.tasks.filter(t=>!t.archived && isTaskToday(t));
-  const busy = busySlotsForDate(iso).slice().sort((x,y)=>x[0]-y[0]);
-  let committedMin = 0, lastEnd = -1;
-  busy.forEach(([s,e])=>{ const start = Math.max(s, lastEnd); if(e>start){ committedMin += (e-start); lastEnd = Math.max(lastEnd, e); } });
-  const unscheduledEstMin = tasksToday.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && !t.executionTime)
-    .reduce((s,t)=>s+Math.max(30, Math.round((t.estimatedTime||1)*60)), 0);
-  const pct = Math.min(100, Math.round(((committedMin+unscheduledEstMin)/(10*60))*100));
-  const capLevel = pct<45 ? "liviana" : pct<80 ? "equilibrada" : "exigente";
-
   if(a.total===0){
-    badge.textContent = "🌤️";
-    headline.textContent = `Agenda ${capLevel} para hoy · tu día está por delante`;
+    ring.style.setProperty("--pct","0%");
+    pctEl.textContent = "🌤️";
+    subEl.textContent = "Día despejado";
+    if(progLabel){ progLabel.textContent = "Nada planificado hoy"; progFill.style.width = "0%"; }
     return;
   }
-  badge.textContent = a.done;
-  const restante = a.total - a.done;
-  let text;
-  if(a.done===a.total) text = `¡Completaste todo! ${a.total} de ${a.total} · agenda ${capLevel}`;
-  else text = `${a.done} de ${a.total} logrado hoy · quedan ${restante} · agenda ${capLevel}`;
-  headline.textContent = text;
+  const pct = Math.round((a.done/a.total)*100);
+  ring.style.setProperty("--pct", pct+"%");
+  pctEl.textContent = pct+"%";
+  subEl.textContent = `${a.done} de ${a.total} tareas`;
+  if(progLabel){ progLabel.textContent = `${a.done} de ${a.total} completadas`; progFill.style.width = pct+"%"; }
+}
+
+// "Tu ruta de hoy": las reuniones reales de hoy (Google Calendar) + un
+// bloque de foco sugerido SOLO si hay un hueco real disponible ahora mismo
+// — nunca se inventa un bloque si la agenda está apretada. Las reuniones ya
+// terminadas dejan de ocupar espacio; una en curso se queda visible con su
+// estado marcado.
+function renderDashRouteTimeline(){
+  const wrap = document.getElementById("dashRouteTimeline");
+  const nowPill = document.getElementById("dashRouteNowPill");
+  const nowLabel = document.getElementById("dashRouteNowLabel");
+  if(!wrap) return;
+  const iso = TODAY();
+  const now = new Date(); // hora local real del navegador de la persona — ya respeta su huso horario solo
+  const nowMin = now.getHours()*60+now.getMinutes();
+  if(nowPill) nowPill.textContent = minutesTo12h(nowMin)+" · Ahora";
+  if(nowLabel) nowLabel.textContent = "Estás aquí · "+minutesTo12h(nowMin);
+
+  const events = getGoogleEventsForDate(iso).slice().sort((a,b)=>timeToMinutes(a.startTime)-timeToMinutes(b.startTime));
+  const relevant = events.filter(ev=>timeToMinutes(ev.endTime) > nowMin).slice(0,3);
+
+  let html = "";
+  if(relevant.length){
+    // Bloque de foco: solo si hay un hueco real de al menos 30 min entre
+    // ahora y lo próximo que viene.
+    const nextStart = timeToMinutes(relevant[0].startTime);
+    const ongoing0 = timeToMinutes(relevant[0].startTime) <= nowMin;
+    const gapMin = ongoing0 ? 0 : (nextStart - nowMin);
+    if(gapMin >= 30){
+      const topTask = rankTasksForToday(DB.tasks.filter(t=>!t.archived))[0];
+      if(topTask){
+        html += `<div class="route-slot">
+          <span class="route-slot-time">${minutesTo12h(nowMin)}</span>
+          <div class="route-slot-box focus">Bloque de foco
+            <small>${esc(topTask.title)} · ${Math.min(gapMin,90)} min sugeridos</small>
+          </div>
+        </div>`;
+      }
+    }
+    relevant.forEach(ev=>{
+      const ongoing = timeToMinutes(ev.startTime) <= nowMin && nowMin <= timeToMinutes(ev.endTime);
+      html += `<div class="route-slot">
+        <span class="route-slot-time">${minutesTo12h(timeToMinutes(ev.startTime))}</span>
+        <div class="route-slot-box ${ongoing?'ongoing':''}">${esc(ev.title)}${ongoing?' <span class="tag" style="margin-left:6px;">En curso</span>':''}
+          <small>${minutesTo12h(timeToMinutes(ev.startTime))}–${minutesTo12h(timeToMinutes(ev.endTime))}</small>
+        </div>
+      </div>`;
+    });
+  } else {
+    // Agenda del día terminada — cierre honesto, con los pendientes REALES
+    // de hoy (nunca "todo listo" si en verdad queda algo sin hacer).
+    const pendingToday = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskToday(t));
+    if(pendingToday.length){
+      html = `<div class="route-closeday">
+        <span class="route-eyebrow" style="color:var(--text-muted);">Cierre del día</span>
+        <strong>${pendingToday.length} pendiente${pendingToday.length===1?'':'s'} para hoy</strong>
+        <span class="t-sub">Tu agenda de reuniones ya terminó — elige qué resolver y qué llevar a mañana.</span>
+      </div>`;
+    }else{
+      html = `<div class="route-closeday">
+        <span class="route-eyebrow" style="color:var(--text-muted);">Cierre del día</span>
+        <strong>Lo esencial está hecho.</strong>
+        <span class="t-sub">Tu agenda y tus tareas de hoy quedaron al día.</span>
+      </div>`;
+    }
+  }
+  wrap.innerHTML = html;
 }
 
 function renderDashAlmaDice(){
@@ -4959,7 +5086,7 @@ function renderDashAlmaDice(){
     e.stopPropagation();
     const t = byId(DB.tasks, b.dataset.retomarDone);
     if(!t) return;
-    t.status = "completada"; t.progress = 100; t.updatedAt = TODAY();
+    t.status = "completada"; t.progress = 100; t.updatedAt = TODAY(); t.completedAt = TODAY();
     logActivity("task_completed", `Completaste "${t.title}".`);
     recomputeAll(); saveDB(); render();
     toast(`✓ ¡Hecho! Marqué "${t.title}" como completada.`,"success");
@@ -5027,7 +5154,7 @@ function rankTasksForToday(tasks){
 }
 function renderDashPriorityToday(){
   const tasks = DB.tasks.filter(t=>!t.archived);
-  const top5 = rankTasksForToday(tasks).slice(0,5);
+  const top5 = rankTasksForToday(tasks).slice(0,3);
   const wrap = document.getElementById("dashPriorityToday");
   if(!top5.length){ wrap.innerHTML = `<div class="empty-state" style="padding:30px 10px;">¡Todo bajo control! No hay tareas urgentes pendientes.</div>`; return; }
   wrap.innerHTML = top5.map((t,i)=>{
@@ -5064,37 +5191,69 @@ function renderDashPriorityToday(){
 }
 
 /* E. Productividad semanal */
+// Lunes a domingo de la semana que contiene HOY, en ISO — para mostrar
+// fechas reales en el gráfico, no solo "hace X días".
+function currentWeekDatesMonToSun(){
+  const today = new Date(TODAY()+"T00:00:00");
+  const dow = today.getDay(); // 0=domingo
+  const diffToMonday = dow===0 ? 6 : dow-1;
+  const monday = new Date(today); monday.setDate(monday.getDate()-diffToMonday);
+  const dates = [];
+  for(let i=0;i<7;i++){ const d = new Date(monday); d.setDate(d.getDate()+i); dates.push(isoOf(d)); }
+  return dates;
+}
 function renderDashWeeklyChart(){
-  const completedPerDay = last7DaysTaskSeries((t,iso)=>t.status==="completada" && t.updatedAt===iso);
-  const createdPerDay = last7DaysTaskSeries((t,iso)=>t.createdAt===iso);
-  const labels = []; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); labels.push(["D","L","M","X","J","V","S"][d.getDay()]); }
-  const max = Math.max(1, ...completedPerDay, ...createdPerDay);
-  const weeklyGoal = Math.max(5, DB.responsables.length*3);
-  const totalCompleted = completedPerDay.reduce((a,b)=>a+b,0);
-  const compliancePct = Math.min(100, Math.round((totalCompleted/weeklyGoal)*100));
-
-  const w=520,h=150,padB=20,padT=10,barW=18;
-  const stepX = (w-40)/7;
-  let bars = "", line = "";
-  const linePts = [];
-  completedPerDay.forEach((v,i)=>{
-    const x = 30+i*stepX+stepX/2;
-    const barH = (v/max)*(h-padB-padT);
-    bars += `<rect x="${x-barW/2}" y="${h-padB-barH}" width="${barW}" height="${barH}" rx="3" fill="var(--accent)"/>`;
-    bars += `<text x="${x}" y="${h-2}" text-anchor="middle" font-size="10" fill="var(--text-faint)">${labels[i]}</text>`;
-    const cy = h-padB-((createdPerDay[i]/max)*(h-padB-padT));
-    linePts.push(`${x},${cy.toFixed(1)}`);
+  const weekDates = currentWeekDatesMonToSun();
+  const todayIso = TODAY();
+  const dowShort = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const dayLabels = weekDates.map(iso=>{
+    const d = new Date(iso+"T00:00:00");
+    return `${dowShort[d.getDay()]} ${d.getDate()}`;
   });
-  line = `<polyline points="${linePts.join(" ")}" fill="none" stroke="var(--accent-2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>` +
-    linePts.map(p=>{ const [x,y]=p.split(","); return `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent-2)"/>`; }).join("");
+  // Fechas REALES de creación y de finalización (completedAt, nunca
+  // updatedAt) — un día futuro siempre da 0 en ambas series, por definición
+  // (no se puede crear ni completar algo que todavía no llega).
+  const completed = weekDates.map(iso => DB.tasks.filter(t=>!t.archived && t.completedAt===iso).length);
+  const created = weekDates.map(iso => DB.tasks.filter(t=>!t.archived && t.createdAt===iso).length);
+  const isFuture = weekDates.map(iso => iso > todayIso);
+  const max = Math.max(1, ...completed, ...created);
+
+  const w=520, h=170, padB=24, padT=12, barW=15, gap=4;
+  const stepX = (w-44)/7;
+  let bars = "";
+  for(let i=0;i<7;i++){
+    const x = 34+i*stepX+stepX/2;
+    if(isFuture[i]){
+      // Día futuro: columna apagada, sin barras (no hay datos que mostrar
+      // todavía) — distinto de un día ya pasado con cero actividad real.
+      bars += `<rect x="${x-barW-gap/2}" y="${h-padB-3}" width="${barW*2+gap}" height="3" rx="1.5" fill="var(--border)"/>`;
+      bars += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="10" fill="var(--text-faint)">${dayLabels[i]}</text>`;
+      continue;
+    }
+    const cH = Math.max(completed[i]>0?3:0, (completed[i]/max)*(h-padB-padT));
+    const crH = Math.max(created[i]>0?3:0, (created[i]/max)*(h-padB-padT));
+    bars += `<rect x="${x-barW-gap/2}" y="${h-padB-cH}" width="${barW}" height="${cH}" rx="3" fill="var(--accent)"><title>${dayLabels[i]}: ${completed[i]} completada${completed[i]===1?'':'s'}</title></rect>`;
+    bars += `<rect x="${x+gap/2}" y="${h-padB-crH}" width="${barW}" height="${crH}" rx="3" fill="var(--accent-2)"><title>${dayLabels[i]}: ${created[i]} creada${created[i]===1?'':'s'}</title></rect>`;
+    bars += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="10" fill="var(--text-faint)" font-weight="${weekDates[i]===todayIso?'700':'400'}">${dayLabels[i]}</text>`;
+  }
+
+  const totalCompleted = completed.reduce((a,b)=>a+b,0);
+  const totalCreated = created.reduce((a,b)=>a+b,0);
+  // Nunca se inventa una meta: solo se muestra el cumplimiento si de verdad
+  // existe DB.config.weeklyGoal configurado por la persona.
+  const hasRealGoal = DB.config && typeof DB.config.weeklyGoal === "number" && DB.config.weeklyGoal > 0;
+  const noteHtml = hasRealGoal
+    ? `<span>${totalCompleted} completadas · ${totalCreated} creadas esta semana</span><strong>${Math.round((totalCompleted/DB.config.weeklyGoal)*100)}% de tu meta · ${DB.config.weeklyGoal} tareas</strong>`
+    : `<span>${totalCompleted} completadas · ${totalCreated} creadas esta semana</span>`;
 
   document.getElementById("dashWeeklyChart").innerHTML = `
-    <div class="weekly-chart-legend">
-      <span><span class="dot" style="background:var(--accent)"></span>Completadas por día</span>
-      <span><span class="dot" style="background:var(--accent-2)"></span>Creadas por día</span>
+    <div class="dash-rowhead"><h2>Tu avance esta semana</h2><span class="t-sub">${dayLabels[0]} – ${dayLabels[6]}</span></div>
+    <div class="route-chart-legend">
+      <span><span class="route-chart-dot"></span>Completadas</span>
+      <span><span class="route-chart-dot pink"></span>Creadas</span>
     </div>
-    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;">${bars}${line}</svg>
-    <div class="weekly-goal-note">Meta semanal: <b>${weeklyGoal}</b> tareas completadas · Cumplimiento: <b>${compliancePct}%</b> (${totalCompleted}/${weeklyGoal})</div>
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;" role="img" aria-label="Tareas completadas y creadas por día, lunes a domingo.">${bars}</svg>
+    <div class="route-chart-note">${noteHtml}</div>
   `;
 }
 
@@ -6021,6 +6180,11 @@ function applyManualStatusChange(t, newStatus){
     else if(wasCompleted) t.subtasks.forEach(s=>{ s.done = false; }); // reabrir libera las subtareas para que el cambio no quede "atascado"
   }
   t.updatedAt = TODAY();
+  // Fecha REAL de finalización — separada de "última modificación", para
+  // que el gráfico semanal y los reportes reflejen cuándo se completó de
+  // verdad, no la última vez que se tocó la tarea por cualquier motivo.
+  if(newStatus === "completada" && !wasCompleted) t.completedAt = TODAY();
+  else if(newStatus !== "completada" && wasCompleted) t.completedAt = null; // se reabrió, ya no cuenta como completada ese día
   if(newStatus === "completada" && !wasCompleted && t.recurring && t.recurring.enabled){
     regenerateRecurringTask(t);
   }
@@ -12225,7 +12389,7 @@ function catchUpAction(tid, act, dateVal){
     renderCatchUp(); refreshCatchUpButton(); return;
   }
   if(act==="hecha"){
-    t.status="completada"; t.progress=100; t.updatedAt=TODAY();
+    t.status="completada"; t.progress=100; t.updatedAt=TODAY(); t.completedAt=TODAY();
     logActivity("task_completed", `"${t.title}" marcada como hecha desde Ponerme al día.`);
     toast(`"${t.title}" marcada como hecha. 🎉`,"success");
   }else{
@@ -13670,7 +13834,7 @@ document.getElementById("welcomeOrgName").addEventListener("keydown", (e)=>{ if(
 const TOUR_STEPS = [
   { sel:"#dashHeader", view:"dashboard", title:"Tu Inicio", text:"Aquí empieza tu día. Alma te saluda según cómo vengas y te muestra lo importante sin abrumarte." },
   { sel:"#almaFab", view:"dashboard", title:"Alma, tu asistente", text:"Esta nube es Alma. Te acompaña, te pregunta cómo estás y te ayuda a organizarte — siempre con calma y sin juzgarte." },
-  { sel:"#dashImpulsoPanel", view:"dashboard", title:"Impulso del día", text:"De un vistazo: cuánto llevas logrado hoy y qué tan cargada está tu agenda. Celebra tu avance, sin castigar lo que quede pendiente." },
+  { sel:"#dashImpulsoRing", view:"dashboard", title:"Tu avance de hoy", text:"De un vistazo: cuánto llevas logrado hoy y qué tan cargada está tu agenda. Celebra tu avance, sin castigar lo que quede pendiente." },
   { sel:"#dashAlmaDice", view:"dashboard", title:"Alma dice", text:"Un solo mensaje de Alma con lo pendiente más relevante — con calma, para que lo resuelvas o lo reagendes sin presión." },
   { sel:"#dashPlanDayBtn", view:"dashboard", title:"Organizar mi día", text:"Con un toque, Alma te propone un orden para hoy usando tus horas libres. Tú decides si lo aplicas." },
   { sel:"#quickAddTask", view:"dashboard", title:"Crear tareas fácil", text:"Escribe, dicta por voz o toma una foto de una lista: Alma la lee y crea las tareas por ti." },
