@@ -11260,12 +11260,20 @@ function aiUnavailableMessage(){
   return "No se pudo conectar con la IA en este momento. Revisa tu conexión e intenta de nuevo en un momento.";
 }
 /* Estado honesto de integraciones (Módulo 14) — informativo, nada conectado aún */
-function integrationsStatus(){
+function integrationsStatus(gcalState){
+  // gcalState: {connected:true/false} o null mientras se verifica
+  const gcal = gcalState==null
+    ? {state:"partial", label:"Verificando…", detail:"Comprobando tu conexión real con Google…"}
+    : gcalState.connected
+      ? {state:"yes", label:"Conectado", detail:"Sincronizando tus eventos reales de Google Calendar."}
+      : {state:"no", label:"No conectado", detail:"Conéctala desde el botón de arriba para ver tus eventos reales."};
   return [
-    {name:"Servidor (Supabase)", state:"no", label:"No conectado", detail:"Base para cuentas, sincronización y notificaciones."},
-    {name:"Asistente con IA", state:"partial", label:"Local (reglas)", detail:"Alma usa reglas locales; la IA real llega con el servidor."},
-    {name:"Google Calendar", state:"partial", label:"Demo", detail:"Los eventos mostrados son de ejemplo por ahora."},
-    {name:"Notificaciones (correo / WhatsApp)", state:"no", label:"Requieren servidor", detail:"Se activarán al conectar Supabase."},
+    {name:"Almacenamiento de datos (Netlify)", state:"yes", label:"Conectado", detail:"Cada cuenta tiene su espacio privado — nada se comparte entre usuarios."},
+    {name:"Asistente con IA (Gemini)", state:"yes", label:"Conectado", detail:"Alma usa IA real para sugerir horarios, redactar y leer fotos/archivos."},
+    {name:"Google Calendar", state:gcal.state, label:gcal.label, detail:gcal.detail},
+    {name:"Correo (Gmail)", state:"yes", label:"Conectado", detail:"Recuperar clave, resumen semanal y recordatorios de cumpleaños."},
+    {name:"Notificaciones push", state:"yes", label:"Conectado", detail:"Avisos directo en tu celular o navegador, si instalaste la app."},
+    {name:"WhatsApp", state:"no", label:"Próximamente", detail:"Necesita una cuenta de WhatsApp Business — aún no está conectada."},
   ];
 }
 async function improveDescriptionWithAI(fieldId, btn){
@@ -12760,17 +12768,25 @@ function renderCfIntegrations(){
   const wrap = document.getElementById("cf_integrationsList");
   if(!wrap) return;
   const dot = {no:"var(--text-faint)", partial:"var(--warning)", yes:"var(--success)"};
-  wrap.innerHTML = integrationsStatus().map(it=>`
-    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
-      <span style="width:9px;height:9px;border-radius:50%;background:${dot[it.state]};margin-top:5px;flex:none;"></span>
-      <div style="flex:1;">
-        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:13px;font-weight:600;">${esc(it.name)}</span>
-          <span style="font-size:12px;color:var(--text-muted);">${esc(it.label)}</span>
+  const paint = (items) => {
+    wrap.innerHTML = items.map(it=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <span style="width:9px;height:9px;border-radius:50%;background:${dot[it.state]};margin-top:5px;flex:none;"></span>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;">${esc(it.name)}</span>
+            <span style="font-size:12px;color:var(--text-muted);">${esc(it.label)}</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:2px;">${esc(it.detail)}</div>
         </div>
-        <div style="font-size:11.5px;color:var(--text-faint);margin-top:2px;">${esc(it.detail)}</div>
-      </div>
-    </div>`).join("");
+      </div>`).join("");
+  };
+  paint(integrationsStatus(null)); // primero pinta con "Verificando…" para Google Calendar, sin esperar
+  apiGCalList("status", {}).then(status=>{
+    paint(integrationsStatus({connected: !!status.connected}));
+  }).catch(()=>{
+    paint(integrationsStatus({connected:false}));
+  });
 }
 function saveAlmaSettings(){
   const a = DB.config.alma = DB.config.alma || {};
