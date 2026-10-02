@@ -395,7 +395,9 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
  * su propio boceto. Reusa los tokens de siempre (--bg,--surface,--text,
  * etc.) para que el modo oscuro funcione solo, sin reglas nuevas.
  * ---------------------------------------------------------------------- */
-.route-hero-top{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;}
+.route-hero-top{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;flex:1 1 100%;min-width:0;}
+/* el texto se achica antes de empujar el anillo a otra línea */
+.route-hero-top > .dash-header-text{flex:1 1 320px;min-width:0;}
 .route-eyebrow{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;opacity:.85;margin-bottom:4px;}
 .route-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
 .route-btn-glass{background:rgba(255,255,255,.16)!important;color:#fff!important;border:1px solid rgba(255,255,255,.3)!important;}
@@ -408,7 +410,7 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .route-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0;}
 .route-toolbar .dash-actions-secondary{position:relative;}
 
-.route-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;}
+.route-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;align-items:start;}
 .route-panel{min-width:0;}
 .dash-rowhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
 .dash-rowhead h2{font-family:var(--font-display);font-size:15px;font-weight:500;margin:0;color:var(--text);}
@@ -444,8 +446,12 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .route-project:last-child{border-bottom:none;}
 .route-project-top{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--text);}
 
-@media (max-width:860px){
+/* 1200px y no 860px: el menú lateral (250px) ya se come parte del ancho,
+   así que con menos de ~950px útiles las 2 columnas quedan aplastadas */
+@media (max-width:1200px){
   .route-grid{grid-template-columns:1fr;}
+}
+@media (max-width:860px){
   .route-ring{width:76px;height:76px;}
   .route-ring-inner strong{font-size:18px;}
 }
@@ -453,6 +459,8 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   .route-hero-top{align-items:flex-start;}
   .route-actions{width:100%;}
   .route-actions .btn{flex:1;min-width:0;justify-content:center;}
+  .route-actions .btn:first-child{flex-basis:100%;}
+  .route-actions .btn{white-space:nowrap;}
 }
 
 /* Impulso del día: insignia circular + titular corto */
