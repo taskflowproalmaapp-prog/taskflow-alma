@@ -17,7 +17,7 @@
    Paleta: navy profundo (sidebar) + teal (progreso/foco) + violeta (acento)
    Tipografía: Sora (display) / Inter (UI) / JetBrains Mono (datos, fechas)
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root{
   --bg:#F8F4F1;
@@ -396,71 +396,110 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
  * etc.) para que el modo oscuro funcione solo, sin reglas nuevas.
  * ---------------------------------------------------------------------- */
 .route-hero-top{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;flex:1 1 100%;min-width:0;}
-/* el texto se achica antes de empujar el anillo a otra línea */
 .route-hero-top > .dash-header-text{flex:1 1 320px;min-width:0;}
-.route-eyebrow{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;opacity:.85;margin-bottom:4px;}
-.route-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
-.route-btn-glass{background:rgba(255,255,255,.16)!important;color:#fff!important;border:1px solid rgba(255,255,255,.3)!important;}
-.route-btn-glass:hover{background:rgba(255,255,255,.26)!important;}
-.route-ring{width:92px;height:92px;border-radius:50%;background:conic-gradient(#fff var(--pct,0%),rgba(255,255,255,.22) 0);padding:6px;flex:none;}
-.route-ring-inner{height:100%;border-radius:50%;background:rgba(0,0,0,.14);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff!important;}
-.route-ring-inner strong{font-family:var(--font-display);font-size:21px;color:#fff!important;}
-.route-ring-inner small{font-size:9.5px;color:#fff!important;opacity:.9;text-align:center;padding:0 6px;line-height:1.25;}
+/* Hero según el ejemplo aprobado (taskflow-ruta-del-dia.html) */
+.dash-header.dash-header-hero{padding:28px;border-radius:20px;margin-bottom:16px;box-shadow:none;}
+.dash-header-hero .dash-greeting-row .dash-avatar{display:none;} /* el ejemplo no lleva foto en el hero (el elemento se mantiene: el JS lo usa) */
+.dash-header-hero .dash-header-text h1{font-family:var(--font-display);font-size:32px;font-weight:800;letter-spacing:-1.1px;line-height:1.2;margin:10px 0;}
+.dash-header-hero .dash-header-text p{font-size:14px;margin:0 0 18px;opacity:.95;color:#fff;}
+.route-eyebrow{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;font-weight:700;}
+.route-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:0;}
+.route-actions .btn{padding:10px 14px;border-radius:10px;font-size:12px;font-weight:500;min-height:0;box-shadow:none;}
+.dash-header-hero .route-actions .btn-primary{background:#fff;color:#c02c68;border:1px solid #fff;font-weight:700;}
+.route-btn-glass{background:rgba(255,255,255,.09)!important;color:#fff!important;border:1px solid rgba(255,255,255,.31)!important;}
+.route-btn-glass:hover{background:rgba(255,255,255,.2)!important;}
+.route-ring{width:108px;height:108px;border-radius:50%;background:conic-gradient(#fff var(--pct,0%),rgba(255,255,255,.19) 0);padding:7px;flex:none;}
+.route-ring-inner{height:100%;border-radius:50%;background:#a654cf;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff!important;}
+.route-ring-inner strong{font-family:var(--font-display);font-size:25px;font-weight:500;line-height:1.1;color:#fff!important;}
+.route-ring-inner small{font-size:10px;color:#fff!important;text-align:center;padding:0 6px;line-height:1.25;}
 
-.route-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0;}
-.route-toolbar .dash-actions-secondary{position:relative;}
+.route-more{position:relative;}
+.route-more-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:210px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.15);display:flex;flex-direction:column;}
+.route-more-menu button{background:none;border:0;text-align:left;padding:10px 12px;border-radius:8px;font:inherit;font-size:13px;color:var(--text);cursor:pointer;}
+.route-more-menu button:hover{background:var(--surface-alt);}
+/* Botón "Hablar con Alma": morado Impulso + micrófono con estrellitas de IA */
+.dash-header-hero .route-actions .btn-alma-voice{display:inline-flex;align-items:center;gap:7px;background:#8157EF;color:#fff;border:1px solid rgba(255,255,255,.55);font-weight:700;box-shadow:0 4px 14px rgba(70,30,160,.35);}
+.dash-header-hero .route-actions .btn-alma-voice:hover{background:#7146e6;}
+.btn-alma-voice .mic-ai-icon{flex:none;}
+.route-more-menu button:focus-visible,.route-actions .btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+.route-more-menu button:focus-visible{outline-color:var(--accent-2);}
+/* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
+.route-toolbar{display:none;}
 
-.route-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;align-items:start;}
-.route-panel{min-width:0;}
-.dash-rowhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
-.dash-rowhead h2{font-family:var(--font-display);font-size:15px;font-weight:500;margin:0;color:var(--text);}
+.route-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px;}
+/* mismo interlineado del ejemplo (1.5) */
+.dash-header-hero,.panel.route-panel{line-height:1.5;}
+.panel.route-panel{min-width:0;padding:20px;border-radius:16px;box-shadow:none;margin-bottom:0;}
+.dash-rowhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;}
+.dash-rowhead h2{font-family:var(--font-display);font-size:15px;font-weight:700;margin:0;color:var(--text);}
+.route-pill{font-size:10px;padding:5px 7px;border-radius:6px;background:var(--surface-alt);color:var(--text-muted);white-space:nowrap;}
+.route-sub{font-size:11px;color:var(--text-muted);}
 
-.route-now{display:flex;align-items:center;gap:8px;color:var(--accent-2);font-size:11.5px;font-weight:600;margin:2px 0 12px;}
-.route-now::after{content:'';height:1px;flex:1;background:color-mix(in srgb, var(--accent-2) 35%, transparent);}
-.route-timeline{position:relative;}
-.route-slot{display:grid;grid-template-columns:48px 1fr;gap:12px;margin-bottom:12px;}
-.route-slot-time{color:var(--text-faint);font-size:11px;padding-top:12px;}
-.route-slot-box{padding:12px 14px;background:var(--surface-alt);border-left:3px solid var(--accent-3);border-radius:8px;font-size:12.5px;color:var(--text);}
-.route-slot-box.focus{background:color-mix(in srgb, var(--accent) 10%, var(--surface-alt));border-left-color:var(--accent);}
-.route-slot-box.ongoing{border-left-color:var(--success);box-shadow:0 0 0 1px color-mix(in srgb, var(--success) 35%, transparent);}
-.route-slot-box small{display:block;color:var(--text-muted);font-size:11px;margin-top:4px;}
-.route-closeday{padding:18px;background:var(--surface-alt);border-radius:12px;margin:12px 0;}
-.route-closeday strong{display:block;font-family:var(--font-display);font-size:19px;margin:6px 0;color:var(--text);}
-.route-closeday .t-sub{color:var(--text-muted);}
+.route-now{display:flex;align-items:center;gap:8px;color:var(--accent-2);font-size:11px;margin:12px 0;}
+.route-now::after{content:'';height:1px;flex:1;background:color-mix(in srgb, var(--accent-2) 31%, transparent);}
+.route-timeline{position:relative;margin-top:10px;}
+.route-slot{display:grid;grid-template-columns:46px 1fr;gap:12px;margin:0 0 12px;font-size:11px;}
+.route-slot-time{color:var(--text-muted);padding-top:12px;}
+.route-slot-box{padding:12px 14px;background:var(--surface-alt);border-left:3px solid #8157ef;border-radius:8px;font-size:12px;color:var(--text);}
+.route-slot-box.focus{background:color-mix(in srgb, #FF6B45 9%, var(--surface));border-left-color:#FF6B45;}
+.route-slot-box.ongoing{border-left-color:var(--success);}
+.route-slot-box small{display:block;color:var(--text-muted);font-size:11px;margin-top:5px;}
+.route-closeday{padding:20px;background:var(--surface-alt);border-radius:12px;margin:14px 0;}
+.route-closeday .route-eyebrow{color:var(--text);}
+.route-closeday strong{display:block;font-family:var(--font-display);font-size:22px;letter-spacing:-.5px;margin:8px 0;color:var(--text);font-weight:500;}
+.route-closeday .route-sub{font-size:11px;}
 
-.route-alma{display:flex;align-items:center;gap:12px;font-size:12.5px;padding:14px 16px;background:var(--surface-alt);border-radius:12px;margin-top:14px;color:var(--text);}
-.route-alma .tf-orb{width:30px;height:30px;flex:none;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fbeafb,#c9a7f5 45%,#8b9df0 80%);box-shadow:0 3px 10px rgba(129,87,239,.2);}
+.route-alma{display:flex;align-items:center;gap:12px;font-size:12px;padding:15px 18px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-top:16px;color:var(--text);}
+.route-alma .tf-orb{width:33px;height:33px;flex:none;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fbeafb,#c9a7f5 45%,#8b9df0 80%);box-shadow:0 3px 10px rgba(129,87,239,.15);}
 
-.route-attention{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.route-task{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text);}
+.route-task:last-child{border-bottom:0;}
+.route-task-text{flex:1;min-width:0;cursor:pointer;}
+.route-task-text small{display:block;font-size:11px;opacity:.75;margin-top:4px;}
+.route-check{width:22px;height:22px;flex:none;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface-alt);cursor:pointer;padding:0;display:grid;place-items:center;}
+.route-check:hover{border-color:var(--success);}
+.route-empty{font-size:12px;color:var(--text-muted);padding:12px 0;}
 
-.route-progress-box{margin-top:14px;padding:14px;background:var(--surface-alt);border-radius:10px;}
-.route-progress-box strong{display:block;font-family:var(--font-display);font-size:18px;margin:4px 0 8px;color:var(--text);}
+.route-attention{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:11px;}
+.route-chip{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);cursor:pointer;font:inherit;font-size:11px;}
+.route-chip:hover{border-color:var(--accent-2);}
+.route-chip b{font-weight:400;}
+.route-chip b.warn{color:var(--danger);}
 
-.route-chart-legend{display:flex;gap:14px;font-size:11px;color:var(--text-muted);margin-bottom:8px;}
-.route-chart-dot{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;background:var(--accent);}
-.route-chart-dot.pink{background:var(--accent-2);}
-.route-chart-note{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;border-top:1px solid var(--border);padding-top:10px;margin-top:8px;color:var(--text-muted);}
-.route-chart-note b{color:var(--accent-2);}
+.route-progress-box{margin-top:14px;padding:20px;background:var(--surface-alt);border-radius:12px;}
+.route-progress-box strong{display:block;font-family:var(--font-display);font-size:22px;letter-spacing:-.5px;font-weight:500;margin:8px 0 0;color:var(--text);}
+.route-bar{height:6px;background:var(--surface-alt);border-radius:8px;overflow:hidden;margin-top:9px;}
+.route-progress-box .route-bar{background:transparent;}
+.route-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,#FF6B45,#ED3F7C,#8157EF);}
 
-.route-project{padding:11px 0;font-size:12.5px;border-bottom:1px solid var(--border);}
-.route-project:last-child{border-bottom:none;}
-.route-project-top{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--text);}
+.route-chart-legend{display:flex;gap:14px;font-size:11px;color:var(--text-muted);margin:10px 0;}
+.route-chart-dot{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;background:#FF6B45;}
+.route-chart-dot.pink{background:#ED3F7C;}
+.route-chart text{font-family:var(--font-body,'DM Sans'),sans-serif;font-size:11px;fill:var(--text-muted);}
+.route-chart-note{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;border-top:1px solid var(--border);padding-top:12px;margin-top:8px;color:var(--text);}
+.route-chart-note strong{color:var(--accent-2);font-weight:400;}
 
-/* 1200px y no 860px: el menú lateral (250px) ya se come parte del ancho,
-   así que con menos de ~950px útiles las 2 columnas quedan aplastadas */
+.route-project{padding:12px 0;font-size:12px;cursor:pointer;color:var(--text);}
+.route-project-top{display:flex;justify-content:space-between;}
+
+/* "Carga del equipo" no está en el ejemplo */
+.route-hide{display:none!important;}
+
 @media (max-width:1200px){
   .route-grid{grid-template-columns:1fr;}
 }
-@media (max-width:860px){
-  .route-ring{width:76px;height:76px;}
-  .route-ring-inner strong{font-size:18px;}
-}
 @media (max-width:700px){
+  .dash-header.dash-header-hero{padding:20px;}
+  .dash-header-hero .dash-header-text h1{font-size:26px;}
+  .route-ring{width:84px;height:84px;padding:6px;}
+  .route-ring-inner strong{font-size:20px;}
   .route-hero-top{align-items:flex-start;}
   .route-actions{width:100%;}
-  .route-actions .btn{flex:1;min-width:0;justify-content:center;}
+  .route-actions .btn{flex:1;min-width:0;justify-content:center;white-space:nowrap;}
   .route-actions .btn:first-child{flex-basis:100%;}
-  .route-actions .btn{white-space:nowrap;}
+  .route-more{flex:none;}
+  .route-more .btn{flex:none;width:auto;min-width:44px;}
+  .route-more-menu{left:auto;right:0;}
 }
 
 /* Impulso del día: insignia circular + titular corto */
@@ -1968,9 +2007,19 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               </div>
               <p id="dashSubtitle">Este es el estado general de tu trabajo</p>
               <div class="route-actions">
-                <button class="btn btn-primary" id="dashPlanDayBtn" title="Deja que Alma te proponga un orden para hoy">🗓️ Organizar mi día</button>
-                <button class="btn route-btn-glass" id="dashSpeakBtn" title="Crear tarea hablando">🎙️ Hablar</button>
-                <button class="btn route-btn-glass" id="dashCaptureBtn" title="Crear tarea desde una foto o captura">📋 Agregar captura</button>
+                <button class="btn btn-primary" id="dashPlanDayBtn" title="Deja que Alma te proponga un orden para hoy">Organizar mi día</button>
+                <button class="btn btn-alma-voice" id="dashSpeakBtn" title="Crear tarea hablando con Alma"><svg class="mic-ai-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><rect x="7" y="3" width="7" height="11" rx="3.5" stroke="currentColor" stroke-width="1.9"/><path d="M4.5 11a6 6 0 0 0 12 0M10.5 17v3.5M7.5 20.5h6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M19.5 2.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor"/><path d="M20.5 9l.45 1.05 1.05.45-1.05.45-.45 1.05-.45-1.05-1.05-.45 1.05-.45z" fill="currentColor"/></svg>Hablar con Alma</button>
+                <button class="btn route-btn-glass" id="dashCaptureBtn" title="Crear tarea desde una foto o captura">Agregar captura</button>
+                <div class="route-more">
+                  <button class="btn route-btn-glass" id="dashHeroMoreBtn" title="Más acciones" aria-haspopup="true" aria-expanded="false">⋯</button>
+                  <div class="route-more-menu hidden" id="dashHeroMoreMenu" role="menu">
+                    <button type="button" role="menuitem" data-proxy="dashCatchUpBtn">Ponerme al día</button>
+                    <button type="button" role="menuitem" data-proxy="dashNewProjectBtn">Crear proyecto</button>
+                    <button type="button" role="menuitem" data-proxy="dashLightenBtn">Hoy no puedo con todo</button>
+                    <button type="button" role="menuitem" data-proxy="dashWeeklyBtn">Cerrar mi semana</button>
+                    <button type="button" role="menuitem" data-proxy="dashAvatarInput">Cambiar mi foto</button>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="route-ring" id="dashImpulsoRing" style="--pct:0%;">
@@ -2013,7 +2062,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <!-- Grilla principal: Ruta de hoy | Tus 3 prioridades -->
           <div class="route-grid">
             <div class="panel route-panel">
-              <div class="dash-rowhead"><h2>Tu ruta de hoy</h2><span class="tag" id="dashRouteNowPill"></span></div>
+              <div class="dash-rowhead"><h2>Tu ruta de hoy</h2><span class="route-pill" id="dashRouteNowPill"></span></div>
               <div class="route-now"><span id="dashRouteNowLabel">Estás aquí</span></div>
               <div class="route-timeline" id="dashRouteTimeline"></div>
               <!-- Alma dice (un solo mensaje, no tres) -->
@@ -2024,16 +2073,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
             </div>
 
             <div class="panel route-panel">
-              <div class="dash-rowhead">
-                <h2>Tus 3 prioridades</h2>
-                <button class="btn btn-ghost btn-sm" id="dashViewAllTasksBtn">Ver todas</button>
-              </div>
+              <div class="dash-rowhead"><h2 id="dashPriorityTitle">Prioridades de hoy</h2></div>
               <div id="dashPriorityToday"></div>
               <div class="route-attention" id="dashAttentionBar"></div>
               <div class="route-progress-box">
-                <span class="t-sub">Avance de hoy</span>
+                <span class="route-sub">Avance de hoy</span>
                 <strong id="dashTodayProgressLabel">– de –</strong>
-                <div class="cap-bar"><div class="cap-bar-fill" id="dashTodayProgressFill" style="width:0%;"></div></div>
+                <div class="route-bar"><div class="route-fill" id="dashTodayProgressFill" style="width:0%;"></div></div>
               </div>
             </div>
           </div>
@@ -2044,16 +2090,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
               <div id="dashWeeklyChart"></div>
             </div>
             <div class="panel route-panel">
-              <div class="dash-rowhead">
-                <h2>Proyectos en marcha</h2>
-                <button class="btn btn-ghost btn-sm" id="dashViewAllProjectsBtn">Ver todos</button>
-              </div>
+              <div class="dash-rowhead"><h2>Proyectos en marcha</h2><span class="route-sub" id="dashProjectCount"></span></div>
               <div id="dashProjectStatus"></div>
             </div>
           </div>
 
           <!-- Carga del equipo — se conserva, segundo nivel más discreto -->
-          <div class="panel dash-secondary-level" style="margin-bottom:16px;">
+          <div class="panel dash-secondary-level route-hide" style="margin-bottom:16px;">
             <div class="panel-title">Carga del equipo</div>
             <div id="dashTeamLoad"></div>
           </div>
@@ -4391,9 +4434,9 @@ function renderDashboard(){
 /* A. Encabezado */
 function renderDashHeader(){
   const hour = new Date().getHours();
-  const greeting = hour<12 ? "Buenos días" : hour<19 ? "Buenas tardes" : "Buenas noches";
+  const greeting = hour<12 ? "Buenos días" : hour<18 ? "Buenas tardes" : "Buenas noches"; // 18:00 = mismo corte que "Cierre del día"
   const name = (DB.config.userName||"Usuario").split(" ")[0];
-  document.getElementById("dashGreeting").textContent = `${greeting}, ${name}`;
+  document.getElementById("dashGreeting").textContent = `${greeting}, ${name}.`;
   const avatarImg = document.getElementById("dashAvatarImg");
   const avatarInitial = document.getElementById("dashAvatarInitial");
   if(DB.config.profilePhoto){
@@ -4406,58 +4449,19 @@ function renderDashHeader(){
     avatarInitial.textContent = (name||"U").charAt(0).toUpperCase();
   }
 
-  const todayTasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskToday(t));
-  const personalToday = todayTasks.filter(t=>t.taskType==="personal");
-  const demoEventsToday = getDemoEventsToday();
-  const totalToday = todayTasks.length + demoEventsToday.length;
-
-  // nivel de carga del día
-  let load; // "liviana" | "media" | "exigente"
-  if(totalToday<=3) load = "liviana";
-  else if(totalToday<=7) load = "media";
-  else load = "exigente";
-
-  // nivel de bienestar de hoy (si respondió el chequeo del Módulo 2)
+  // Frase corta según el momento del día (como el ejemplo aprobado). Si la
+  // persona contó en el chequeo que viene con poca energía, se suaviza.
   const wbToday = (DB.config.alma && DB.config.alma.wellbeing && DB.config.alma.wellbeing.today) || null;
-  let wbLevel = null; // null (sin chequeo) | "bajo" | "neutro" | "bien"
-  if(wbToday){
-    const low = (wbToday.energy==="baja") || (wbToday.mood==="bajo") || (wbToday.sleep==="poco");
-    const good = (wbToday.energy==="alta" || wbToday.mood==="bien" || wbToday.sleep==="bien");
-    wbLevel = low ? "bajo" : (good ? "bien" : "neutro");
-  }
-
-  let subtitle;
-  if(wbLevel){
-    // matriz bienestar × carga (frases cálidas, reglas locales)
-    const matrix = {
-      bajo: {
-        liviana:  "Me contaste que hoy vienes con menos energía, y el día está tranquilo. Vamos a tu ritmo, sin presión. 💙",
-        media:    "Hoy la energía anda algo baja según me dijiste. Tienes algunas cosas — hagamos solo lo que se pueda, con calma. 💙",
-        exigente: "Se ve un día cargado y me dijiste que la energía anda baja. Concentrémonos solo en lo esencial, ¿te parece? 💙",
-      },
-      neutro: {
-        liviana:  "El día se ve tranquilo. Un buen momento para avanzar con calma en lo que quieras.",
-        media:    "Tienes una agenda equilibrada hoy. Vamos paso a paso.",
-        exigente: "Hoy se ve movido. Prioricemos lo importante y respiremos entre medio.",
-      },
-      bien: {
-        liviana:  "Vienes con buena energía y el día está tranquilo. Momento ideal para adelantar algo que te importe. ✨",
-        media:    "¡Buena energía hoy! Con una agenda equilibrada, es un gran día para avanzar. ✨",
-        exigente: "Vienes con buen ánimo, y hace falta: el día viene cargado. Vamos con todo, pero cuídate los descansos. ✨",
-      },
-    };
-    subtitle = matrix[wbLevel][load];
-  }else{
-    // sin chequeo: comportamiento original por carga
-    if(totalToday===0) subtitle = "Aquí está tu día. Hoy tienes la agenda libre — buen momento para adelantar algo o simplemente descansar.";
-    else if(load==="liviana") subtitle = "Aquí está tu día. Se ve una agenda liviana.";
-    else if(load==="media") subtitle = personalToday.length ? "Aquí está tu día. Tienes una agenda equilibrada, con espacio para lo personal." : "Aquí está tu día. Tienes una agenda moderada.";
-    else subtitle = personalToday.length ? "Hoy tienes una agenda exigente, pero todavía hay espacio para tus compromisos personales." : "Hoy tienes una agenda bastante exigente.";
-  }
+  const lowToday = !!(wbToday && (wbToday.energy==="baja" || wbToday.mood==="bajo" || wbToday.sleep==="poco"));
+  const subtitle = lowToday ? "Hoy, a tu ritmo y sin presión."
+    : hour<12 ? "Un buen día comienza con foco."
+    : hour<18 ? "Ya avanzaste. Ahora, lo que sigue."
+    : "Cierra el día con claridad.";
   document.getElementById("dashSubtitle").textContent = subtitle;
 
-  const dateStr = new Date().toLocaleDateString("es-ES",{weekday:"long", day:"numeric", month:"long", year:"numeric"});
-  document.getElementById("dashDateFull").textContent = dateStr.charAt(0).toUpperCase()+dateStr.slice(1);
+  const nowD = new Date();
+  const dateStr = nowD.toLocaleDateString("es-ES",{weekday:"long", day:"numeric", month:"long"});
+  document.getElementById("dashDateFull").textContent = `${dateStr} · ${minutesTo12h(nowD.getHours()*60+nowD.getMinutes())}`;
   document.getElementById("dashLastUpdate").textContent = "Actualizado " + relativeTime(new Date().toISOString());
   document.querySelectorAll("#dashPeriodToggle button").forEach(b=>b.classList.toggle("active", b.dataset.period===dashPeriod));
 }
@@ -4510,29 +4514,17 @@ function renderDashAttentionBar(){
   const tasks = DB.tasks.filter(t=>!t.archived);
   const overdue = tasks.filter(isTaskOverdue);
   const blocked = tasks.filter(t=>t.status==="bloqueada");
-  // "para hoy/semana/mes" según el período elegido (por fecha de vencimiento en el rango)
-  const periodLabel = dashPeriod==="week"?"esta semana" : dashPeriod==="month"?"este mes" : "para hoy";
-  const dueInPeriod = dashPeriod==="today"
-    ? tasks.filter(isTaskToday)
-    : tasks.filter(t=>(t.status!=="completada"&&t.status!=="cancelada") && inDashPeriod(t.dueDate));
   const personalPending = tasks.filter(t=>t.taskType==="personal" && (t.status!=="completada"&&t.status!=="cancelada"));
   const unscheduled = tasks.filter(needsScheduling);
-
-  const pills = [
-    {count:overdue.length, label: overdue.length===1?"vencida":"vencidas", icon:iconAlert(), color:"var(--danger)", quick:"overdue"},
-    {count:blocked.length, label: blocked.length===1?"bloqueada":"bloqueadas", icon:iconFlag(), color:"var(--warning)", status:"bloqueada"},
-    {count:dueInPeriod.length, label:periodLabel, icon:iconSun(), color:"var(--info)", quick: dashPeriod==="today"?"today":""},
-    {count:personalPending.length, label: personalPending.length===1?"personal":"personales", icon:"🏠", color:"var(--type-personal)", personal:true},
-    {count:unscheduled.length, label:"por agendar", icon:"📥", color:"var(--accent-2)", goCalendar:true, highlight:true},
+  const chips = [
+    {n:overdue.length, label: overdue.length===1?"vencida":"vencidas", warn:true, quick:"overdue"},
+    {n:blocked.length, label: blocked.length===1?"bloqueada":"bloqueadas", warn:true, status:"bloqueada"},
+    {n:unscheduled.length, label:"por agendar", goCalendar:true},
+    {n:personalPending.length, label: personalPending.length===1?"tarea personal":"tareas personales", personal:true},
   ];
-
-  document.getElementById("dashAttentionBar").innerHTML = `<div class="attention-bar">${pills.map(p=>`
-    <div class="attention-pill ${p.highlight?'highlight':''}" data-quick="${p.quick||''}" data-status="${p.status||''}" data-personal="${p.personal?1:0}" data-go-calendar="${p.goCalendar?1:0}" style="${p.highlight?`${mixBg(p.color,14)}border-color:${p.color};`:''}">
-      <div class="ap-icon" style="${mixBg(p.color,p.highlight?28:16)}color:${p.color}">${p.icon}</div>
-      <div><div class="ap-value" ${p.highlight?`style="color:${p.color}"`:''}>${p.count}</div><div class="ap-label">${p.label}</div></div>
-    </div>`).join("")}</div>`;
-
-  document.querySelectorAll("#dashAttentionBar .attention-pill").forEach(el=>{
+  const wrap = document.getElementById("dashAttentionBar");
+  wrap.innerHTML = chips.map(p=>`<button type="button" class="route-chip" data-quick="${p.quick||''}" data-status="${p.status||''}" data-personal="${p.personal?1:0}" data-go-calendar="${p.goCalendar?1:0}"><b class="${p.warn&&p.n?'warn':''}">${p.n}</b> ${p.label}</button>`).join("");
+  wrap.querySelectorAll(".route-chip").forEach(el=>{
     el.addEventListener("click", ()=>{
       if(el.dataset.goCalendar==="1"){ showView("calendar"); return; }
       Object.assign(taskFilterState, {project:"",owner:"",status:el.dataset.status||"",priority:"",tag:"",quick:el.dataset.quick||""});
@@ -4979,64 +4971,75 @@ function renderDashRing(){
 // — nunca se inventa un bloque si la agenda está apretada. Las reuniones ya
 // terminadas dejan de ocupar espacio; una en curso se queda visible con su
 // estado marcado.
+// Contexto real de "Tu ruta de hoy" — lo usan la línea de tiempo Y el
+// mensaje de Alma, así ambos dicen exactamente lo mismo (un solo cálculo).
+// momento: "manana" (<12h), "tarde" (<18h), "cierre" (>=18h).
+function dashRouteContext(){
+  const iso = TODAY();
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+  const moment = nowMin < 12*60 ? "manana" : (nowMin < 18*60 ? "tarde" : "cierre");
+  const events = getGoogleEventsForDate(iso).slice().sort((a,b)=>timeToMinutes(a.startTime)-timeToMinutes(b.startTime));
+  const relevant = events.filter(ev=>timeToMinutes(ev.endTime) > nowMin).slice(0,3);
+  const meetingsBefore = events.some(ev=>timeToMinutes(ev.endTime) <= nowMin);
+  const ongoing0 = relevant.length && timeToMinutes(relevant[0].startTime) <= nowMin;
+  // hueco real: hasta la próxima reunión; si no quedan reuniones, hasta las 18:00
+  let gapMin = 0;
+  if(relevant.length) gapMin = ongoing0 ? 0 : (timeToMinutes(relevant[0].startTime) - nowMin);
+  else if(moment!=="cierre") gapMin = 18*60 - nowMin;
+  const topTask = rankTasksForToday(DB.tasks.filter(t=>!t.archived))[0] || null;
+  const pendingToday = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskToday(t));
+  return { iso, nowMin, moment, events, relevant, meetingsBefore, gapMin, topTask, pendingToday };
+}
+
 function renderDashRouteTimeline(){
   const wrap = document.getElementById("dashRouteTimeline");
   const nowPill = document.getElementById("dashRouteNowPill");
   const nowLabel = document.getElementById("dashRouteNowLabel");
   if(!wrap) return;
-  const iso = TODAY();
-  const now = new Date(); // hora local real del navegador de la persona — ya respeta su huso horario solo
-  const nowMin = now.getHours()*60+now.getMinutes();
-  if(nowPill) nowPill.textContent = minutesTo12h(nowMin)+" · Ahora";
-  if(nowLabel) nowLabel.textContent = "Estás aquí · "+minutesTo12h(nowMin);
+  const c = dashRouteContext();
+  if(nowPill) nowPill.textContent = minutesTo12h(c.nowMin)+" · Ahora";
+  if(nowLabel) nowLabel.textContent = "Estás aquí · "+minutesTo12h(c.nowMin);
 
-  const events = getGoogleEventsForDate(iso).slice().sort((a,b)=>timeToMinutes(a.startTime)-timeToMinutes(b.startTime));
-  const relevant = events.filter(ev=>timeToMinutes(ev.endTime) > nowMin).slice(0,3);
+  // Cierre del día: solo desde las 18:00 (antes, aunque no queden reuniones,
+  // el día sigue — no se dice "cierre" a las 10 de la mañana).
+  if(c.moment==="cierre"){
+    const n = c.pendingToday.length;
+    wrap.innerHTML = `<div class="route-closeday">
+      <span class="route-eyebrow">Cierre del día</span>
+      <strong>${n ? `${n} pendiente${n===1?'':'s'} para hoy` : "Lo esencial está hecho."}</strong>
+      <span class="route-sub">${n ? "Elige qué resolver y qué llevar a mañana." : "Tu agenda y tus tareas de hoy quedaron al día."}</span>
+    </div>`;
+    return;
+  }
 
   let html = "";
-  if(relevant.length){
-    // Bloque de foco: solo si hay un hueco real de al menos 30 min entre
-    // ahora y lo próximo que viene.
-    const nextStart = timeToMinutes(relevant[0].startTime);
-    const ongoing0 = timeToMinutes(relevant[0].startTime) <= nowMin;
-    const gapMin = ongoing0 ? 0 : (nextStart - nowMin);
-    if(gapMin >= 30){
-      const topTask = rankTasksForToday(DB.tasks.filter(t=>!t.archived))[0];
-      if(topTask){
-        html += `<div class="route-slot">
-          <span class="route-slot-time">${minutesTo12h(nowMin)}</span>
-          <div class="route-slot-box focus">Bloque de foco
-            <small>${esc(topTask.title)} · ${Math.min(gapMin,90)} min sugeridos</small>
-          </div>
-        </div>`;
-      }
-    }
-    relevant.forEach(ev=>{
-      const ongoing = timeToMinutes(ev.startTime) <= nowMin && nowMin <= timeToMinutes(ev.endTime);
-      html += `<div class="route-slot">
-        <span class="route-slot-time">${minutesTo12h(timeToMinutes(ev.startTime))}</span>
-        <div class="route-slot-box ${ongoing?'ongoing':''}">${esc(ev.title)}${ongoing?' <span class="tag" style="margin-left:6px;">En curso</span>':''}
-          <small>${minutesTo12h(timeToMinutes(ev.startTime))}–${minutesTo12h(timeToMinutes(ev.endTime))}</small>
-        </div>
-      </div>`;
-    });
-  } else {
-    // Agenda del día terminada — cierre honesto, con los pendientes REALES
-    // de hoy (nunca "todo listo" si en verdad queda algo sin hacer).
-    const pendingToday = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskToday(t));
-    if(pendingToday.length){
-      html = `<div class="route-closeday">
-        <span class="route-eyebrow" style="color:var(--text-muted);">Cierre del día</span>
-        <strong>${pendingToday.length} pendiente${pendingToday.length===1?'':'s'} para hoy</strong>
-        <span class="t-sub">Tu agenda de reuniones ya terminó — elige qué resolver y qué llevar a mañana.</span>
-      </div>`;
-    }else{
-      html = `<div class="route-closeday">
-        <span class="route-eyebrow" style="color:var(--text-muted);">Cierre del día</span>
-        <strong>Lo esencial está hecho.</strong>
-        <span class="t-sub">Tu agenda y tus tareas de hoy quedaron al día.</span>
-      </div>`;
-    }
+  // Bloque de foco: solo si hay un hueco REAL de al menos 30 min y una tarea que hacer
+  if(c.gapMin >= 30 && c.topTask){
+    html += `<div class="route-slot">
+      <span class="route-slot-time">${minutesTo12h(c.nowMin)}</span>
+      <div class="route-slot-box focus">Bloque de foco
+        <small>${esc(c.topTask.title)} · ${Math.min(c.gapMin,90)} minutos sugeridos</small>
+      </div>
+    </div>`;
+  }
+  c.relevant.forEach(ev=>{
+    const s0 = timeToMinutes(ev.startTime), e0 = timeToMinutes(ev.endTime);
+    const ongoing = s0 <= c.nowMin && c.nowMin <= e0;
+    const kind = ev.isWork===true ? " · Laboral" : (ev.isWork===false ? " · Personal" : "");
+    html += `<div class="route-slot">
+      <span class="route-slot-time">${minutesTo12h(s0)}</span>
+      <div class="route-slot-box ${ongoing?'ongoing':''}">${esc(ev.title)}
+        <small>${ongoing?"En curso · ":""}${Math.max(0,e0-s0)} min${kind}</small>
+      </div>
+    </div>`;
+  });
+  if(!html){
+    html = `<div class="route-closeday">
+      <span class="route-eyebrow">Sin reuniones por delante</span>
+      <strong>${c.pendingToday.length ? `${c.pendingToday.length} pendiente${c.pendingToday.length===1?'':'s'} para hoy` : "Agenda libre"}</strong>
+      <span class="route-sub">${c.pendingToday.length ? "Tienes el resto del día para avanzar a tu ritmo." : "No hay nada urgente para hoy."}</span>
+    </div>`;
   }
   wrap.innerHTML = html;
 }
@@ -5044,61 +5047,31 @@ function renderDashRouteTimeline(){
 function renderDashAlmaDice(){
   const wrap = document.getElementById("dashAlmaDice");
   if(!wrap) return;
-
-  // 1) el mismo mensaje según energía/carga que antes vivía en "Motiva"
-  const name = (DB.config.alma&&DB.config.alma.userPreferredName)||DB.config.userName||"";
+  // Un solo mensaje, armado con los mismos datos que la ruta de hoy.
+  const name = ((DB.config.alma&&DB.config.alma.userPreferredName)||DB.config.userName||"").split(" ")[0];
   const nm = name ? `, ${name}` : "";
-  const today = TODAY();
-  const todayTasksCount = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && (t.startDate===today || t.dueDate===today)).length;
-  const overdueCount = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && isTaskOverdue(t)).length;
+  const c = dashRouteContext();
+  const a = computeDayAchievement();
   const wb = wellbeingSummary();
   const lowEnergy = wb && ((wb.energy && wb.energy<=2) || (wb.mood && wb.mood<=2));
-  const heavy = todayTasksCount>=6 || overdueCount>=4;
+  const lead = lowEnergy ? `Un paso a la vez${nm}. ` : "";
   let msg;
-  if(lowEnergy) msg = `Un paso a la vez${nm}. No tienes que con todo hoy.`;
-  else if(heavy) msg = `Hoy se ve movido${nm}. Prioricemos lo esencial.`;
-  else if(todayTasksCount===0) msg = `Tu día está despejado${nm}. Respira y disfruta.`;
-  else msg = `Vamos con calma${nm}. Un buen día para avanzar.`;
-
-  // 2) la MISMA lógica de "Retomemos esto juntos": un solo pick, el más
-  // relevante (crítico > próximo a vencer sin agendar > personal pendiente)
-  const tasks = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada"));
-  const daysUntil = (isoD)=>{ if(!isoD) return null; const a2=new Date(TODAY()+"T00:00:00"), b2=new Date(isoD+"T00:00:00"); return Math.round((b2-a2)/86400000); };
-  let pick = tasks.filter(t=>isTaskOverdue(t) || isTaskToday(t))
-    .sort((a2,b2)=>{ const ap=a2.priority==="alta"?0:1, bp=b2.priority==="alta"?0:1; if(ap!==bp) return ap-bp; return (a2.dueDate||"9999").localeCompare(b2.dueDate||"9999"); })[0];
-  let pickMotivo;
-  if(pick){
-    pickMotivo = isTaskOverdue(pick) ? `Está atrasada${pick.dueDate?` (venció el ${fmtDate(pick.dueDate)})`:""}` : (pick.executionTime ? "Vence hoy y ya tiene tiempo reservado" : "Vence hoy y aún no la agendas");
+  if(c.moment==="cierre"){
+    const left = rankTasksForToday(c.pendingToday).slice(0,2).map(t=>`"${t.title}"`);
+    if(a.total && left.length) msg = `Completaste ${a.done} de ${a.total} tareas. Queda ${left.join(" y ")}; puedes decidir qué cerrar y qué reprogramar.`;
+    else if(a.total) msg = `Completaste ${a.done} de ${a.total} tareas hoy. Cierra tranquilo${nm}.`;
+    else msg = `Día tranquilo${nm}. Descansa y nos vemos mañana.`;
+  }else if(c.gapMin>=30 && c.topTask && c.relevant.length){
+    const which = c.meetingsBefore ? "tu próxima" : "tu primera";
+    msg = `Tienes ${Math.min(c.gapMin,90)} minutos antes de ${which} reunión. Puedes avanzar en "${c.topTask.title}".`;
+  }else if(c.topTask && !c.relevant.length){
+    msg = `No tienes reuniones por delante. Buen momento para avanzar en "${c.topTask.title}".`;
+  }else if(c.relevant.length){
+    msg = `Tu agenda está apretada${nm}. Vamos reunión por reunión.`;
   }else{
-    const upcoming = tasks.filter(t=>t.dueDate && !t.executionTime).map(t=>({t,d:daysUntil(t.dueDate)})).filter(x=>x.d!==null&&x.d>=1&&x.d<=5).sort((a2,b2)=>a2.d-b2.d)[0];
-    if(upcoming){ pick=upcoming.t; const dd=upcoming.d; pickMotivo = `Vence ${dd===1?"mañana":`en ${dd} días`} y aún no le reservas tiempo`; }
+    msg = `Tu día está despejado${nm}. Respira y disfruta.`;
   }
-
-  wrap.innerHTML = `
-    <p style="font-size:14px;color:var(--text);margin:0 0 14px;line-height:1.5;">${esc(msg)}</p>
-    ${pick ? `
-    <div class="pt-row" style="align-items:flex-start;background:var(--surface-alt);border-radius:var(--radius);padding:10px 12px;">
-      <div class="pt-main">
-        <div class="pt-title t-title-click" data-open-task="${pick.id}" style="white-space:normal;cursor:pointer;">${taskTypeBadge(pick)} ${esc(pick.title)}</div>
-        <div class="pt-meta" style="white-space:normal;color:var(--text-muted);">${esc(pickMotivo||"")}</div>
-        <div class="dash-retomar-actions">
-          <button class="dash-retomar-btn reag" data-retomar-reag="${pick.id}">🔄 Reagendar</button>
-          <button class="dash-retomar-btn done" data-retomar-done="${pick.id}">✓ Ya la hice</button>
-        </div>
-      </div>
-    </div>` : ""}
-  `;
-  wrap.querySelectorAll("[data-open-task]").forEach(el=>el.addEventListener("click", ()=>openTaskModal(el.dataset.openTask)));
-  wrap.querySelectorAll("[data-retomar-reag]").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); reagendarTask(b.dataset.retomarReag); }));
-  wrap.querySelectorAll("[data-retomar-done]").forEach(b=>b.addEventListener("click",(e)=>{
-    e.stopPropagation();
-    const t = byId(DB.tasks, b.dataset.retomarDone);
-    if(!t) return;
-    t.status = "completada"; t.progress = 100; t.updatedAt = TODAY(); t.completedAt = TODAY();
-    logActivity("task_completed", `Completaste "${t.title}".`);
-    recomputeAll(); saveDB(); render();
-    toast(`✓ ¡Hecho! Marqué "${t.title}" como completada.`,"success");
-  }));
+  wrap.textContent = lead + msg;
 }
 
 /* Tu equilibrio de vida (Módulo 9): reparto de tareas activas por área de vida.
@@ -5162,40 +5135,30 @@ function rankTasksForToday(tasks){
 }
 function renderDashPriorityToday(){
   const tasks = DB.tasks.filter(t=>!t.archived);
-  const top5 = rankTasksForToday(tasks).slice(0,3);
+  const top3 = rankTasksForToday(tasks).slice(0,3);
   const wrap = document.getElementById("dashPriorityToday");
-  if(!top5.length){ wrap.innerHTML = `<div class="empty-state" style="padding:30px 10px;">¡Todo bajo control! No hay tareas urgentes pendientes.</div>`; return; }
-  wrap.innerHTML = top5.map((t,i)=>{
-    const p = byId(DB.projects,t.projectId);
-    const owner = byId(DB.responsables,t.owner);
-    const st = byId(TASK_STATUSES,t.status);
+  const titleEl = document.getElementById("dashPriorityTitle");
+  const moment = dashRouteContext().moment;
+  if(titleEl) titleEl.textContent = moment==="manana" ? "Prioridades de la mañana" : (moment==="tarde" ? "Prioridades de la tarde" : "Pendientes para cerrar el día");
+  if(!top3.length){ wrap.innerHTML = `<div class="route-empty">Nada urgente por ahora. ¡Todo bajo control!</div>`; return; }
+  wrap.innerHTML = top3.map((t,i)=>{
+    const prio = (labelOf(PRIORITIES,t.priority)||"").split(" /")[0];
     const overdue = isTaskOverdue(t);
-    return `<div class="pt-row" data-task-id="${t.id}">
-      <div class="pt-rank">${i+1}</div>
-      <div class="pt-main">
-        <div class="pt-title">${taskTypeBadge(t)} ${esc(t.title)}</div>
-        <div class="pt-meta">
-          ${p?`<span class="tag" style="background:color-mix(in srgb, ${p.color} 18%, transparent);color:${p.color}">${esc(p.name)}</span>`:""}
-          ${requestInfoLabel(t)?`<span title="Solicitado por">🙋 ${esc(requestInfoLabel(t))}</span>`:""}
-          ${owner?`<span>${esc(owner.name)}</span>`:'<span>Sin responsable</span>'}
-          <span class="priority-dot" style="background:${colorOf(PRIORITIES,t.priority)}"></span>${labelOf(PRIORITIES,t.priority)}
-          <span class="mono" style="color:${overdue?'var(--danger)':'inherit'}">${fmtDate(t.dueDate)}</span>
-          <span class="status-pill" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color}">${st.label}</span>
-        </div>
-      </div>
-      <div class="pt-progress"><div class="progress-mini"><div style="width:${t.progress}%"></div></div></div>
-      <div class="pt-actions">
-        <button class="mini-btn" data-act="complete" title="Marcar completada">${iconCheck()}</button>
-        <button class="mini-btn" data-act="edit" title="Editar">${iconEdit()}</button>
-      </div>
+    let when;
+    if(!t.dueDate) when = "Sin vencimiento";
+    else if(t.dueDate===TODAY()) when = `${overdue?"Venció":"Vence"} ${t.dueTime?minutesTo12h(timeToMinutes(t.dueTime)):"hoy"}`;
+    else when = `${overdue?"Venció":"Vence"} el ${fmtDate(t.dueDate)}`;
+    return `<div class="route-task" data-task-id="${t.id}">
+      <button type="button" class="route-check" data-act="complete" title="Marcar como hecha" aria-label="Marcar como hecha"></button>
+      <div class="route-task-text" data-act="open">${esc(t.title)}<small>${esc(prio)} · ${when}</small></div>
+      <span class="route-pill">${i===0?"Ahora":"Después"}</span>
     </div>`;
   }).join("");
-  wrap.querySelectorAll(".pt-row").forEach(row=>{
+  wrap.querySelectorAll(".route-task").forEach(row=>{
     const tid = row.dataset.taskId;
-    row.querySelector('[data-act="edit"]').addEventListener("click", ()=>openTaskModal(tid));
+    row.querySelector('[data-act="open"]').addEventListener("click", ()=>openTaskModal(tid));
     row.querySelector('[data-act="complete"]').addEventListener("click", (e)=>{ e.stopPropagation(); toggleTaskComplete(tid); });
   });
-  document.getElementById("dashViewAllTasksBtn").onclick = ()=>showView("mytasks");
 }
 
 /* E. Productividad semanal */
@@ -5211,59 +5174,68 @@ function currentWeekDatesMonToSun(){
   return dates;
 }
 function renderDashWeeklyChart(){
-  const weekDates = currentWeekDatesMonToSun();
+  // Lunes a viernes, como el ejemplo aprobado (fechas reales de la semana actual)
+  const weekDates = currentWeekDatesMonToSun().slice(0,5);
   const todayIso = TODAY();
   const dowShort = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-  const dayLabels = weekDates.map(iso=>{
-    const d = new Date(iso+"T00:00:00");
-    return `${dowShort[d.getDay()]} ${d.getDate()}`;
-  });
-  // Fechas REALES de creación y de finalización (completedAt, nunca
-  // updatedAt) — un día futuro siempre da 0 en ambas series, por definición
-  // (no se puede crear ni completar algo que todavía no llega).
+  const monShort = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const dd = iso=>new Date(iso+"T00:00:00");
+  const dayLabels = weekDates.map(iso=>`${dowShort[dd(iso).getDay()]} ${dd(iso).getDate()}`);
+  const rangeLabel = (iso)=>`${dd(iso).getDate()} ${monShort[dd(iso).getMonth()]}`;
+  // Fechas REALES (completedAt / createdAt, nunca updatedAt)
   const completed = weekDates.map(iso => DB.tasks.filter(t=>!t.archived && t.completedAt===iso).length);
   const created = weekDates.map(iso => DB.tasks.filter(t=>!t.archived && t.createdAt===iso).length);
   const isFuture = weekDates.map(iso => iso > todayIso);
-  const max = Math.max(1, ...completed, ...created);
+  const rawMax = Math.max(1, ...completed, ...created);
+  const top = Math.max(10, Math.ceil(rawMax/5)*5); // eje en pasos de 5, mínimo 10
 
-  const w=520, h=170, padB=24, padT=12, barW=15, gap=4;
-  const stepX = (w-44)/7;
-  let bars = "";
-  for(let i=0;i<7;i++){
-    const x = 34+i*stepX+stepX/2;
+  // Misma geometría del ejemplo: alto fijo 180px, ancho = ancho real del
+  // panel (1 unidad SVG = 1px, así el texto no se agranda ni se achica).
+  const chartWrap = document.getElementById("dashWeeklyChart");
+  const width = Math.max(260, Math.round((chartWrap && chartWrap.clientWidth) || 520));
+  const unit = 110/top, baseY = 142;
+  const yOf = v => baseY - v*unit;
+  let svg = `<text x="0" y="11">Tareas</text>`;
+  [0, top/2, top].forEach(v=>{
+    svg += `<line x1="30" x2="${width-3}" y1="${yOf(v)}" y2="${yOf(v)}" stroke="var(--border)"/><text x="8" y="${yOf(v)+4}">${v}</text>`;
+  });
+  const step = (width-44)/5;
+  for(let i=0;i<5;i++){
+    const x = 34+i*step;
+    const label = width<360 ? dayLabels[i].split(" ")[0] : dayLabels[i];
     if(isFuture[i]){
-      // Día futuro: columna apagada, sin barras (no hay datos que mostrar
-      // todavía) — distinto de un día ya pasado con cero actividad real.
-      bars += `<rect x="${x-barW-gap/2}" y="${h-padB-3}" width="${barW*2+gap}" height="3" rx="1.5" fill="var(--border)"/>`;
-      bars += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="10" fill="var(--text-faint)">${dayLabels[i]}</text>`;
-      continue;
+      svg += `<text x="${x+12}" y="${baseY-7}" text-anchor="middle">—</text>`;
+    }else{
+      const cH = completed[i]*unit, crH = created[i]*unit;
+      svg += `<rect x="${x-8}" y="${baseY-cH}" width="19" height="${cH}" rx="4" fill="#FF6B45"><title>${dayLabels[i]}: ${completed[i]} completada${completed[i]===1?'':'s'}</title></rect>`;
+      svg += `<rect x="${x+16}" y="${baseY-crH}" width="19" height="${crH}" rx="4" fill="#ED3F7C"><title>${dayLabels[i]}: ${created[i]} creada${created[i]===1?'':'s'}</title></rect>`;
+      svg += `<text x="${x+12}" y="${baseY-Math.max(cH,crH)-7}" text-anchor="middle">${completed[i]} / ${created[i]}</text>`;
     }
-    const cH = Math.max(completed[i]>0?3:0, (completed[i]/max)*(h-padB-padT));
-    const crH = Math.max(created[i]>0?3:0, (created[i]/max)*(h-padB-padT));
-    bars += `<rect x="${x-barW-gap/2}" y="${h-padB-cH}" width="${barW}" height="${cH}" rx="3" fill="var(--accent)"><title>${dayLabels[i]}: ${completed[i]} completada${completed[i]===1?'':'s'}</title></rect>`;
-    bars += `<rect x="${x+gap/2}" y="${h-padB-crH}" width="${barW}" height="${crH}" rx="3" fill="var(--accent-2)"><title>${dayLabels[i]}: ${created[i]} creada${created[i]===1?'':'s'}</title></rect>`;
-    bars += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="10" fill="var(--text-faint)" font-weight="${weekDates[i]===todayIso?'700':'400'}">${dayLabels[i]}</text>`;
+    svg += `<text x="${x+12}" y="166" text-anchor="middle"${weekDates[i]===todayIso?' font-weight="700"':''}>${label}</text>`;
   }
 
   const totalCompleted = completed.reduce((a,b)=>a+b,0);
-  const totalCreated = created.reduce((a,b)=>a+b,0);
-  // Nunca se inventa una meta: solo se muestra el cumplimiento si de verdad
-  // existe DB.config.weeklyGoal configurado por la persona.
+  // Nunca se inventa una meta: solo aparece si existe DB.config.weeklyGoal real
   const hasRealGoal = DB.config && typeof DB.config.weeklyGoal === "number" && DB.config.weeklyGoal > 0;
-  const noteHtml = hasRealGoal
-    ? `<span>${totalCompleted} completadas · ${totalCreated} creadas esta semana</span><strong>${Math.round((totalCompleted/DB.config.weeklyGoal)*100)}% de tu meta · ${DB.config.weeklyGoal} tareas</strong>`
-    : `<span>${totalCompleted} completadas · ${totalCreated} creadas esta semana</span>`;
+  const noteHtml = `<span>${totalCompleted} tarea${totalCompleted===1?'':'s'} completada${totalCompleted===1?'':'s'}</span>` +
+    (hasRealGoal ? `<strong>${Math.round((totalCompleted/DB.config.weeklyGoal)*100)}% de meta · ${DB.config.weeklyGoal} tareas</strong>` : "");
 
   document.getElementById("dashWeeklyChart").innerHTML = `
-    <div class="dash-rowhead"><h2>Tu avance esta semana</h2><span class="t-sub">${dayLabels[0]} – ${dayLabels[6]}</span></div>
+    <div class="dash-rowhead"><h2>Tu avance esta semana</h2><span class="route-sub">${rangeLabel(weekDates[0])} – ${rangeLabel(weekDates[4])}</span></div>
     <div class="route-chart-legend">
       <span><span class="route-chart-dot"></span>Completadas</span>
       <span><span class="route-chart-dot pink"></span>Creadas</span>
     </div>
-    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;" role="img" aria-label="Tareas completadas y creadas por día, lunes a domingo.">${bars}</svg>
+    <svg class="route-chart" viewBox="0 0 ${width} 180" style="width:100%;height:180px;display:block;overflow:visible;" role="img" aria-label="Tareas completadas y creadas por día, de lunes a viernes.">${svg}</svg>
     <div class="route-chart-note">${noteHtml}</div>
   `;
 }
+
+let _dashChartResizeT = null;
+window.addEventListener("resize", ()=>{
+  clearTimeout(_dashChartResizeT);
+  _dashChartResizeT = setTimeout(()=>{ if(!document.getElementById("view-dashboard").classList.contains("hidden")){ try{ renderDashWeeklyChart(); }catch(e){} } }, 150);
+});
 
 /* F. Estado de proyectos (máx. 4 relevantes) */
 function renderDashProjectStatus(){
@@ -5275,30 +5247,16 @@ function renderDashProjectStatus(){
   const lowCompletion = active.filter(p=>p.status==="activo" && p.progress<40).sort((a,b)=>a.progress-b.progress);
   [...atRisk, ...nearDue, ...mostTasks, ...lowCompletion].forEach(p=>{ if(picked.length<4 && !picked.includes(p)) picked.push(p); });
 
+  const countEl = document.getElementById("dashProjectCount");
+  const nActive = active.filter(p=>p.status!=="completado" && p.status!=="cancelado").length;
+  if(countEl) countEl.textContent = `${nActive} activo${nActive===1?'':'s'}`;
   const wrap = document.getElementById("dashProjectStatus");
-  if(!picked.length){ wrap.innerHTML = `<div class="t-sub">No hay proyectos activos por el momento.</div>`; return; }
-  wrap.innerHTML = picked.map(p=>{
-    const owner = byId(DB.responsables,p.owner);
-    const st = byId(PROJECT_STATUSES,p.status);
-    return `<div class="proj-compact-card" style="--card-color:${p.color}" data-pid="${p.id}">
-      <div class="proj-compact-head">
-        <b>${esc(p.name)}</b>
-        <span class="badge" style="background:color-mix(in srgb, ${st.color} 18%, transparent);color:${st.color}">${st.label}</span>
-      </div>
-      <div class="proj-compact-meta">
-        <span>${owner?esc(owner.name):"Sin responsable"}</span>
-        <span>Vence ${fmtDate(p.endDate)}</span>
-        <span>${p.pendingTasks} pendientes</span>
-        <span style="color:${p.overdueTasks?'var(--danger)':'inherit'}">${p.overdueTasks} atrasadas</span>
-      </div>
-      <div class="pbar-track" style="margin-bottom:10px;"><div class="pbar-fill" style="width:${p.progress}%;background:${p.color}"></div></div>
-      <button type="button" class="btn btn-ghost btn-sm" data-open>Abrir proyecto</button>
-    </div>`;
-  }).join("");
-  wrap.querySelectorAll(".proj-compact-card").forEach(card=>{
-    card.querySelector("[data-open]").addEventListener("click", ()=>openProjectModal(card.dataset.pid));
-  });
-  document.getElementById("dashViewAllProjectsBtn").onclick = ()=>showView("projects");
+  if(!picked.length){ wrap.innerHTML = `<div class="route-empty">No hay proyectos activos por el momento.</div>`; return; }
+  wrap.innerHTML = picked.map(p=>`<div class="route-project" data-pid="${p.id}" title="Abrir proyecto">
+      <div class="route-project-top"><span>${esc(p.name)}</span><span>${Math.round(p.progress||0)}%</span></div>
+      <div class="route-bar"><div class="route-fill" style="width:${Math.round(p.progress||0)}%"></div></div>
+    </div>`).join("");
+  wrap.querySelectorAll(".route-project").forEach(el=>el.addEventListener("click", ()=>openProjectModal(el.dataset.pid)));
 }
 
 /* G. Carga del equipo */
@@ -5703,7 +5661,7 @@ function renderNotas(){
 }
 function stickyGreeting(name){
   const h = new Date().getHours();
-  const s = h<12 ? "Buenos días" : h<19 ? "Buenas tardes" : "Buenas noches";
+  const s = h<12 ? "Buenos días" : h<18 ? "Buenas tardes" : "Buenas noches";
   return name ? `${s}, ${esc(name)}` : s;
 }
 function fmtLongDate(iso){
@@ -11927,7 +11885,7 @@ let almaCloudExpanded = false; // sesión: si el panel está abierto ahora mismo
 let almaCloudInit = false;
 function almaGreetingByHour(){
   const h = new Date().getHours();
-  return h<12 ? "Buenos días" : h<19 ? "Buenas tardes" : "Buenas noches";
+  return h<12 ? "Buenos días" : h<18 ? "Buenas tardes" : "Buenas noches";
 }
 function renderAlmaCloud(activeView){
   const fab = document.getElementById("almaFab");
@@ -12423,6 +12381,33 @@ function refreshCatchUpButton(){
   if(btn) btn.classList.toggle("hidden", overdueTasks().length===0);
 }
 document.getElementById("dashCatchUpBtn").addEventListener("click", openCatchUp);
+
+/* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
+   la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
+   lógica: cada opción "presiona" el botón original, que sigue en la página. */
+(function initHeroMoreMenu(){
+  const btn = document.getElementById("dashHeroMoreBtn");
+  const menu = document.getElementById("dashHeroMoreMenu");
+  if(!btn || !menu) return;
+  const close = ()=>{ menu.classList.add("hidden"); btn.setAttribute("aria-expanded","false"); };
+  const open = ()=>{
+    // "Ponerme al día" solo aparece si de verdad hay algo atrasado (mismo criterio que el botón original)
+    const catchUp = document.getElementById("dashCatchUpBtn");
+    const item = menu.querySelector('[data-proxy="dashCatchUpBtn"]');
+    if(item) item.classList.toggle("hidden", !catchUp || catchUp.classList.contains("hidden"));
+    menu.classList.remove("hidden"); btn.setAttribute("aria-expanded","true");
+    const first = menu.querySelector("button:not(.hidden)"); if(first) first.focus();
+  };
+  btn.addEventListener("click", (e)=>{ e.stopPropagation(); menu.classList.contains("hidden") ? open() : close(); });
+  menu.addEventListener("click", (e)=>{
+    const it = e.target.closest("[data-proxy]"); if(!it) return;
+    close();
+    const target = document.getElementById(it.dataset.proxy);
+    if(target) target.click();
+  });
+  document.addEventListener("click", (e)=>{ if(!menu.classList.contains("hidden") && !menu.contains(e.target) && e.target!==btn) close(); });
+  document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && !menu.classList.contains("hidden")){ close(); btn.focus(); } });
+})();
 
 /* ---------------------------------------------------------------------- *
  * Cierre y revisión semanal (Módulo 10)
