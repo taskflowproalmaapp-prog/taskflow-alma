@@ -7554,7 +7554,7 @@ ${projects}
 - "fecha_ejecucion"/"hora_ejecucion": cuándo ocurre la actividad, o cuándo el usuario dice que la va a hacer ("voy a ir hoy a las 12", "la hago mañana a las 9").
 - "fecha_vencimiento"/"hora_vencimiento": SOLO el plazo límite de una tarea ("entregar máximo el 13", "antes del viernes", "vence el lunes a las 18"). No es lo mismo que cuándo la va a hacer.
 - "horas_estimadas": número (ej 0.5, 1, 2) solo si lo menciona o es muy obvio; si no, null.
-- "prioridad": "alta" si es urgente/importante o vence hoy/mañana, "baja" si puede esperar, si no "media".
+- "prioridad": "alta" SOLO si el usuario lo dice o lo deja claro: "urgente", "importante", "prioritario", "crítico", "sí o sí", "no se me puede olvidar", o si hay una consecuencia seria por no hacerlo (multa, corte de un servicio, perder un plazo legal o de pago). "baja" si dice "cuando pueda", "sin apuro", "algún día" o similar. En cualquier otro caso: "media". Que algo sea para hoy o mañana NO lo hace "alta" por sí solo.
 - "etiquetas": 0 a 3 palabras clave relevantes, en minúscula.
 Nunca inventes fechas, horas, proyectos ni personas que no se desprendan del contenido — usa null. Responde solo el JSON.`;
 }
@@ -16300,6 +16300,9 @@ async function tryRestoreSession(){
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
     showLoginScreen();
+    // la sesión venció (90 días sin usarla) o se cerró al cambiar la clave
+    const le = document.getElementById("loginError");
+    if(le){ le.textContent = "Tu sesión se cerró (por seguridad, tras un tiempo sin usarla o un cambio de clave). Vuelve a entrar."; le.style.color = "var(--text-muted)"; }
     return;
   }
   hideLoginScreen();
@@ -16355,6 +16358,7 @@ function setupAuthUI(){
     const password = document.getElementById("loginPassword").value;
     btn.disabled = true; btn.textContent = "Entrando...";
     try{
+      errEl.style.color = "";
       const r = await apiAuth("login", { username, password });
       localStorage.setItem(AUTH_TOKEN_KEY, r.token);
       localStorage.setItem(AUTH_USER_KEY, r.username);
