@@ -23,6 +23,14 @@ function store(name) {
 function json(statusCode, obj) {
   return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
+// Una sesión vence tras SESSION_DAYS días (por defecto 90) sin usarse —
+// misma regla que en auth.js (allí se renueva cada vez que se abre la app).
+const SESSION_MS = (parseInt(process.env.SESSION_DAYS || "90", 10) || 90) * 24 * 3600 * 1000;
+function sessionExpired(rec) {
+  const last = Date.parse((rec && rec.lastSeenAt) || ""); // sin fecha = sesión anterior a esta regla: vigente
+  return !!last && Date.now() - last > SESSION_MS;
+}
 const clip = (s, n) => String(s == null ? "" : s).slice(0, n);
 const monthOf = (d) => (d || new Date()).toISOString().slice(0, 7);          // "2026-10"
 const KEY_RE = /^[a-z0-9_.-]{1,40}$/;
@@ -39,7 +47,7 @@ exports.handler = async function (event) {
 
   try {
     const rec = await store("sessions").get(token, { type: "json" });
-    if (!rec || !rec.username) return json(401, { error: "Sesión inválida o expirada" });
+    if (!rec || !rec.username || sessionExpired(rec)) return json(401, { error: "Sesión inválida o expirada" });
     const username = rec.username;
     const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
     const isAdmin = !!adminUser && username === adminUser;

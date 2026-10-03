@@ -27,6 +27,14 @@ function json(statusCode, obj) {
   };
 }
 
+// Una sesión vence tras SESSION_DAYS días (por defecto 90) sin usarse —
+// misma regla que en auth.js (allí se renueva cada vez que se abre la app).
+const SESSION_MS = (parseInt(process.env.SESSION_DAYS || "90", 10) || 90) * 24 * 3600 * 1000;
+function sessionExpired(rec) {
+  const last = Date.parse((rec && rec.lastSeenAt) || ""); // sin fecha = sesión anterior a esta regla: vigente
+  return !!last && Date.now() - last > SESSION_MS;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "Método no permitido" });
@@ -45,7 +53,7 @@ exports.handler = async function (event) {
   try {
     const sessions = store("sessions");
     const rec = await sessions.get(token, { type: "json" });
-    if (!rec) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
+    if (!rec || sessionExpired(rec)) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
     const username = rec.username;
     const userdata = store("userdata");
 

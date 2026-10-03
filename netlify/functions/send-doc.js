@@ -24,6 +24,14 @@ function store(name) {
 function json(statusCode, obj) {
   return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
+// Una sesión vence tras SESSION_DAYS días (por defecto 90) sin usarse —
+// misma regla que en auth.js (allí se renueva cada vez que se abre la app).
+const SESSION_MS = (parseInt(process.env.SESSION_DAYS || "90", 10) || 90) * 24 * 3600 * 1000;
+function sessionExpired(rec) {
+  const last = Date.parse((rec && rec.lastSeenAt) || ""); // sin fecha = sesión anterior a esta regla: vigente
+  return !!last && Date.now() - last > SESSION_MS;
+}
 function esc(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -72,7 +80,7 @@ exports.handler = async function (event) {
   let username;
   try {
     const rec = await store("sessions").get(token, { type: "json" });
-    if (!rec || !rec.username) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
+    if (!rec || !rec.username || sessionExpired(rec)) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
     username = rec.username;
   } catch (e) { return json(500, { error: "No se pudo validar la sesión: " + e.message }); }
 

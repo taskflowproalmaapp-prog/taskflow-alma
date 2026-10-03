@@ -29,6 +29,14 @@ function json(statusCode, obj) {
   return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
 
+// Una sesión vence tras SESSION_DAYS días (por defecto 90) sin usarse —
+// misma regla que en auth.js (allí se renueva cada vez que se abre la app).
+const SESSION_MS = (parseInt(process.env.SESSION_DAYS || "90", 10) || 90) * 24 * 3600 * 1000;
+function sessionExpired(rec) {
+  const last = Date.parse((rec && rec.lastSeenAt) || ""); // sin fecha = sesión anterior a esta regla: vigente
+  return !!last && Date.now() - last > SESSION_MS;
+}
+
 // Tipos de archivo que aceptamos mandar a Gemini
 const ALLOWED_MEDIA = /^(image\/(png|jpeg|jpg|webp|heic|heif|gif)|audio\/(webm|ogg|mp4|mpeg|mp3|wav|aac|x-m4a|m4a|flac))(;.*)?$/i;
 // Netlify acepta hasta ~6 MB por llamada; dejamos margen para el resto del cuerpo
@@ -50,7 +58,7 @@ exports.handler = async function (event) {
   let username;
   try {
     const rec = await store("sessions").get(token, { type: "json" });
-    if (!rec || !rec.username) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
+    if (!rec || !rec.username || sessionExpired(rec)) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
     username = rec.username;
   } catch (e) {
     return json(500, { error: "No se pudo validar la sesión: " + e.message });

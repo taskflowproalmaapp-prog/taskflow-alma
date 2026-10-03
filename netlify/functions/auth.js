@@ -41,6 +41,40 @@ function randomToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
+// ── Sesiones que vencen ──
+// Una sesión vence si pasa SESSION_DAYS días (por defecto 90) SIN usarse.
+// Cada vez que la persona abre la app ("verify"), se renueva. Así nadie que
+// usa la app seguido se ve afectado, pero una sesión olvidada en un
+// computador ajeno se cierra sola.
+const SESSION_MS = (parseInt(process.env.SESSION_DAYS || "90", 10) || 90) * 24 * 3600 * 1000;
+function sessionExpired(rec) {
+  // Las sesiones creadas antes de esta regla no tienen "lastSeenAt": se
+  // consideran vigentes y empiezan a contar desde su próximo uso (así nadie
+  // pierde la sesión de golpe al actualizar la app).
+  const last = Date.parse((rec && rec.lastSeenAt) || "");
+  if (!last) return false;
+  return Date.now() - last > SESSION_MS;
+}
+// Devuelve el registro de sesión si es válido (y borra el vencido)
+async function validSession(sessions, token) {
+  if (!token) return null;
+  const rec = await sessions.get(token, { type: "json" });
+  if (!rec) return null;
+  if (sessionExpired(rec)) { try { await sessions.delete(token); } catch (e) {} return null; }
+  return rec;
+}
+// Compara hashes en tiempo constante (evita ataques de medición de tiempo)
+function sameHash(a, b) {
+  const A = Buffer.from(String(a), "hex"), B = Buffer.from(String(b), "hex");
+  return A.length === B.length && crypto.timingSafeEqual(A, B);
+}
+
+// ── Límite de intentos de login ──
+// Máx. LOGIN_MAX_ATTEMPTS intentos fallidos (por defecto 8) por usuario en
+// 15 minutos. Al acertar la clave, el contador se reinicia.
+const LOGIN_MAX = parseInt(process.env.LOGIN_MAX_ATTEMPTS || "8", 10) || 8;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
 async function sendResetEmail(toEmail, resetLink) {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
@@ -105,27 +139,43 @@ exports.handler = async function (event) {
       }));
 
       const tok = randomToken();
-      await sessions.set(tok, JSON.stringify({ username: uname, createdAt: new Date().toISOString() }));
+      const nowIso = new Date().toISOString();
+      await sessions.set(tok, JSON.stringify({ username: uname, createdAt: nowIso, lastSeenAt: nowIso }));
       return json(200, { token: tok, username: uname });
     }
 
     if (action === "login") {
       if (!username || !password) return json(400, { error: "Falta usuario o clave" });
       const uname = String(username).trim().toLowerCase();
+      const attempts = store("login_attempts");
+      const att = (await attempts.get(uname, { type: "json" })) || { count: 0, firstAt: 0 };
+      if (Date.now() - att.firstAt > LOGIN_WINDOW_MS) { att.count = 0; att.firstAt = Date.now(); }
+      if (att.count >= LOGIN_MAX) {
+        const mins = Math.max(1, Math.ceil((att.firstAt + LOGIN_WINDOW_MS - Date.now()) / 60000));
+        return json(429, { error: `Demasiados intentos. Espera ${mins} minuto${mins === 1 ? "" : "s"} o recupera tu clave.` });
+      }
       const rec = await users.get(uname, { type: "json" });
-      if (!rec) return json(401, { error: "Usuario o clave incorrectos" });
-      const hash = hashPassword(password, rec.salt);
-      if (hash !== rec.hash) return json(401, { error: "Usuario o clave incorrectos" });
+      const ok = !!rec && sameHash(hashPassword(password, rec.salt), rec.hash);
+      if (!ok) {
+        att.count += 1; if (!att.firstAt) att.firstAt = Date.now();
+        await attempts.set(uname, JSON.stringify(att));
+        return json(401, { error: "Usuario o clave incorrectos" });
+      }
+      try { await attempts.delete(uname); } catch (e) {}
 
       const tok = randomToken();
-      await sessions.set(tok, JSON.stringify({ username: uname, createdAt: new Date().toISOString() }));
+      const nowIso = new Date().toISOString();
+      await sessions.set(tok, JSON.stringify({ username: uname, createdAt: nowIso, lastSeenAt: nowIso }));
       return json(200, { token: tok, username: uname });
     }
 
     if (action === "verify") {
       if (!token) return json(400, { error: "Falta token" });
-      const rec = await sessions.get(token, { type: "json" });
+      const rec = await validSession(sessions, token);
       if (!rec) return json(200, { valid: false });
+      // renovar: la sesión vence por INACTIVIDAD, no por antigüedad
+      rec.lastSeenAt = new Date().toISOString();
+      try { await sessions.set(token, JSON.stringify(rec)); } catch (e) {}
       return json(200, { valid: true, username: rec.username });
     }
 
@@ -139,7 +189,7 @@ exports.handler = async function (event) {
     // con la variable de entorno ADMIN_USERNAME en Netlify.
     if (action === "amIAdmin") {
       if (!token) return json(200, { isAdmin: false });
-      const rec = await sessions.get(token, { type: "json" });
+      const rec = await validSession(sessions, token);
       const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
       const isAdmin = !!(rec && adminUser && rec.username === adminUser);
       return json(200, { isAdmin });
@@ -150,7 +200,7 @@ exports.handler = async function (event) {
     // otra persona recibe un error, aunque tenga sesión válida.
     if (action === "listUsers") {
       if (!token) return json(401, { error: "Falta token" });
-      const rec = await sessions.get(token, { type: "json" });
+      const rec = await validSession(sessions, token);
       const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
       if (!rec || !adminUser || rec.username !== adminUser) {
         return json(403, { error: "No tienes permiso para ver esto" });
@@ -170,7 +220,7 @@ exports.handler = async function (event) {
     // y no puede eliminarse a sí misma por accidente.
     if (action === "deleteUser") {
       if (!token) return json(401, { error: "Falta token" });
-      const rec = await sessions.get(token, { type: "json" });
+      const rec = await validSession(sessions, token);
       const adminUser = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
       if (!rec || !adminUser || rec.username !== adminUser) {
         return json(403, { error: "No tienes permiso para hacer esto" });
@@ -186,6 +236,29 @@ exports.handler = async function (event) {
       await users.delete(targetUser);
       const userdata = store("userdata");
       await userdata.delete(targetUser);
+
+      // Limpieza de datos menores de esa persona (contadores, avisos, intentos).
+      // Sus sugerencias se conservan para el Panel de mejoras, pero sin su nombre.
+      const cleanup = async (storeName, match) => {
+        try {
+          const st = store(storeName);
+          const l = await st.list();
+          for (const e of l.blobs || []) if (match(e.key)) await st.delete(e.key);
+        } catch (e) { console.error("cleanup " + storeName, e.message); }
+      };
+      await cleanup("ia_usage", (k) => k.startsWith(targetUser + ":"));
+      await cleanup("send_doc_usage", (k) => k.startsWith(targetUser + ":"));
+      await cleanup("usage", (k) => k.endsWith(":" + targetUser));
+      await cleanup("push_subscriptions", (k) => k === targetUser);
+      await cleanup("login_attempts", (k) => k === targetUser);
+      try {
+        const fb = store("feedback");
+        const l = await fb.list({ prefix: "fb:" });
+        for (const e of l.blobs || []) {
+          const it = await fb.get(e.key, { type: "json" });
+          if (it && it.username === targetUser) { it.username = "usuario eliminado"; it.conversacion = []; await fb.set(e.key, JSON.stringify(it)); }
+        }
+      } catch (e) { console.error("cleanup feedback", e.message); }
 
       // cerramos cualquier sesión activa que tuviera esa persona, para que no
       // le quede la app abierta en su celular usando datos ya borrados.
@@ -235,6 +308,16 @@ exports.handler = async function (event) {
       const hash = hashPassword(newPassword, salt);
       await users.set(rec.username, JSON.stringify(Object.assign({}, userRec, { hash, salt })));
       await resets.delete(token);
+      // Clave nueva = se cierran todas las sesiones abiertas de esa cuenta
+      // (si alguien más tenía la sesión, queda fuera) y se limpian los intentos.
+      try {
+        const sl = await sessions.list();
+        for (const e of sl.blobs || []) {
+          const se = await sessions.get(e.key, { type: "json" });
+          if (se && se.username === rec.username) await sessions.delete(e.key);
+        }
+        await store("login_attempts").delete(rec.username);
+      } catch (e) { console.error("reset cleanup", e.message); }
       return json(200, { ok: true });
     }
 
