@@ -432,6 +432,123 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .asp-when b{font-weight:700;}
 .asp-when.ok{color:var(--success);}
 .asp-warn{color:#B8860B;}
+
+/* ---- Clima (Open-Meteo) ---- */
+.route-hero-right{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;flex:none;}
+.hero-cards{display:flex;flex-direction:column;gap:8px;width:250px;}
+.hero-cards .wx-wrap{width:100%;}
+.wx-wrap{position:relative;}
+.wx-card{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);color:#fff;font:inherit;text-align:left;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .15s, transform .15s;}
+.wx-card:hover{background:rgba(255,255,255,.22);transform:translateY(-1px);}
+.wx-card:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+.wx-card-ico{font-size:26px;line-height:1;flex:none;width:34px;text-align:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));}
+.wx-card-main{flex:1;min-width:0;}
+.wx-card-temp{display:block;font-family:var(--font-display);font-size:18px;font-weight:800;line-height:1.15;}
+.wx-card-desc{display:block;font-size:11px;opacity:.92;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wx-card-chev{flex:none;font-size:18px;opacity:.8;}
+.wx-card.wx-empty .wx-card-temp{font-size:14px;}
+.wx-panel{position:absolute;top:calc(100% + 8px);right:0;z-index:40;width:min(410px,92vw);background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.18);text-transform:none;letter-spacing:0;font-weight:400;}
+.wx-now{display:flex;align-items:center;gap:12px;}
+.wx-now-ico{font-size:34px;line-height:1;}
+.wx-now-temp{font-family:var(--font-display);font-size:30px;font-weight:700;line-height:1;}
+.wx-now-sub{font-size:12px;color:var(--text-muted);margin-top:3px;}
+.wx-sec{font-size:11px;color:var(--text-muted);margin:14px 0 8px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;}
+.wx-hours{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+.wx-hour{flex:0 0 auto;min-width:50px;text-align:center;background:var(--surface-alt);border-radius:10px;padding:7px 4px;font-size:11px;}
+.wx-hour b{display:block;font-size:13px;margin:2px 0;}
+.wx-rain{color:#4A7FD6;font-size:10.5px;}
+.wx-days{display:flex;flex-direction:column;}
+.wx-day{display:grid;grid-template-columns:62px 26px 1fr 64px;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+.wx-day:last-child{border-bottom:0;}
+.wx-range{text-align:right;}
+.wx-range span{color:var(--text-muted);}
+.wx-foot{font-size:10.5px;color:var(--text-muted);margin-top:10px;display:flex;justify-content:space-between;gap:8px;}
+.wx-foot button{background:none;border:0;color:var(--accent-2);font:inherit;font-size:10.5px;cursor:pointer;padding:0;}
+.wx-day{cursor:pointer;border-radius:8px;}
+.wx-day:hover{background:var(--surface-alt);}
+.wx-day .wx-go{color:var(--text-muted);font-size:14px;}
+.wx-sec-row{display:flex;justify-content:space-between;align-items:center;}
+.wx-link{background:none;border:0;color:var(--accent-2);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;padding:0;}
+.wx-back{background:var(--surface-alt);border:0;border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;color:var(--text);cursor:pointer;}
+.wx-detail-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.wx-detail-title{font-family:var(--font-display);font-weight:700;font-size:15px;}
+.wx-hlist{max-height:330px;overflow-y:auto;margin:0 -4px;padding:0 4px;}
+.wx-hrow{display:grid;grid-template-columns:50px 24px minmax(0,1fr) 36px 50px 64px;align-items:center;gap:4px;padding:7px 4px;border-bottom:1px solid var(--border);font-size:12.5px;}
+.wx-hrow.now{background:color-mix(in srgb, var(--accent-2) 8%, transparent);border-radius:8px;}
+.wx-hrow .wx-t{font-weight:700;text-align:right;}
+.wx-hrow .wx-w{color:var(--text-muted);font-size:11px;text-align:right;}
+.wx-hhead{font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.route-rain{display:inline-block;margin-left:6px;font-size:10.5px;color:#4A7FD6;font-weight:700;}
+
+/* ---- Herramientas (🧰) ---- */
+.tools-btn{position:relative;}
+.tools-timer-badge{position:absolute;top:-6px;right:-10px;background:linear-gradient(125deg,#FF6B45,#ED3F7C);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;font-variant-numeric:tabular-nums;border:2px solid var(--surface);white-space:nowrap;}
+.tools-overlay{position:fixed;inset:0;background:rgba(20,10,30,.25);z-index:900;}
+.tools-drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:var(--surface);color:var(--text);border-left:1px solid var(--border);box-shadow:-12px 0 40px rgba(0,0,0,.18);z-index:901;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+.tools-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px;}
+.tools-title{font-family:var(--font-display);font-weight:800;font-size:18px;}
+.tools-close{border:0;background:var(--surface-alt);color:var(--text);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:15px;}
+.tools-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 14px 10px;border-bottom:1px solid var(--border);}
+.tools-tab{display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);border-radius:12px;padding:8px 4px;font:inherit;font-size:18px;cursor:pointer;}
+.tools-tab span{font-size:11px;font-weight:700;}
+.tools-tab.on{background:linear-gradient(125deg,#FF6B45 0%,#ED3F7C 52%,#8157EF 100%);color:#fff;border-color:transparent;}
+.tools-body{flex:1;overflow-y:auto;padding:16px 18px 24px;}
+.tl-sec{font-size:11px;color:var(--text-muted);font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:18px 0 8px;}
+.tl-sec:first-child{margin-top:0;}
+.tl-muted{font-size:12px;color:var(--text-muted);}
+/* calculadora */
+.calc-display{background:var(--surface-alt);border-radius:14px;padding:14px 16px;text-align:right;}
+.calc-expr{font-size:14px;color:var(--text-muted);min-height:20px;word-break:break-all;}
+.calc-result{font-family:var(--font-display);font-size:34px;font-weight:700;line-height:1.15;word-break:break-all;font-variant-numeric:tabular-nums;}
+.calc-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;}
+.calc-key{border:0;border-radius:12px;padding:14px 0;font:inherit;font-size:18px;font-weight:700;background:var(--surface-alt);color:var(--text);cursor:pointer;}
+.calc-key:active{transform:scale(.97);}
+.calc-key.op{background:color-mix(in srgb,#8157EF 14%,var(--surface));color:#8157EF;}
+.calc-key.eq{background:linear-gradient(125deg,#FF6B45,#ED3F7C);color:#fff;}
+.calc-key.fn{color:var(--text-muted);}
+.calc-kbd-hint{}
+@media (hover:none){ .calc-kbd-hint{display:none;} }
+.calc-hist{display:flex;flex-direction:column;gap:4px;}
+.calc-hist button{display:flex;justify-content:space-between;gap:8px;border:0;background:none;color:var(--text);font:inherit;font-size:13px;padding:6px 4px;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;}
+.calc-hist button span:last-child{font-weight:700;}
+/* foco */
+.focus-ring{width:190px;height:190px;margin:6px auto 0;border-radius:50%;padding:12px;background:conic-gradient(#ED3F7C var(--pct,0%), var(--surface-alt) 0);}
+.focus-ring-inner{height:100%;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;}
+.focus-time{font-family:var(--font-display);font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.focus-task{font-size:12px;color:var(--text-muted);margin-top:6px;max-width:130px;}
+.tl-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.tl-chip{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;}
+.tl-chip.on{border-color:#ED3F7C;color:#ED3F7C;font-weight:700;background:color-mix(in srgb,#ED3F7C 8%,var(--surface));}
+.tl-select,.tl-input{width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;}
+.tl-row{display:flex;gap:8px;margin-top:14px;}
+.tl-row .btn{flex:1;justify-content:center;}
+.focus-ask{background:var(--surface-alt);border-radius:14px;padding:16px;margin-top:14px;text-align:center;}
+/* indicadores */
+.ind-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ind-box{background:var(--surface-alt);border-radius:12px;padding:12px;}
+.ind-box b{display:block;font-family:var(--font-display);font-size:19px;margin-top:3px;font-variant-numeric:tabular-nums;}
+.ind-conv{display:grid;grid-template-columns:1fr 92px;gap:8px;}
+.ind-out{margin-top:10px;background:color-mix(in srgb,#8157EF 9%,var(--surface));border-radius:12px;padding:12px 14px;font-size:13px;}
+.ind-out b{display:block;font-family:var(--font-display);font-size:22px;margin-top:2px;font-variant-numeric:tabular-nums;}
+/* días */
+.days-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.days-num{min-width:58px;text-align:center;background:var(--surface-alt);border-radius:12px;padding:8px 4px;}
+.days-num b{display:block;font-family:var(--font-display);font-size:22px;line-height:1;}
+.days-num small{font-size:10px;color:var(--text-muted);}
+.days-num.soon{background:color-mix(in srgb,#ED3F7C 12%,var(--surface));color:#ED3F7C;}
+.days-txt{flex:1;min-width:0;font-size:13px;}
+.days-txt small{display:block;color:var(--text-muted);font-size:11.5px;margin-top:2px;}
+.split-stepper{display:flex;align-items:center;justify-content:space-between;background:var(--surface-alt);border-radius:12px;padding:6px;}
+.split-btn{width:44px;height:44px;border:0;border-radius:10px;background:var(--surface);color:var(--text);font-size:22px;font-weight:700;cursor:pointer;}
+.split-n{font-weight:700;font-size:15px;}
+.days-del{border:0;background:none;color:var(--text-muted);cursor:pointer;font-size:14px;}
+.days-form{display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px;}
+/* tarjeta UF en el hero */
+
+.ind-badge{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);font-family:var(--font-display);font-weight:800;font-size:11.5px;letter-spacing:.3px;}
+.route-focus-start{display:inline-block;margin-top:8px;border:0;border-radius:8px;padding:5px 10px;background:linear-gradient(125deg,#FF6B45,#ED3F7C);color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer;}
+@media (max-width:700px){
+}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -501,6 +618,11 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
   .dash-header.dash-header-hero{padding:20px;}
   .dash-header-hero .dash-header-text h1{font-size:26px;}
   .route-ring{width:84px;height:84px;padding:6px;}
+  .route-hero-right{width:100%;gap:12px;}
+  .hero-cards{flex:1;width:auto;min-width:0;}
+  .wx-panel{left:0;right:auto;}
+  .wx-hrow{grid-template-columns:46px 24px 1fr 36px 42px;}
+  .wx-hrow .wx-w{display:none;}
   .route-ring-inner strong{font-size:20px;}
   .route-hero-top{align-items:flex-start;}
   .route-actions{width:100%;}
@@ -1982,6 +2104,10 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
           <span id="notifBellDot" class="hidden" style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--danger);border:2px solid var(--surface);"></span>
         </button>
+        <button class="icon-btn tools-btn" id="toolsBtn" title="Herramientas" aria-label="Herramientas" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18M10.5 12.5v2h3v-2"/></svg>
+          <span class="tools-timer-badge hidden" id="toolsTimerBadge"></span>
+        </button>
         <button class="icon-btn" id="aiAssistantBtn" title="Asistente inteligente">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l1.8 4.6L18 8l-4.2 1.8L12 15l-1.8-5.2L6 8l4.2-1.4L12 2Z"/><path d="M19 15l.9 2.2L22 18l-2.1.8L19 21l-.9-2.2L16 18l2.1-.8L19 15Z"/></svg>
         </button>
@@ -2031,10 +2157,19 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
                 </div>
               </div>
             </div>
-            <div class="route-ring" id="dashImpulsoRing" style="--pct:0%;">
-              <div class="route-ring-inner">
-                <strong id="dashRingPct">–</strong>
-                <small id="dashRingSub">Cargando…</small>
+            <div class="route-hero-right">
+              <div class="hero-cards">
+                <button type="button" class="wx-card ind-card hidden" id="dashIndCard" title="Ver indicadores y conversor"></button>
+                <div class="wx-wrap">
+                  <button type="button" class="wx-card hidden" id="dashWeatherChip" aria-haspopup="true" aria-expanded="false" title="Ver pronóstico"></button>
+                  <div class="wx-panel hidden" id="dashWeatherPanel" role="dialog" aria-label="Pronóstico del tiempo"></div>
+                </div>
+              </div>
+              <div class="route-ring" id="dashImpulsoRing" style="--pct:0%;">
+                <div class="route-ring-inner">
+                  <strong id="dashRingPct">–</strong>
+                  <small id="dashRingSub">Cargando…</small>
+                </div>
               </div>
             </div>
           </div>
@@ -2775,6 +2910,22 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 </div>
 
 <!-- ===================== MODAL ASISTENTE IA ===================== -->
+<div class="tools-overlay hidden" id="toolsOverlay"></div>
+<aside class="tools-drawer hidden" id="toolsDrawer" role="dialog" aria-label="Herramientas" aria-modal="false">
+  <div class="tools-head">
+    <div class="tools-title">Herramientas</div>
+    <button type="button" class="tools-close" id="toolsClose" aria-label="Cerrar herramientas">✕</button>
+  </div>
+  <div class="tools-tabs" role="tablist">
+    <button type="button" role="tab" class="tools-tab" data-tool="calc">🧮<span>Calculadora</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="focus">⏱️<span>Foco</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="ind">💲<span>UF y dólar</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="days">📆<span>Días</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="hol">🇨🇱<span>Feriados</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="split">🧾<span>Dividir cuenta</span></button>
+  </div>
+  <div class="tools-body" id="toolsBody"></div>
+</aside>
 <div class="modal-backdrop hidden" id="aiModalBackdrop">
   <div class="modal modal-lg">
     <div class="modal-head">
@@ -4467,6 +4618,9 @@ function renderDashHeader(){
     : hour<18 ? "Ya avanzaste. Ahora, lo que sigue."
     : "Cierra el día con claridad.";
   document.getElementById("dashSubtitle").textContent = subtitle;
+  renderWeatherChip(); ensureWeather(false);
+  renderIndCard(); ensureIndicators(false);
+  if(focusState()) focusEnsureTick();
 
   const nowD = new Date();
   const dateStr = nowD.toLocaleDateString("es-ES",{weekday:"long", day:"numeric", month:"long"});
@@ -5028,7 +5182,8 @@ function renderDashRouteTimeline(){
     html += `<div class="route-slot">
       <span class="route-slot-time">${minutesTo12h(c.nowMin)}</span>
       <div class="route-slot-box focus">Bloque de foco
-        <small>${esc(c.topTask.title)} · ${Math.min(c.gapMin,90)} minutos sugeridos</small>
+        <small>${esc(c.topTask.title)} · ${Math.min(c.gapMin,90)} minutos sugeridos${(()=>{ const p = wxRainAt(c.iso, minutesToHHMM(c.nowMin)); return p!==null && p>=50 ? `<span class="route-rain">🌧️ ${p}%</span>` : ""; })()}</small>
+              <button type="button" class="route-focus-start" data-focus-task="${c.topTask.id}" data-focus-min="${c.gapMin>=50?50:25}">▶ Iniciar foco</button>
       </div>
     </div>`;
   }
@@ -5039,7 +5194,7 @@ function renderDashRouteTimeline(){
     html += `<div class="route-slot">
       <span class="route-slot-time">${minutesTo12h(s0)}</span>
       <div class="route-slot-box ${ongoing?'ongoing':''}">${esc(ev.title)}
-        <small>${ongoing?"En curso · ":""}${Math.max(0,e0-s0)} min${kind}</small>
+        <small>${ongoing?"En curso · ":""}${Math.max(0,e0-s0)} min${kind}${(()=>{ const p = wxRainAt(c.iso, ev.startTime); return p!==null && p>=50 ? `<span class="route-rain">🌧️ ${p}%</span>` : ""; })()}</small>
       </div>
     </div>`;
   });
@@ -5051,6 +5206,10 @@ function renderDashRouteTimeline(){
     </div>`;
   }
   wrap.innerHTML = html;
+  wrap.querySelectorAll("[data-focus-task]").forEach(b=>b.addEventListener("click", ()=>{
+    focusPickTask = b.dataset.focusTask; focusPickMin = +b.dataset.focusMin;
+    openTools("focus");
+  }));
 }
 
 function renderDashAlmaDice(){
@@ -5080,7 +5239,13 @@ function renderDashAlmaDice(){
   }else{
     msg = `Tu día está despejado${nm}. Respira y disfruta.`;
   }
-  wrap.textContent = lead + msg;
+  // Clima: si viene lluvia probable más tarde hoy, Alma lo menciona (una vez)
+  let wx = "";
+  if(c.moment!=="cierre"){
+    const rain = wxRainLaterToday(60);
+    if(rain) wx = ` Ojo: hay ${rain.p}% de lluvia cerca de las ${minutesTo12h(timeToMinutes(rain.hhmm))}, lleva paraguas si sales. ☔`;
+  }
+  wrap.textContent = lead + msg + wx;
 }
 
 /* Tu equilibrio de vida (Módulo 9): reparto de tareas activas por área de vida.
@@ -7272,6 +7437,7 @@ function almaRenderSmartPreview(rawText, parsed){
     if(w.scheduled){
       filas.push(`<div class="asp-row asp-when ok"><span>✅</span><span>Se agenda al tiro: <b>${esc(almaFriendlyDate(w.startDate))} · ${esc(almaFriendlyTime(w.executionTime))}</b></span></div>`);
       if(w.pastTime) filas.push(`<div class="asp-row asp-warn"><span>⚠️</span><span>Ojo: esa hora ya pasó. Si no es así, toca "Corregir".</span></div>`);
+      { const hol = holidayOn(w.startDate); if(hol) filas.push(`<div class="asp-row asp-warn"><span>🇨🇱</span><span>Ojo: ese día es feriado (${esc(hol.name)}).</span></div>`); }
     }
     if(w.dueDate) filas.push(`<div class="asp-row"><span>⏰</span><span>${w.dayOnly?"Para el":"Plazo:"} ${esc(almaFriendlyDate(w.dueDate))}${w.dueTime?" · "+esc(almaFriendlyTime(w.dueTime)):""}</span></div>`);
     if(!w.scheduled){
@@ -7323,7 +7489,7 @@ function almaRenderMultiVoicePreview(rawText, items){
   const rowHTML = (rec)=>{
     const p = rec.parsed, w = almaResolveWhen(p), isLab = p.tipo_tarea==="laboral";
     let when;
-    if(w.scheduled) when = `✅ ${esc(almaFriendlyDate(w.startDate))} · ${esc(almaFriendlyTime(w.executionTime))}${w.pastTime?' <span style="color:#B8860B;">⚠️ ya pasó</span>':""}`;
+    if(w.scheduled) when = `✅ ${esc(almaFriendlyDate(w.startDate))} · ${esc(almaFriendlyTime(w.executionTime))}${w.pastTime?' <span style="color:#B8860B;">⚠️ ya pasó</span>':""}${holidayOn(w.startDate)?' <span style="color:#B8860B;">🇨🇱 feriado</span>':""}`;
     else if(w.dueDate) when = `<span style="color:#9B8BB5;">💭 por agendar · ${w.dayOnly?"para el":"plazo"} ${esc(almaFriendlyDate(w.dueDate))}</span>`;
     else when = `<span style="color:#9B8BB5;">💭 por agendar</span>`;
     return `<div class="amv-row" data-amv="${rec.idx}">
@@ -8449,16 +8615,9 @@ function renderAlmaIaHours(){
 // Elige el "mejor" hueco del día con reglas simples y una observación humana.
 // (El criterio fino por IA llegará al publicar.)
 // Modalidad del día (presencial / teletrabajo / libre) según el horario laboral.
-function dayModality(iso){
-  const ws = DB.config.workSchedule;
-  if(!ws || !ws.mode) return "libre";
-  const dow = dowNameFor(new Date(iso+"T00:00:00"));
-  if(!(ws.days||[]).includes(dow)) return "libre";
-  if(ws.mode==="hibrido"){
-    return (ws.hybridOfficeDays||[]).includes(dow) ? "oficina" : "teletrabajo";
-  }
-  return ws.mode==="teletrabajo" ? "teletrabajo" : "oficina";
-}
+// (Había dos funciones "dayModality" con el mismo nombre; la segunda pisaba a
+// esta y además esta preguntaba por "teletrabajo", que nunca se guarda — los
+// modos reales son presencial/remoto/hibrido. Ahora hay una sola, más abajo.)
 // Contexto de carga de un día: nº de compromisos, minutos ocupados, modalidad.
 function buildDayContext(iso, taskType, allowException){
   const busy = busySlotsForDate(iso, taskType, allowException);
@@ -8468,7 +8627,7 @@ function buildDayContext(iso, taskType, allowException){
   if(iso===TODAY()) commitments += getDemoEventsToday().length;
   const freeMin = freeMinutesForDate(iso, taskType, allowException);
   const daysAway = Math.round((new Date(iso+"T00:00:00") - new Date(TODAY()+"T00:00:00"))/86400000);
-  return { iso, modality: dayModality(iso), commitments, busyMin, freeMin, daysAway,
+  return { iso, modality: (dayModality(iso)||{kind:"libre"}).kind, commitments, busyMin, freeMin, daysAway,
            dow: dowNameFor(new Date(iso+"T00:00:00")),
            isWeekend: [0,6].includes(new Date(iso+"T00:00:00").getDay()),
            loadLevel: commitments>=4?"alta":commitments>=2?"media":"baja" };
@@ -12432,6 +12591,625 @@ function refreshCatchUpButton(){
 }
 document.getElementById("dashCatchUpBtn").addEventListener("click", openCatchUp);
 
+/* ====================================================================== *
+ * Clima (Open-Meteo: gratis para uso no comercial, sin clave, CORS abierto)
+ * Ubicación: GPS del navegador (con permiso) o ciudad elegida a mano.
+ * Se guarda en DB.config.weatherPlace = {name, lat, lon, source}.
+ * Los datos del pronóstico solo viven en memoria (se piden cada 30 min).
+ * ====================================================================== */
+let weatherState = { data:null, fetchedAt:0, loading:false, error:"", asked:false };
+const WX_REFRESH_MS = 30*60*1000;
+function wxInfo(code, isDay){
+  const c = Number(code);
+  if(c===0) return isDay===0 ? ["🌙","Despejado"] : ["☀️","Despejado"];
+  if(c===1) return isDay===0 ? ["🌙","Mayormente despejado"] : ["🌤️","Mayormente despejado"];
+  if(c===2) return ["⛅","Parcialmente nublado"];
+  if(c===3) return ["☁️","Nublado"];
+  if(c===45||c===48) return ["🌫️","Niebla"];
+  if(c>=51&&c<=57) return ["🌦️","Llovizna"];
+  if(c>=61&&c<=67) return ["🌧️","Lluvia"];
+  if(c>=71&&c<=77) return ["🌨️","Nieve"];
+  if(c>=80&&c<=82) return ["🌧️","Chubascos"];
+  if(c===85||c===86) return ["🌨️","Chubascos de nieve"];
+  if(c>=95) return ["⛈️","Tormenta"];
+  return ["🌡️","—"];
+}
+async function wxFetch(lat, lon){
+  const q = new URLSearchParams({
+    latitude: lat, longitude: lon, timezone: "auto", forecast_days: "5",
+    current: "temperature_2m,apparent_temperature,weather_code,is_day",
+    hourly: "temperature_2m,apparent_temperature,precipitation_probability,weather_code,is_day,wind_speed_10m",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+  });
+  const r = await fetch("https://api.open-meteo.com/v1/forecast?"+q.toString());
+  if(!r.ok) throw new Error("clima "+r.status);
+  return await r.json();
+}
+// Pide la ubicación al navegador UNA vez; si la niegan, se elige ciudad a mano.
+function wxAskGPS(){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation){ resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos=>resolve({ name:"Tu ubicación", lat:+pos.coords.latitude.toFixed(3), lon:+pos.coords.longitude.toFixed(3), source:"gps" }),
+      ()=>resolve(null), { timeout:10000, maximumAge: 6*60*60*1000 });
+  });
+}
+async function ensureWeather(force){
+  if(weatherState.loading) return;
+  if(!force && weatherState.data && Date.now()-weatherState.fetchedAt < WX_REFRESH_MS) return;
+  let place = DB.config.weatherPlace;
+  if(!place && !weatherState.asked){
+    weatherState.asked = true;
+    place = await wxAskGPS();
+    if(place){ DB.config.weatherPlace = place; saveDB(); }
+  }
+  if(!place){ renderWeatherChip(); return; }
+  weatherState.loading = true;
+  try{
+    weatherState.data = await wxFetch(place.lat, place.lon);
+    weatherState.fetchedAt = Date.now(); weatherState.error = "";
+  }catch(e){ weatherState.error = "No pude cargar el clima ahora."; }
+  weatherState.loading = false;
+  renderWeatherChip();
+  try{ renderDashRouteTimeline(); renderDashAlmaDice(); }catch(e){}
+}
+// Probabilidad de lluvia (%) en una fecha y hora "HH:MM" — null si no hay dato
+function wxRainAt(iso, hhmm){
+  const d = weatherState.data; if(!d || !d.hourly) return null;
+  const key = `${iso}T${String(hhmm||"").slice(0,2)}:00`;
+  const i = d.hourly.time.indexOf(key);
+  return i>=0 ? d.hourly.precipitation_probability[i] : null;
+}
+// La hora con más lluvia que queda hoy (hasta las 22:00), si supera el umbral
+function wxRainLaterToday(threshold){
+  const d = weatherState.data; if(!d || !d.hourly) return null;
+  const today = TODAY(), nowH = new Date().getHours();
+  let best = null;
+  d.hourly.time.forEach((t,i)=>{
+    if(!t.startsWith(today)) return;
+    const h = +t.slice(11,13);
+    if(h < nowH || h > 22) return;
+    const p = d.hourly.precipitation_probability[i];
+    if(p>=threshold && (!best || p>best.p)) best = { p, hhmm: t.slice(11,16) };
+  });
+  return best;
+}
+function renderWeatherChip(){
+  const chip = document.getElementById("dashWeatherChip");
+  if(!chip) return;
+  const d = weatherState.data;
+  if(!d || !d.current){
+    // sin ubicación todavía: ofrecer elegir ciudad (nunca se muestra un clima inventado)
+    if(!DB.config.weatherPlace && weatherState.asked){ chip.classList.remove("hidden"); chip.classList.add("wx-empty"); chip.innerHTML = `<span class="wx-card-ico">🌤️</span><span class="wx-card-main"><span class="wx-card-temp">Ver el clima</span><span class="wx-card-desc">Elige tu ciudad</span></span><span class="wx-card-chev" aria-hidden="true">›</span>`; }
+    else chip.classList.add("hidden");
+    return;
+  }
+  const [ico, txt] = wxInfo(d.current.weather_code, d.current.is_day);
+  chip.classList.remove("hidden","wx-empty");
+  chip.innerHTML = `<span class="wx-card-ico">${ico}</span><span class="wx-card-main"><span class="wx-card-temp">${Math.round(d.current.temperature_2m)}°</span><span class="wx-card-desc">↑${Math.round(d.daily.temperature_2m_max[0])}° ↓${Math.round(d.daily.temperature_2m_min[0])}° · ${txt}</span></span><span class="wx-card-chev" aria-hidden="true">›</span>`;
+  chip.setAttribute("aria-label", `Clima: ${Math.round(d.current.temperature_2m)} grados, ${txt}. Ver pronóstico`);
+}
+let wxPanelDay = null; // null = resumen; "YYYY-MM-DD" = detalle hora por hora de ese día
+function wxDayLabel(iso, i){
+  if(i===0 || iso===TODAY()) return "Hoy";
+  const x = new Date(iso+"T00:00:00"), t = new Date(TODAY()+"T00:00:00");
+  if(Math.round((x-t)/86400000)===1) return "Mañana";
+  return ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"][x.getDay()]+" "+x.getDate();
+}
+function renderWeatherPanel(){
+  const panel = document.getElementById("dashWeatherPanel");
+  if(!panel) return;
+  const d = weatherState.data, place = DB.config.weatherPlace;
+  if(!d || !d.current){
+    panel.innerHTML = `<div style="font-weight:700;margin-bottom:6px;">¿De qué ciudad quieres el clima?</div>${wxCityPickerHTML()}`;
+    wxBindCityPicker(panel); return;
+  }
+  if(wxPanelDay){ renderWeatherDayDetail(panel, wxPanelDay); return; }
+  const [ico, txt] = wxInfo(d.current.weather_code, d.current.is_day);
+  const nowH = new Date().getHours();
+  let start = d.hourly.time.findIndex(t=>t.startsWith(TODAY()) && +t.slice(11,13)===nowH);
+  if(start<0) start = 0;
+  const hours = [];
+  for(let i=start+1; i<d.hourly.time.length && hours.length<6; i+=2){
+    const [hi] = wxInfo(d.hourly.weather_code[i], d.hourly.is_day[i]);
+    const p = d.hourly.precipitation_probability[i];
+    hours.push(`<div class="wx-hour">${minutesTo12h(timeToMinutes(d.hourly.time[i].slice(11,16)))}<b>${hi} ${Math.round(d.hourly.temperature_2m[i])}°</b><span class="wx-rain">${p>=20?`💧${p}%`:"&nbsp;"}</span></div>`);
+  }
+  const days = d.daily.time.map((iso,i)=>{
+    const [di, dt] = wxInfo(d.daily.weather_code[i], 1);
+    const p = d.daily.precipitation_probability_max[i];
+    return `<div class="wx-day" role="button" tabindex="0" data-wxday="${iso}" title="Ver hora por hora"><span>${wxDayLabel(iso,i)}</span><span>${di}</span><span style="color:var(--text-muted);">${dt}${p>=30?` · <span class="wx-rain">💧${p}%</span>`:""}</span><span class="wx-range">${Math.round(d.daily.temperature_2m_max[i])}° <span>${Math.round(d.daily.temperature_2m_min[i])}°</span> <span class="wx-go">›</span></span></div>`;
+  }).join("");
+  panel.innerHTML = `
+    <div class="wx-now"><span class="wx-now-ico">${ico}</span>
+      <div><div class="wx-now-temp">${Math.round(d.current.temperature_2m)}°</div>
+      <div class="wx-now-sub">${txt} · sensación ${Math.round(d.current.apparent_temperature)}° · máx ${Math.round(d.daily.temperature_2m_max[0])}° mín ${Math.round(d.daily.temperature_2m_min[0])}°</div></div></div>
+    <div class="wx-sec wx-sec-row"><span>Próximas horas</span><button type="button" class="wx-link" data-wxday="${TODAY()}">Ver hora por hora ›</button></div>
+    <div class="wx-hours">${hours.join("")}</div>
+    <div class="wx-sec">Próximos días <span style="text-transform:none;letter-spacing:0;font-weight:400;">· toca un día para ver el detalle</span></div><div class="wx-days">${days}</div>
+    <div class="wx-foot"><span>📍 ${esc(place?place.name:"")} · datos de Open-Meteo</span><button type="button" id="wxChangeCity">Cambiar ciudad</button></div>
+    <div id="wxCityBox"></div>`;
+  panel.querySelectorAll("[data-wxday]").forEach(el=>{
+    const open = ()=>{ wxPanelDay = el.dataset.wxday; renderWeatherPanel(); };
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } });
+  });
+  document.getElementById("wxChangeCity").addEventListener("click", ()=>{
+    const box = document.getElementById("wxCityBox"); box.innerHTML = wxCityPickerHTML(); wxBindCityPicker(box);
+  });
+}
+// Detalle hora por hora de un día (si es hoy, desde la hora actual)
+function renderWeatherDayDetail(panel, iso){
+  const d = weatherState.data;
+  const di = d.daily.time.indexOf(iso);
+  const nowH = new Date().getHours();
+  const rows = [];
+  d.hourly.time.forEach((t,i)=>{
+    if(!t.startsWith(iso)) return;
+    const h = +t.slice(11,13);
+    if(iso===TODAY() && h < nowH) return;
+    const [hi, ht] = wxInfo(d.hourly.weather_code[i], d.hourly.is_day[i]);
+    const p = d.hourly.precipitation_probability[i];
+    const wind = d.hourly.wind_speed_10m ? Math.round(d.hourly.wind_speed_10m[i]) : null;
+    const isNow = iso===TODAY() && h===nowH;
+    rows.push(`<div class="wx-hrow ${isNow?"now":""}"><span>${isNow?"Ahora":minutesTo12h(h*60)}</span><span>${hi}</span><span style="color:var(--text-muted);font-size:11.5px;">${ht}</span><span class="wx-t">${Math.round(d.hourly.temperature_2m[i])}°</span><span class="wx-rain" style="text-align:right;">${p!=null?`💧${p}%`:""}</span><span class="wx-w">${wind!=null?`${wind} km/h`:""}</span></div>`);
+  });
+  const [dico, dtxt] = di>=0 ? wxInfo(d.daily.weather_code[di],1) : ["",""];
+  panel.innerHTML = `
+    <div class="wx-detail-head"><button type="button" class="wx-back" id="wxBack">‹ Volver</button>
+      <div><div class="wx-detail-title">${wxDayLabel(iso, di)} · ${dico} ${dtxt}</div>
+      ${di>=0?`<div class="wx-now-sub">máx ${Math.round(d.daily.temperature_2m_max[di])}° · mín ${Math.round(d.daily.temperature_2m_min[di])}° · lluvia hasta ${d.daily.precipitation_probability_max[di]}%</div>`:""}</div></div>
+    <div class="wx-hrow wx-hhead"><span>Hora</span><span></span><span></span><span style="text-align:right;">Temp</span><span style="text-align:right;">Lluvia</span><span class="wx-w">Viento</span></div>
+    <div class="wx-hlist">${rows.join("") || `<div class="t-sub" style="padding:10px 0;">Sin datos para este día.</div>`}</div>
+    <div class="wx-foot"><span>Datos de Open-Meteo</span></div>`;
+  document.getElementById("wxBack").addEventListener("click", ()=>{ wxPanelDay = null; renderWeatherPanel(); });
+}
+function wxCityPickerHTML(){
+  return `<div style="display:flex;gap:6px;margin-top:8px;"><input type="text" class="af-input" id="wxCityInput" placeholder="Ej: Santiago, Concepción…" style="flex:1;padding:8px 10px;font-size:13px;"><button type="button" class="btn btn-primary btn-sm" id="wxCityGo">Buscar</button></div><div id="wxCityResults" style="margin-top:6px;"></div>`;
+}
+function wxBindCityPicker(root){
+  const inp = root.querySelector("#wxCityInput"), go = root.querySelector("#wxCityGo"), out = root.querySelector("#wxCityResults");
+  const search = async ()=>{
+    const q = inp.value.trim(); if(!q) return;
+    out.innerHTML = `<div class="t-sub">Buscando…</div>`;
+    try{
+      const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?"+new URLSearchParams({name:q, count:"5", language:"es", format:"json"}));
+      const j = await r.json();
+      const res = (j && j.results) || [];
+      if(!res.length){ out.innerHTML = `<div class="t-sub">No encontré esa ciudad.</div>`; return; }
+      out.innerHTML = res.map((c,i)=>`<button type="button" class="af-choice" data-i="${i}" style="display:block;width:100%;text-align:left;margin-top:4px;">${esc(c.name)}${c.admin1?", "+esc(c.admin1):""}${c.country?" · "+esc(c.country):""}</button>`).join("");
+      out.querySelectorAll("[data-i]").forEach(b=>b.addEventListener("click", ()=>{
+        const c = res[+b.dataset.i];
+        DB.config.weatherPlace = { name: c.name, lat: +(+c.latitude).toFixed(3), lon: +(+c.longitude).toFixed(3), source:"city" };
+        saveDB(); ensureWeather(true).then(renderWeatherPanel);
+      }));
+    }catch(e){ out.innerHTML = `<div class="t-sub">No pude buscar ahora. Intenta de nuevo.</div>`; }
+  };
+  go.addEventListener("click", search);
+  inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); search(); } });
+  inp.focus();
+}
+(function initWeatherUI(){
+  const chip = document.getElementById("dashWeatherChip"), panel = document.getElementById("dashWeatherPanel");
+  if(!chip || !panel) return;
+  const close = ()=>{ panel.classList.add("hidden"); chip.setAttribute("aria-expanded","false"); };
+  chip.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    if(panel.classList.contains("hidden")){ wxPanelDay = null; renderWeatherPanel(); panel.classList.remove("hidden"); chip.setAttribute("aria-expanded","true"); }
+    else close();
+  });
+  panel.addEventListener("click", e=>e.stopPropagation());
+  document.addEventListener("click", ()=>{ if(!panel.classList.contains("hidden")) close(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !panel.classList.contains("hidden")){ close(); chip.focus(); } });
+})();
+/* ====================================================================== *
+ * HERRAMIENTAS (🧰): calculadora, temporizador de foco, UF y dólar, días.
+ * Panel lateral que se abre sin salir de la pantalla actual.
+ * ====================================================================== */
+let toolsCurrent = "calc";
+function fmtCLP(n, dec){ return "$" + Number(n).toLocaleString("es-CL",{minimumFractionDigits:dec||0, maximumFractionDigits:dec||0}); }
+function openTools(tool){
+  if(tool) toolsCurrent = tool;
+  document.getElementById("toolsDrawer").classList.remove("hidden");
+  document.getElementById("toolsOverlay").classList.remove("hidden");
+  renderTools();
+}
+function closeTools(){
+  document.getElementById("toolsDrawer").classList.add("hidden");
+  document.getElementById("toolsOverlay").classList.add("hidden");
+}
+function toolsIsOpen(){ const d=document.getElementById("toolsDrawer"); return d && !d.classList.contains("hidden"); }
+function renderTools(){
+  document.querySelectorAll(".tools-tab").forEach(t=>{ const on = t.dataset.tool===toolsCurrent; t.classList.toggle("on",on); t.setAttribute("aria-selected", on?"true":"false"); });
+  const body = document.getElementById("toolsBody");
+  if(toolsCurrent==="calc") renderToolCalc(body);
+  else if(toolsCurrent==="focus") renderToolFocus(body);
+  else if(toolsCurrent==="ind") renderToolInd(body);
+  else if(toolsCurrent==="hol") renderToolHol(body);
+  else if(toolsCurrent==="split") renderToolSplit(body);
+  else renderToolDays(body);
+}
+
+/* ---------- Calculadora (sin eval: parser propio) ---------- */
+let calcExpr = "", calcLast = null, calcHistory = [], calcJustEvaluated = false;
+function calcEvaluate(input){
+  const src = String(input).replace(/×/g,"*").replace(/÷/g,"/").replace(/,/g,".").replace(/\s+/g,"");
+  if(!src) return null;
+  const toks = []; let i = 0;
+  while(i<src.length){
+    const c = src[i];
+    if(/[0-9.]/.test(c)){ let j=i; while(j<src.length && /[0-9.]/.test(src[j])) j++; const n = parseFloat(src.slice(i,j)); if(isNaN(n)) throw 0; toks.push({t:"n",v:n}); i=j; continue; }
+    if("+-*/()%".includes(c)){ toks.push({t:"o",v:c}); i++; continue; }
+    throw 0;
+  }
+  // recursivo descendente: expr = term (+|- term)* ; term = factor (*|/ factor)* ; factor = (-)factor | num(%) | (expr)(%)
+  let k = 0;
+  const peek = ()=>toks[k], eat = ()=>toks[k++];
+  const factor = ()=>{
+    const tk = eat(); if(!tk) throw 0;
+    let v;
+    if(tk.t==="o" && tk.v==="-") return -factor();
+    if(tk.t==="o" && tk.v==="+") return factor();
+    if(tk.t==="n") v = tk.v;
+    else if(tk.v==="("){ v = sum(); const cl = eat(); if(!cl || cl.v!==")") throw 0; }
+    else throw 0;
+    while(peek() && peek().v==="%"){ eat(); v = v/100; }
+    return v;
+  };
+  const term = ()=>{ let v = factor(); while(peek() && (peek().v==="*"||peek().v==="/")){ const op = eat().v; const r = factor(); if(op==="/" && r===0) throw "div0"; v = op==="*" ? v*r : v/r; } return v; };
+  const sum = ()=>{ let v = term(); while(peek() && (peek().v==="+"||peek().v==="-")){ const op = eat().v; const r = term(); v = op==="+" ? v+r : v-r; } return v; };
+  const out = sum(); if(k!==toks.length) throw 0;
+  return Math.round(out*1e10)/1e10;
+}
+function calcFormat(n){ return (n===null||n===undefined) ? "0" : Number(n).toLocaleString("es-CL",{maximumFractionDigits:10}); }
+function calcPress(key){
+  // después de "=", un número nuevo empieza otra cuenta; un operador sigue desde el resultado
+  if(calcJustEvaluated && /^[0-9,(]$/.test(key)) calcExpr = "";
+  calcJustEvaluated = false;
+  if(key==="C"){ calcExpr=""; calcLast=null; }
+  else if(key==="⌫"){ calcExpr = calcExpr.slice(0,-1); }
+  else if(key==="="){
+    try{
+      const r = calcEvaluate(calcExpr);
+      if(r!==null){ calcHistory.unshift({e:calcExpr, r}); calcHistory = calcHistory.slice(0,8); calcLast = r; calcExpr = String(r).replace(".",","); calcJustEvaluated = true; }
+    }catch(err){ calcLast = err==="div0" ? "No se puede dividir por 0" : "Revisa la operación"; }
+  }
+  else { calcExpr += key; }
+  if(toolsCurrent==="calc" && toolsIsOpen()) renderToolCalc(document.getElementById("toolsBody"));
+}
+function renderToolCalc(body){
+  let preview = "";
+  try{ const r = calcEvaluate(calcExpr); preview = r===null ? "0" : calcFormat(r); }catch(e){ preview = typeof calcLast==="string" ? calcLast : "…"; }
+  const keys = ["C","(",")","÷","7","8","9","×","4","5","6","-","1","2","3","+","%","0",",","="];
+  body.innerHTML = `
+    <div class="calc-display"><div class="calc-expr">${esc(calcExpr)||"&nbsp;"}</div><div class="calc-result" aria-live="polite">${esc(preview)}</div></div>
+    <div class="calc-keys">${keys.map(k=>`<button type="button" class="calc-key ${"÷×-+".includes(k)?"op":k==="="?"eq":"C()%".includes(k)?"fn":""}" data-k="${k}">${k}</button>`).join("")}</div>
+    <div class="tl-row"><button type="button" class="btn btn-ghost" id="calcBack">⌫ Borrar</button><button type="button" class="btn btn-ghost" id="calcCopy">📋 Copiar resultado</button></div>
+    ${calcHistory.length?`<div class="tl-sec">Historial</div><div class="calc-hist">${calcHistory.map((h,i)=>`<button type="button" data-h="${i}"><span class="tl-muted">${esc(h.e)}</span><span>= ${esc(calcFormat(h.r))}</span></button>`).join("")}</div>`:""}
+    <div class="tl-muted calc-kbd-hint" style="margin-top:12px;">También puedes usar el teclado: números, + − * /, Enter y Borrar.</div>`;
+  body.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click", ()=>calcPress(b.dataset.k)));
+  body.querySelector("#calcBack").addEventListener("click", ()=>calcPress("⌫"));
+  body.querySelector("#calcCopy").addEventListener("click", async ()=>{
+    try{ const r = calcEvaluate(calcExpr); await navigator.clipboard.writeText(String(r)); toast("Resultado copiado.","success"); }catch(e){ toast("No hay un resultado para copiar.","info"); }
+  });
+  body.querySelectorAll("[data-h]").forEach(b=>b.addEventListener("click", ()=>{ calcExpr = String(calcHistory[+b.dataset.h].r).replace(".",","); renderToolCalc(body); }));
+}
+document.addEventListener("keydown", (e)=>{
+  if(!toolsIsOpen()) return;
+  if(e.key==="Escape"){ closeTools(); return; }
+  if(toolsCurrent!=="calc") return;
+  const tag = (e.target && e.target.tagName)||"";
+  if(tag==="INPUT" || tag==="TEXTAREA" || tag==="SELECT") return;
+  const map = {"*":"×","/":"÷","Enter":"=","=":"=","Backspace":"⌫","Delete":"C",".":","};
+  const k = map[e.key] || e.key;
+  if(/^[0-9]$/.test(k) || ["+","-","×","÷","(",")","%",",","=","⌫","C"].includes(k)){ e.preventDefault(); calcPress(k); }
+});
+
+/* ---------- Temporizador de foco ---------- */
+// Estado guardado en DB.config.focusTimer para que siga si cierras el panel o recargas.
+let focusTick = null, focusAskTask = null, focusPickMin = 25, focusPickTask = "";
+function focusState(){ return (DB && DB.config && DB.config.focusTimer) || null; } // DB aún no existe antes de iniciar sesión
+function focusLeftMs(){ const f = focusState(); if(!f) return 0; return f.paused ? f.leftMs : Math.max(0, f.endsAt - Date.now()); }
+function focusFmt(ms){ const t = Math.ceil(ms/1000), m = Math.floor(t/60), sec = t%60; return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`; }
+function focusStart(taskId, minutes){
+  DB.config.focusTimer = { taskId: taskId||"", minutes, endsAt: Date.now()+minutes*60000, paused:false, leftMs:0 };
+  focusAskTask = null; saveDB(); focusEnsureTick(); focusUpdateBadge();
+}
+function focusPauseResume(){
+  const f = focusState(); if(!f) return;
+  if(f.paused){ f.endsAt = Date.now()+f.leftMs; f.paused = false; }
+  else { f.leftMs = Math.max(0, f.endsAt-Date.now()); f.paused = true; }
+  saveDB(); focusUpdateBadge();
+}
+function focusStop(){ DB.config.focusTimer = null; saveDB(); focusUpdateBadge(); }
+function focusEnsureTick(){
+  if(focusTick) return;
+  focusTick = setInterval(()=>{
+    const f = focusState();
+    if(!f){ clearInterval(focusTick); focusTick = null; focusUpdateBadge(); return; }
+    if(!f.paused && Date.now() >= f.endsAt) { focusFinish(); return; }
+    focusUpdateBadge();
+    if(toolsIsOpen() && toolsCurrent==="focus") focusUpdateLive();
+  }, 1000);
+}
+function focusFinish(){
+  const f = focusState(); focusAskTask = f && f.taskId ? f.taskId : null;
+  DB.config.focusTimer = null; saveDB(); focusUpdateBadge();
+  try{ playSuccessChime(); }catch(e){}
+  try{ if("Notification" in window && Notification.permission==="granted") new Notification("⏱️ Terminó tu bloque de foco", { body: focusAskTask ? `¿Terminaste "${(byId(DB.tasks,focusAskTask)||{}).title||""}"?` : "Tómate un respiro." }); }catch(e){}
+  toast("⏱️ ¡Terminó tu bloque de foco!","success");
+  openTools("focus");
+}
+function focusUpdateBadge(){
+  const b = document.getElementById("toolsTimerBadge"); if(!b) return;
+  const f = focusState();
+  if(!f){ b.classList.add("hidden"); return; }
+  b.classList.remove("hidden"); b.textContent = (f.paused?"⏸ ":"") + focusFmt(focusLeftMs());
+}
+function focusUpdateLive(){
+  const f = focusState(); const t = document.getElementById("focusTime"), ring = document.getElementById("focusRing");
+  if(!f || !t || !ring) return;
+  const left = focusLeftMs(), total = f.minutes*60000;
+  t.textContent = focusFmt(left);
+  ring.style.setProperty("--pct", `${Math.round((1-left/total)*100)}%`);
+}
+function renderToolFocus(body){
+  const f = focusState();
+  if(focusAskTask){
+    const t = byId(DB.tasks, focusAskTask);
+    body.innerHTML = `<div class="focus-ask"><div style="font-size:34px;">🎉</div>
+      <div style="font-weight:700;margin-top:6px;">¡Bloque terminado!</div>
+      <div class="tl-muted" style="margin-top:4px;">¿Terminaste "${esc(t?t.title:"tu tarea")}"?</div>
+      <div class="tl-row"><button type="button" class="btn btn-ghost" id="focusNotYet">Aún no · 10 min más</button><button type="button" class="btn btn-primary" id="focusDone">✅ Sí, la terminé</button></div></div>`;
+    body.querySelector("#focusDone").addEventListener("click", ()=>{ if(t && t.status!=="completada") toggleTaskComplete(t.id); focusAskTask=null; renderToolFocus(body); });
+    body.querySelector("#focusNotYet").addEventListener("click", ()=>{ const id=focusAskTask; focusStart(id, 10); renderToolFocus(body); });
+    return;
+  }
+  if(f){
+    const t = f.taskId ? byId(DB.tasks, f.taskId) : null;
+    body.innerHTML = `
+      <div class="focus-ring" id="focusRing"><div class="focus-ring-inner"><div class="focus-time" id="focusTime">${focusFmt(focusLeftMs())}</div><div class="focus-task">${t?esc(t.title):"Foco libre"}</div></div></div>
+      <div class="tl-row"><button type="button" class="btn btn-ghost" id="focusStop">⏹ Terminar</button><button type="button" class="btn btn-primary" id="focusPause">${f.paused?"▶ Seguir":"⏸ Pausar"}</button></div>
+      <div class="tl-muted" style="margin-top:12px;text-align:center;">Puedes cerrar este panel: el tiempo sigue corriendo y lo ves en el botón 🧰 de arriba.</div>`;
+    focusUpdateLive();
+    body.querySelector("#focusPause").addEventListener("click", ()=>{ focusPauseResume(); renderToolFocus(body); });
+    body.querySelector("#focusStop").addEventListener("click", ()=>{ focusStop(); renderToolFocus(body); });
+    return;
+  }
+  const options = rankTasksForToday(DB.tasks.filter(t=>!t.archived && t.status!=="completada" && t.status!=="cancelada")).slice(0,10);
+  if(focusPickTask && !options.some(o=>o.id===focusPickTask)){ const extra = byId(DB.tasks, focusPickTask); if(extra) options.unshift(extra); }
+  body.innerHTML = `
+    <div class="tl-sec">¿En qué te vas a concentrar?</div>
+    <select class="tl-select" id="focusTaskSel"><option value="">Foco libre (sin tarea)</option>${options.map(o=>`<option value="${o.id}" ${o.id===focusPickTask?"selected":""}>${esc(o.title)}</option>`).join("")}</select>
+    <div class="tl-sec">¿Cuánto tiempo?</div>
+    <div class="tl-chips">${[15,25,50,90].map(m=>`<button type="button" class="tl-chip ${m===focusPickMin?"on":""}" data-min="${m}">${m} min</button>`).join("")}</div>
+    <div class="tl-row"><button type="button" class="btn btn-primary" id="focusGo">▶ Empezar foco</button></div>
+    <div class="tl-muted" style="margin-top:12px;">Al terminar suena un aviso y te pregunto si completaste la tarea, para marcarla de una.</div>`;
+  body.querySelectorAll("[data-min]").forEach(b=>b.addEventListener("click", ()=>{ focusPickMin = +b.dataset.min; focusPickTask = body.querySelector("#focusTaskSel").value; renderToolFocus(body); }));
+  body.querySelector("#focusGo").addEventListener("click", ()=>{
+    focusPickTask = body.querySelector("#focusTaskSel").value;
+    try{ if("Notification" in window && Notification.permission==="default") Notification.requestPermission(); }catch(e){}
+    focusStart(focusPickTask, focusPickMin); renderToolFocus(body);
+  });
+}
+
+/* ---------- UF, dólar, euro y UTM (mindicador.cl) ---------- */
+let indState = { data:null, fetchedAt:0, loading:false, error:"" };
+const IND_REFRESH_MS = 6*60*60*1000;
+const IND_KEYS = [["uf","UF"],["dolar","Dólar"],["euro","Euro"],["utm","UTM"]];
+async function ensureIndicators(force){
+  if(indState.loading) return;
+  if(!force && indState.data && Date.now()-indState.fetchedAt < IND_REFRESH_MS) return;
+  indState.loading = true;
+  try{
+    const r = await fetch("https://mindicador.cl/api");
+    if(!r.ok) throw new Error("ind "+r.status);
+    const j = await r.json();
+    const pick = {};
+    IND_KEYS.forEach(([k])=>{ if(j[k] && typeof j[k].valor==="number") pick[k] = { valor:j[k].valor, fecha:String(j[k].fecha||"").slice(0,10) }; });
+    if(!pick.uf) throw new Error("sin uf");
+    indState.data = pick; indState.fetchedAt = Date.now(); indState.error = "";
+    DB.config.lastIndicators = { ...pick, savedAt: Date.now() }; saveDB();
+  }catch(e){
+    // si falla, se usa el último valor guardado (mostrando su fecha) — nunca uno inventado
+    const last = DB.config.lastIndicators;
+    if(last && last.uf){ indState.data = last; indState.error = "stale"; }
+    else indState.error = "No pude cargar los indicadores ahora.";
+  }
+  indState.loading = false;
+  renderIndCard();
+  if(toolsIsOpen() && toolsCurrent==="ind") renderToolInd(document.getElementById("toolsBody"));
+}
+function indDateLabel(iso){ if(!iso) return ""; const d = new Date(iso+"T12:00:00"); return d.toLocaleDateString("es-CL",{day:"numeric",month:"short"}).replace(".",""); }
+function renderIndCard(){
+  const c = document.getElementById("dashIndCard"); if(!c) return;
+  const d = indState.data;
+  if(!d || !d.uf){ c.classList.add("hidden"); return; }
+  c.classList.remove("hidden");
+  c.innerHTML = `<span class="ind-badge" aria-hidden="true">UF</span><span class="wx-card-main"><span class="wx-card-temp">${fmtCLP(d.uf.valor,2)}</span><span class="wx-card-desc">${d.dolar?`Dólar ${fmtCLP(d.dolar.valor,0)}`:"Valor de hoy"} · Convertir</span></span><span class="wx-card-chev" aria-hidden="true">›</span>`;
+  c.setAttribute("aria-label", `UF hoy ${fmtCLP(d.uf.valor,2)}. Abrir conversor`);
+}
+let indConvAmount = "1", indConvFrom = "uf";
+function indRate(code){ if(code==="clp") return 1; const d = indState.data; return d && d[code] ? d[code].valor : null; }
+function renderToolInd(body){
+  const d = indState.data;
+  if(!d){ body.innerHTML = `<div class="tl-muted">${indState.loading?"Cargando indicadores…":esc(indState.error||"Cargando indicadores…")}</div>`; ensureIndicators(); return; }
+  const stale = indState.error==="stale";
+  const opts = [["uf","UF"],["dolar","Dólares (US$)"],["euro","Euros (€)"],["utm","UTM"],["clp","Pesos ($)"]].filter(([k])=>k==="clp"||d[k]);
+  const amt = parseFloat(String(indConvAmount).replace(/\./g,"").replace(",", "."));
+  const rate = indRate(indConvFrom);
+  const clp = (!isNaN(amt) && rate) ? amt*rate : null;
+  const results = clp===null ? "" : opts.filter(([k])=>k!==indConvFrom).map(([k,l])=>{
+    const v = k==="clp" ? clp : clp/indRate(k);
+    const dec = k==="clp" ? 0 : (k==="uf"||k==="utm" ? 4 : 2);
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>${l}</span><b style="font-size:15px;display:inline;">${k==="clp"?fmtCLP(v,0):Number(v).toLocaleString("es-CL",{maximumFractionDigits:dec})}</b></div>`;
+  }).join("");
+  body.innerHTML = `
+    <div class="tl-sec">Valores ${stale?"(último guardado)":"de hoy"}</div>
+    <div class="ind-grid">${IND_KEYS.filter(([k])=>d[k]).map(([k,l])=>`<div class="ind-box"><span class="tl-muted">${l}</span><b>${fmtCLP(d[k].valor, k==="uf"||k==="dolar"||k==="euro"?2:0)}</b><span class="tl-muted">${k==="utm" ? (d[k].fecha ? new Date(d[k].fecha+"T12:00:00").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "") : indDateLabel(d[k].fecha)}</span></div>`).join("")}</div>
+    ${stale?`<div class="tl-muted" style="margin-top:8px;">⚠️ No pude actualizar ahora; muestro los últimos valores guardados.</div>`:""}
+    <div class="tl-sec">Conversor</div>
+    <div class="ind-conv"><input class="tl-input" id="indAmt" inputmode="decimal" value="${esc(indConvAmount)}" aria-label="Monto"><select class="tl-select" id="indFrom" aria-label="Moneda">${opts.map(([k,l])=>`<option value="${k}" ${k===indConvFrom?"selected":""}>${k==="clp"?"$":k==="dolar"?"US$":k==="euro"?"€":l}</option>`).join("")}</select></div>
+    <div class="ind-out">${results || `<span class="tl-muted">Escribe un monto.</span>`}</div>
+    <div class="tl-muted" style="margin-top:12px;">Fuente: mindicador.cl (datos del Banco Central y SII).</div>`;
+  const amtEl = body.querySelector("#indAmt");
+  amtEl.addEventListener("input", ()=>{ indConvAmount = amtEl.value; const pos = amtEl.selectionStart; renderToolInd(body); const n = body.querySelector("#indAmt"); n.focus(); try{ n.setSelectionRange(pos,pos); }catch(e){} });
+  body.querySelector("#indFrom").addEventListener("change", e=>{ indConvFrom = e.target.value; renderToolInd(body); });
+}
+
+/* ---------- Contador de días ---------- */
+function daysUntilIso(iso){ const a = new Date(TODAY()+"T00:00:00"), b = new Date(iso+"T00:00:00"); return Math.round((b-a)/86400000); }
+function renderToolDays(body){
+  const items = [];
+  (DB.config.countdowns||[]).forEach(c=>{ const n = daysUntilIso(c.date); if(n>=0) items.push({ n, title:c.name, sub:`Tu fecha · ${almaFriendlyDate(c.date)}`, icon:"⭐", del:c.id }); });
+  DB.tasks.filter(t=>!t.archived && t.status!=="completada" && t.status!=="cancelada" && t.dueDate)
+    .map(t=>({t, n:daysUntilIso(t.dueDate)})).filter(x=>x.n>=1 && x.n<=60) // lo de hoy ya está en Inicio
+    .sort((a,b)=>a.n-b.n).slice(0,5)
+    .forEach(({t,n})=>items.push({ n, title:t.title, sub:`Plazo de tarea · ${almaFriendlyDate(t.dueDate)}`, icon:"📋", task:t.id }));
+  (DB.birthdays||[]).map(b=>({b, occ:nextBirthdayOccurrence(b)})).filter(x=>x.occ.daysUntil<=60)
+    .sort((a,b)=>a.occ.daysUntil-b.occ.daysUntil).slice(0,5)
+    .forEach(({b,occ})=>items.push({ n:occ.daysUntil, title:`Cumpleaños de ${b.name||"alguien"}`, sub:occ.date.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"}), icon:"🎂" }));
+  items.sort((a,b)=>a.n-b.n);
+  body.innerHTML = `
+    <div class="tl-sec">Lo que viene</div>
+    ${items.length ? items.map((it,i)=>`<div class="days-row" ${it.task?`data-task="${it.task}" style="cursor:pointer;"`:""}>
+      <div class="days-num ${it.n<=3?"soon":""}"><b>${it.n===0?"¡Hoy!":it.n}</b><small>${it.n===0?"":it.n===1?"día":"días"}</small></div>
+      <div class="days-txt">${it.icon} ${esc(it.title)}<small>${esc(it.sub)}</small></div>
+      ${it.del?`<button type="button" class="days-del" data-del="${it.del}" aria-label="Quitar">✕</button>`:""}</div>`).join("")
+      : `<div class="tl-muted">No tienes plazos, cumpleaños ni fechas en los próximos 60 días.</div>`}
+    <div class="tl-sec">Agregar una cuenta regresiva</div>
+    <div class="tl-muted">Para lo que no es tarea: vacaciones, un viaje, un concierto…</div>
+    <div class="days-form"><input class="tl-input" id="cdName" placeholder="Ej: Vacaciones en el sur"><input class="tl-input" id="cdDate" type="date" min="${TODAY()}"></div>
+    <div class="tl-row"><button type="button" class="btn btn-primary" id="cdAdd">＋ Agregar</button></div>
+    <div class="tl-muted" style="margin-top:12px;">Los plazos y cumpleaños se toman solos de tus tareas y de la sección Cumpleaños.</div>`;
+  body.querySelectorAll("[data-task]").forEach(r=>r.addEventListener("click", ()=>{ closeTools(); openTaskModal(r.dataset.task); }));
+  body.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); DB.config.countdowns = (DB.config.countdowns||[]).filter(c=>c.id!==b.dataset.del); saveDB(); renderToolDays(body); }));
+  body.querySelector("#cdAdd").addEventListener("click", ()=>{
+    const name = body.querySelector("#cdName").value.trim(), date = body.querySelector("#cdDate").value;
+    if(!name || !date){ toast("Escribe un nombre y elige la fecha.","info"); return; }
+    if(date < TODAY()){ toast("Elige una fecha de hoy en adelante.","info"); return; }
+    DB.config.countdowns = (DB.config.countdowns||[]).concat({ id: uid("cd"), name: name.slice(0,60), date });
+    saveDB(); renderToolDays(body);
+  });
+}
+
+/* ---------- Feriados de Chile (calculados en la app, sin depender de terceros) ---------- */
+// Reglas: Ley 19.668 (29 jun y 12 oct al lunes), Ley 20.299 (31 oct evangélico),
+// Ley 20.215 y 20.983 (17/20 sep y 2 ene), Ley 21.357 (Pueblos Indígenas = solsticio).
+// No incluye feriados regionales ni los especiales que se decretan aparte (ej. elecciones).
+const _holCache = {};
+function holIso(y,m,d){ return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+function holEaster(y){ // algoritmo de Meeus/Jones/Butcher (calendario gregoriano)
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+        h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+        month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
+  return new Date(y, month-1, day);
+}
+function holWinterSolsticeDay(y){ // solsticio de junio (Meeus), en hora de Chile continental (UTC-4 en invierno)
+  const Y=(y-2000)/1000;
+  const jde = 2451716.56767 + 365241.62603*Y + 0.00325*Y*Y + 0.00888*Y*Y*Y - 0.00030*Y*Y*Y*Y;
+  const ms = (jde - 2440587.5)*86400000 - 4*3600000; // a UTC-4
+  return new Date(ms).getUTCDate();
+}
+function chileHolidays(y){
+  if(_holCache[y]) return _holCache[y];
+  const L = [], add=(m,d,name)=>L.push({date:holIso(y,m,d), name});
+  const dow=(m,d)=>new Date(y,m-1,d).getDay(); // 0 dom … 6 sáb
+  add(1,1,"Año Nuevo");
+  if(dow(1,1)===0) add(1,2,"Feriado de Año Nuevo");
+  const e = holEaster(y), vs = new Date(e), ss = new Date(e); vs.setDate(e.getDate()-2); ss.setDate(e.getDate()-1);
+  L.push({date:toLocalISODate(vs), name:"Viernes Santo"}); L.push({date:toLocalISODate(ss), name:"Sábado Santo"});
+  add(5,1,"Día del Trabajo"); add(5,21,"Día de las Glorias Navales");
+  add(6,holWinterSolsticeDay(y),"Día de los Pueblos Indígenas");
+  const toMonday=(m,d,name)=>{ const w=dow(m,d); const x=new Date(y,m-1,d);
+    if(w>=2 && w<=4) x.setDate(d-(w-1)); else if(w===5) x.setDate(d+3);
+    L.push({date:toLocalISODate(x), name}); };
+  toMonday(6,29,"San Pedro y San Pablo");
+  add(7,16,"Virgen del Carmen"); add(8,15,"Asunción de la Virgen");
+  const d18=dow(9,18);
+  if(d18===2) add(9,17,"Feriado de Fiestas Patrias");
+  if(d18===6) add(9,17,"Feriado de Fiestas Patrias");
+  add(9,18,"Independencia Nacional"); add(9,19,"Glorias del Ejército");
+  if(d18===3) add(9,20,"Feriado de Fiestas Patrias");
+  toMonday(10,12,"Encuentro de Dos Mundos");
+  { const w=dow(10,31); const x=new Date(y,9,31); if(w===2) x.setDate(27); else if(w===3) x.setDate(33);
+    L.push({date:toLocalISODate(x), name:"Día de las Iglesias Evangélicas"}); }
+  add(11,1,"Día de Todos los Santos"); add(12,8,"Inmaculada Concepción"); add(12,25,"Navidad");
+  L.sort((a,b)=>a.date.localeCompare(b.date));
+  return (_holCache[y] = L);
+}
+function holidayOn(iso){ if(!iso) return null; return chileHolidays(+iso.slice(0,4)).find(h=>h.date===iso) || null; }
+function isBusinessDay(iso){ const d=new Date(iso+"T00:00:00").getDay(); return d!==0 && d!==6 && !holidayOn(iso); }
+function addBusinessDays(iso, n){ const d=new Date(iso+"T00:00:00"); let left=n; while(left>0){ d.setDate(d.getDate()+1); if(isBusinessDay(toLocalISODate(d))) left--; } return toLocalISODate(d); }
+function businessDaysBetween(a, b){ // días hábiles desde el día siguiente a "a" hasta "b", inclusive
+  if(b<=a) return 0; const d=new Date(a+"T00:00:00"); let n=0;
+  while(true){ d.setDate(d.getDate()+1); const iso=toLocalISODate(d); if(iso>b) break; if(isBusinessDay(iso)) n++; }
+  return n;
+}
+function upcomingHolidays(count){
+  const t=TODAY(), y=+t.slice(0,4);
+  return chileHolidays(y).concat(chileHolidays(y+1)).filter(h=>h.date>=t).slice(0,count);
+}
+let holCalcFrom = "", holCalcN = "10", holBetweenTo = "";
+function renderToolHol(body){
+  const t = TODAY();
+  if(!holCalcFrom) holCalcFrom = t;
+  const next = upcomingHolidays(6);
+  const n = parseInt(holCalcN,10);
+  const res = (!isNaN(n) && n>0 && n<=400 && holCalcFrom) ? addBusinessDays(holCalcFrom, n) : "";
+  const between = holBetweenTo ? businessDaysBetween(t, holBetweenTo) : null;
+  const fmtLong = iso => new Date(iso+"T00:00:00").toLocaleDateString("es-CL",{weekday:"long", day:"numeric", month:"long"});
+  body.innerHTML = `
+    <div class="tl-sec">Próximos feriados</div>
+    ${next.map(h=>{ const dd=daysUntilIso(h.date); return `<div class="days-row"><div class="days-num ${dd<=7?"soon":""}"><b>${dd===0?"¡Hoy!":dd}</b><small>${dd===0?"":dd===1?"día":"días"}</small></div><div class="days-txt">🇨🇱 ${esc(h.name)}<small>${esc(fmtLong(h.date))}</small></div></div>`; }).join("")}
+    <div class="tl-sec">Sumar días hábiles</div>
+    <div class="days-form" style="grid-template-columns:1fr 90px;"><input class="tl-input" type="date" id="holFrom" value="${holCalcFrom}" aria-label="Desde"><input class="tl-input" id="holN" inputmode="numeric" value="${esc(holCalcN)}" aria-label="Días hábiles"></div>
+    <div class="ind-out">${res?`${esc(holCalcN)} días hábiles después del ${esc(fmtLong(holCalcFrom))} es el<b>${esc(fmtLong(res))}</b>`:`<span class="tl-muted">Elige una fecha y cuántos días hábiles.</span>`}</div>
+    <div class="tl-sec">¿Cuántos días hábiles faltan para…?</div>
+    <input class="tl-input" type="date" id="holTo" value="${holBetweenTo}" min="${t}" aria-label="Fecha">
+    ${between!==null?`<div class="ind-out">Desde mañana hasta el ${esc(fmtLong(holBetweenTo))} hay<b>${between} día${between===1?"":"s"} hábil${between===1?"":"es"}</b></div>`:""}
+    <div class="tl-muted" style="margin-top:12px;">Días hábiles = lunes a viernes sin feriados nacionales. No incluye feriados regionales ni los que se decretan aparte (por ejemplo, días de elección).</div>`;
+  body.querySelector("#holFrom").addEventListener("change", e=>{ holCalcFrom = e.target.value; renderToolHol(body); });
+  const nEl = body.querySelector("#holN");
+  nEl.addEventListener("input", ()=>{ holCalcN = nEl.value.replace(/\D/g,""); renderToolHol(body); const x=body.querySelector("#holN"); x.focus(); x.setSelectionRange(x.value.length,x.value.length); });
+  body.querySelector("#holTo").addEventListener("change", e=>{ holBetweenTo = e.target.value; renderToolHol(body); });
+}
+
+/* ---------- Dividir la cuenta ---------- */
+let splitTotal = "", splitTip = 10, splitPeople = 2;
+function renderToolSplit(body){
+  const total = parseFloat(String(splitTotal).replace(/\./g,"").replace(",", "."));
+  const ok = !isNaN(total) && total>0;
+  const tip = ok ? Math.round(total*splitTip/100) : 0;
+  const all = ok ? total+tip : 0;
+  const each = ok ? Math.ceil(all/splitPeople) : 0;
+  body.innerHTML = `
+    <div class="tl-sec">Total de la cuenta</div>
+    <input class="tl-input" id="spTotal" inputmode="numeric" placeholder="Ej: 48.500" value="${esc(splitTotal)}" aria-label="Total de la cuenta" style="font-size:20px;font-weight:700;">
+    <div class="tl-sec">Propina</div>
+    <div class="tl-chips">${[0,10,15,20].map(p=>`<button type="button" class="tl-chip ${p===splitTip?"on":""}" data-tip="${p}">${p===0?"Sin propina":p+"%"}</button>`).join("")}</div>
+    <div class="tl-sec">¿Entre cuántos?</div>
+    <div class="split-stepper"><button type="button" class="split-btn" id="spMinus" aria-label="Uno menos">−</button><span class="split-n">${splitPeople} persona${splitPeople===1?"":"s"}</span><button type="button" class="split-btn" id="spPlus" aria-label="Uno más">+</button></div>
+    <div class="ind-out" style="margin-top:16px;">${ok?`Cuenta ${fmtCLP(total)} + propina ${fmtCLP(tip)} = ${fmtCLP(all)}<b>${fmtCLP(each)} por persona</b>${each*splitPeople!==all?`<span class="tl-muted">Redondeado hacia arriba: sobran ${fmtCLP(each*splitPeople-all)}.</span>`:""}`:`<span class="tl-muted">Escribe el total para calcular.</span>`}</div>
+    <div class="tl-muted" style="margin-top:12px;">En Chile la propina sugerida habitual es 10% y es voluntaria.</div>`;
+  const tEl = body.querySelector("#spTotal");
+  tEl.addEventListener("input", ()=>{ const digits = tEl.value.replace(/\D/g,""); splitTotal = digits ? Number(digits).toLocaleString("es-CL") : ""; renderToolSplit(body); const x=body.querySelector("#spTotal"); x.focus(); x.setSelectionRange(x.value.length,x.value.length); });
+  body.querySelectorAll("[data-tip]").forEach(b=>b.addEventListener("click", ()=>{ splitTip = +b.dataset.tip; renderToolSplit(body); }));
+  body.querySelector("#spMinus").addEventListener("click", ()=>{ splitPeople = Math.max(1, splitPeople-1); renderToolSplit(body); });
+  body.querySelector("#spPlus").addEventListener("click", ()=>{ splitPeople = Math.min(50, splitPeople+1); renderToolSplit(body); });
+}
+
+/* ---------- Conexión de la UI ---------- */
+(function initTools(){
+  const btn = document.getElementById("toolsBtn"); if(!btn) return;
+  btn.addEventListener("click", ()=> toolsIsOpen() ? closeTools() : openTools());
+  document.getElementById("toolsClose").addEventListener("click", closeTools);
+  document.getElementById("toolsOverlay").addEventListener("click", closeTools);
+  document.querySelectorAll(".tools-tab").forEach(t=>t.addEventListener("click", ()=>{ toolsCurrent = t.dataset.tool; renderTools(); }));
+  const card = document.getElementById("dashIndCard");
+  if(card) card.addEventListener("click", ()=>openTools("ind"));
+  if(focusState()){ focusEnsureTick(); focusUpdateBadge(); }
+})();
 /* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
    la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
    lógica: cada opción "presiona" el botón original, que sigue en la página. */
