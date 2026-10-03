@@ -56,7 +56,9 @@ function buildWeeklyStats(tasks, utcOffsetHours) {
     if (!t || t.archived) return;
     const isActive = t.status !== "completada" && t.status !== "cancelada";
 
-    if (t.status === "completada" && t.updatedAt && t.updatedAt >= weekAgo && t.updatedAt <= today) {
+    // fecha REAL en que se completó (completedAt); updatedAt solo para tareas antiguas sin ese dato
+    const doneAt = t.completedAt || t.updatedAt;
+    if (t.status === "completada" && doneAt && doneAt >= weekAgo && doneAt <= today) {
       completedThisWeek++;
     }
     if (isActive && t.dueDate && t.dueDate < today) overdueNow++;

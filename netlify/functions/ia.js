@@ -4,53 +4,112 @@
 //  Tu app (index.html) le pide cosas a esta función.
 //  Esta función tiene la clave secreta (guardada en Netlify, NO en el código)
 //  y es la única que habla con Gemini. Así tu clave nunca queda expuesta.
-//  Acepta texto (prompt) y, opcionalmente, una imagen (para leer fotos).
+//
+//  Seguridad (nuevo):
+//   - Solo responde a personas con sesión iniciada: valida el token igual
+//     que data.js. Sin token válido → 401 (nadie de afuera puede usar tu clave).
+//   - Límite diario por persona (IA_DAILY_LIMIT, por defecto 400 llamadas)
+//     para que una cuenta no pueda agotar la cuota de todos.
+//
+//  Acepta texto (prompt) y, opcionalmente, UN archivo:
+//   - media: { data: base64, mediaType }  → imagen o audio (para Brainstorm)
+//   - image: { data, mediaType }          → formato antiguo, sigue funcionando
 // ────────────────────────────────────────────────────────────────
 
+const { getStore } = require("@netlify/blobs");
+
+function store(name) {
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN;
+  if (siteID && token) return getStore({ name, siteID, token });
+  return getStore(name);
+}
+
+function json(statusCode, obj) {
+  return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
+}
+
+// Tipos de archivo que aceptamos mandar a Gemini
+const ALLOWED_MEDIA = /^(image\/(png|jpeg|jpg|webp|heic|heif|gif)|audio\/(webm|ogg|mp4|mpeg|mp3|wav|aac|x-m4a|m4a|flac))(;.*)?$/i;
+// Netlify acepta hasta ~6 MB por llamada; dejamos margen para el resto del cuerpo
+const MAX_MEDIA_BASE64 = 5.5 * 1024 * 1024;
+
 exports.handler = async function (event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Método no permitido" }) };
-  }
+  if (event.httpMethod !== "POST") return json(405, { error: "Método no permitido" });
 
   const API_KEY = process.env.GEMINI_API_KEY;
-  if (!API_KEY) {
-    return { statusCode: 500, body: JSON.stringify({ error: "Falta configurar GEMINI_API_KEY en Netlify" }) };
+  if (!API_KEY) return json(500, { error: "Falta configurar GEMINI_API_KEY en Netlify" });
+
+  let body;
+  try { body = JSON.parse(event.body || "{}"); }
+  catch (e) { return json(400, { error: "Cuerpo de la petición inválido" }); }
+
+  // 1) ¿Quién pide? Mismo chequeo de sesión que data.js
+  const { token } = body;
+  if (!token) return json(401, { error: "Falta token de sesión" });
+  let username;
+  try {
+    const rec = await store("sessions").get(token, { type: "json" });
+    if (!rec || !rec.username) return json(401, { error: "Sesión inválida o expirada, vuelve a iniciar sesión" });
+    username = rec.username;
+  } catch (e) {
+    return json(500, { error: "No se pudo validar la sesión: " + e.message });
   }
 
+  // 2) Límite diario por persona (cuenta en Netlify Blobs, por día UTC)
+  const limit = parseInt(process.env.IA_DAILY_LIMIT || "400", 10);
   try {
-    const body = JSON.parse(event.body || "{}");
-    const prompt = body.prompt;
-    const image = body.image; // opcional: { data: base64, mediaType }
-    if (!prompt) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Falta el prompt" }) };
-    }
+    const usage = store("ia_usage");
+    const key = `${username}:${new Date().toISOString().slice(0, 10)}`;
+    const used = parseInt((await usage.get(key)) || "0", 10) || 0;
+    if (used >= limit) return json(429, { error: "Llegaste al límite diario de uso de Alma. Vuelve a intentar mañana." });
+    await usage.set(key, String(used + 1));
+  } catch (e) {
+    // si el contador falla, no bloqueamos a la persona (solo lo registramos)
+    console.error("ia_usage:", e.message);
+  }
 
-    const modelo = "gemini-3.5-flash-lite";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
+  // 3) Armar la petición a Gemini
+  const prompt = body.prompt;
+  if (!prompt || typeof prompt !== "string") return json(400, { error: "Falta el prompt" });
 
-    const parts = [{ text: prompt }];
-    if (image && image.data) {
-      parts.push({ inline_data: { mime_type: image.mediaType || "image/png", data: image.data } });
-    }
+  const media = body.media || body.image; // "image" = formato antiguo
+  const parts = [{ text: prompt }];
+  if (media && media.data) {
+    const mediaType = String(media.mediaType || "image/png");
+    if (!ALLOWED_MEDIA.test(mediaType)) return json(415, { error: "Tipo de archivo no permitido: " + mediaType });
+    if (String(media.data).length > MAX_MEDIA_BASE64) return json(413, { error: "El archivo es demasiado grande para enviarlo de una vez." });
+    // Gemini espera el tipo sin parámetros extra (ej. "audio/webm;codecs=opus" → "audio/webm")
+    parts.push({ inline_data: { mime_type: mediaType.split(";")[0], data: media.data } });
+  }
 
+  const modelo = "gemini-3.5-flash-lite";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
+
+  try {
     const respuesta = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts }] }),
     });
+    const datos = await respuesta.json().catch(() => ({}));
 
-    const datos = await respuesta.json();
-    const texto = datos?.candidates?.[0]?.content?.parts?.[0]?.text || "No obtuve respuesta de la IA.";
+    // Si Gemini responde con error (cuota agotada, clave inválida, etc.), lo
+    // decimos claramente en vez de devolver un texto falso con código 200.
+    if (!respuesta.ok) {
+      const msg = (datos && datos.error && datos.error.message) || ("HTTP " + respuesta.status);
+      console.error("Gemini error:", respuesta.status, msg);
+      return json(respuesta.status === 429 ? 429 : 502, { error: "La IA no pudo responder: " + msg });
+    }
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto }),
-    };
+    const texto = (datos?.candidates?.[0]?.content?.parts || [])
+      .map((p) => p.text || "").join("").trim();
+    if (!texto) {
+      const reason = datos?.promptFeedback?.blockReason || datos?.candidates?.[0]?.finishReason || "sin texto";
+      return json(502, { error: "La IA no devolvió respuesta (" + reason + ")." });
+    }
+    return json(200, { texto });
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Error al hablar con la IA: " + error.message }),
-    };
+    return json(500, { error: "Error al hablar con la IA: " + error.message });
   }
 };

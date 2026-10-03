@@ -30,7 +30,7 @@ function summarizeTasks(tasks, utcOffsetHours, leadDays) {
 
   let overdue = 0, dueToday = 0, upcoming = 0;
   (tasks || []).forEach((t) => {
-    if (!t || t.status === "completada" || t.archived) return;
+    if (!t || t.status === "completada" || t.status === "cancelada" || t.archived) return; // las canceladas no son "vencidas"
     if (t.dueDate && t.dueDate < today) overdue++;
     else if (t.dueDate === today || t.startDate === today) dueToday++;
     else if (t.dueDate && t.dueDate > today && t.dueDate <= leadCutoffISO) upcoming++;
