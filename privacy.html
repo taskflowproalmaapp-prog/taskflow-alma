@@ -9,42 +9,85 @@
   h1{font-size:26px;margin-bottom:4px;}
   .updated{color:#826F78;font-size:13px;margin-bottom:32px;}
   h2{font-size:18px;margin-top:32px;color:#2B1B2E;}
+  h3{font-size:15.5px;margin:20px 0 4px;color:#2B1B2E;}
   p, li{font-size:15px;color:#3c3240;}
   ul{padding-left:20px;}
+  li{margin:4px 0;}
   a{color:#ED3F7C;}
+  .box{background:#F8F4F1;border-radius:12px;padding:12px 16px;margin:12px 0;}
+  .toc{font-size:14px;}
 </style>
 </head>
 <body>
   <h1>Política de privacidad de TaskFlow Pro</h1>
-  <p class="updated">Última actualización: septiembre de 2026</p>
+  <p class="updated">Última actualización: octubre de 2026</p>
 
-  <p>TaskFlow Pro es una aplicación personal de organización de tareas, calendario y proyectos, con un asistente llamado Alma. Esta página explica qué información se recopila y cómo se usa.</p>
+  <p>TaskFlow Pro es una aplicación personal de organización de tareas, calendario y proyectos, con un asistente de inteligencia artificial llamado Alma. La usa un grupo cerrado de personas (familia, amigos y compañeros) por invitación. Esta página explica qué información se recopila, para qué se usa y qué control tienes sobre ella.</p>
 
-  <h2>Qué datos recopilamos</h2>
+  <div class="box"><b>En resumen:</b> tus datos son tuyos y se guardan en un espacio privado de tu cuenta. Solo se usan para que la app funcione para ti. No los vendemos ni los usamos para publicidad. El administrador de la app ve <b>cuánto</b> se usa cada función, pero <b>no</b> ve tus tareas, notas ni documentos.</div>
+
+  <h2>1. Qué datos recopilamos</h2>
   <ul>
-    <li><b>Cuenta:</b> nombre de usuario, correo electrónico y contraseña (encriptada) para crear tu cuenta.</li>
-    <li><b>Tareas, proyectos y notas:</b> todo lo que escribes dentro de la app para organizarte.</li>
-    <li><b>Google Calendar (opcional):</b> si eliges conectar tu cuenta de Google, accedemos a tu calendario únicamente para mostrar tus eventos dentro de la app y crear/editar los eventos que tú agendas desde TaskFlow Pro. No leemos tu correo ni ningún otro dato de tu cuenta de Google.</li>
-    <li><b>Cumpleaños y recordatorios (opcional):</b> fechas y nombres que tú mismo ingresas, para avisarte con anticipación.</li>
+    <li><b>Cuenta:</b> nombre de usuario, correo electrónico y contraseña (guardada encriptada, nunca en texto legible).</li>
+    <li><b>Tu organización:</b> tareas, proyectos, notas, personas, cumpleaños, recordatorios y todo lo que escribes dentro de la app.</li>
+    <li><b>Tus rutinas y horarios (opcional):</b> país, jornada laboral, ramos y rutinas que ingresas para que Alma no te agende encima de ellos.</li>
+    <li><b>Google Calendar (opcional):</b> si conectas tu cuenta de Google, accedemos a tu calendario solo para mostrar tus eventos en la app, crear y editar los eventos que tú agendas desde TaskFlow Pro (incluidas reuniones con invitados y link de Google Meet), y cancelarlos si tú lo pides. No leemos tu correo ni ningún otro dato de tu cuenta de Google.</li>
+    <li><b>Ubicación (opcional, para el clima):</b> si das permiso al navegador, usamos tu ubicación aproximada (redondeada a unos 100 metros) o la ciudad que eliges, solo para mostrarte el pronóstico del tiempo. Se guarda en tu cuenta para no volver a preguntarte.</li>
+    <li><b>Audio y fotos (opcional):</b> cuando dictas una tarea, grabas una conversación con Alma Brainstorm o subes una foto para crear tareas. Ver la sección 3.</li>
+    <li><b>Estadísticas de uso:</b> cuántas veces usas cada función de la app (por ejemplo, "abrió el Calendario 12 veces este mes") y en qué días entraste. Ver la sección 4.</li>
+    <li><b>Sugerencias:</b> lo que escribes en "Ayúdanos a mejorar", incluida la conversación con Alma.</li>
   </ul>
 
-  <h2>Cómo usamos tus datos</h2>
-  <p>Tus datos se usan únicamente para que la app funcione para ti: mostrar tus tareas, sincronizar tu calendario, y mandarte los recordatorios que configuraste (por correo electrónico y/o notificación push). Alma, el asistente de IA, usa tus datos solo para responderte dentro de la misma conversación — no se usan para entrenar modelos de IA de terceros.</p>
+  <h2>2. Cómo usamos tus datos</h2>
+  <p>Tus datos se usan únicamente para que la app funcione para ti: mostrar y organizar tus tareas, sincronizar tu calendario, sugerirte horarios, armar documentos de tus reuniones, mostrarte el clima y mandarte los recordatorios que configuraste (por correo electrónico o notificación push).</p>
 
-  <h2>Cómo almacenamos tus datos</h2>
-  <p>Cada cuenta tiene su propio espacio de almacenamiento privado (Netlify Blobs). Los datos de una cuenta nunca son visibles ni accesibles para otra cuenta.</p>
+  <h2>3. Inteligencia artificial (Alma), audio, pantalla y fotos</h2>
+  <ul>
+    <li>Para entender lo que dictas o escribes, leer fotos, transcribir grabaciones y armar resúmenes, la app envía ese contenido a <b>Google Gemini</b>, el servicio de inteligencia artificial que usa Alma.</li>
+    <li><b>El audio no se guarda.</b> Las grabaciones de Alma Brainstorm se envían a Gemini en trozos para transcribirlas, y luego se descartan. Solo queda guardado el texto (transcripción y resumen) en tu espacio privado.</li>
+    <li><b>Grabación de reuniones online:</b> para escuchar una reunión de Meet, Zoom o Teams, el navegador te pide compartir una pestaña o la pantalla. La app usa <b>solo el audio</b>: la imagen de tu pantalla no se graba, no se guarda ni se envía a ninguna parte.</li>
+    <li><b>Las fotos</b> que usas para crear tareas se envían a Gemini para leerlas y no se guardan como imagen.</li>
+    <li><b>Consentimiento:</b> antes de grabar, la app te pide confirmar que avisaste a las demás personas. Grabar a otros sin su conocimiento puede estar prohibido por la ley; avisarles es responsabilidad de quien graba.</li>
+    <li>Usamos la API de Gemini en su modalidad de pago, en la que Google no usa el contenido enviado para entrenar ni mejorar sus modelos.</li>
+  </ul>
 
-  <h2>Con quién compartimos datos</h2>
+  <h2>4. Estadísticas de uso y sugerencias</h2>
+  <ul>
+    <li>Para saber qué mejorar, la app cuenta <b>cuántas veces</b> cada persona usa cada función, por mes. <b>Nunca</b> se registra el contenido: títulos de tareas, notas, documentos ni conversaciones con Alma.</li>
+    <li>Esas estadísticas y las sugerencias que envías desde "Ayúdanos a mejorar" (con tu nombre de usuario) las ve solo el administrador de la app, para decidir mejoras.</li>
+  </ul>
+
+  <h2>5. Cómo almacenamos y protegemos tus datos</h2>
+  <ul>
+    <li>Cada cuenta tiene su propio espacio de almacenamiento privado (Netlify Blobs). Los datos de una cuenta nunca son visibles ni accesibles para otra cuenta.</li>
+    <li>Las contraseñas se guardan encriptadas. Los intentos de inicio de sesión están limitados para evitar que alguien adivine tu clave.</li>
+    <li>Tu sesión se cierra sola si no usas la app durante 90 días, y se cierra en todos tus dispositivos si restableces tu clave con "Olvidé mi clave".</li>
+    <li>En tu dispositivo, la app guarda tu sesión y una copia de tus datos en el almacenamiento del navegador, para funcionar más rápido y sin conexión. No usamos cookies de publicidad ni de seguimiento.</li>
+  </ul>
+
+  <h2>6. Con quién compartimos datos</h2>
   <p>No vendemos ni compartimos tus datos con terceros con fines comerciales o publicitarios. Usamos estos proveedores únicamente para que la app funcione:</p>
   <ul>
-    <li><b>Google Calendar API</b> — solo si decides conectar tu cuenta de Google.</li>
-    <li><b>Gmail (Google)</b> — para enviarte correos de la app (recuperar clave, resúmenes, recordatorios).</li>
-    <li><b>Google Gemini</b> — para las funciones de inteligencia artificial de Alma.</li>
-    <li><b>Netlify</b> — como infraestructura de hosting y almacenamiento.</li>
+    <li><b>Netlify</b>: hosting de la app y almacenamiento de tus datos.</li>
+    <li><b>Google Gemini</b>: funciones de inteligencia artificial de Alma (ver sección 3).</li>
+    <li><b>Google Calendar API</b>: solo si conectas tu cuenta de Google. Si creas una reunión con invitados, Google les envía la invitación a los correos que tú escribes.</li>
+    <li><b>Gmail (Google)</b>: para enviarte correos de la app (recuperar clave, resúmenes, recordatorios) y para enviar los documentos de Brainstorm a las personas que tú elijas. Esos correos salen de la cuenta de TaskFlow Pro, y las respuestas te llegan a tu correo.</li>
+    <li><b>Open-Meteo</b>: pronóstico del tiempo. Solo recibe coordenadas aproximadas o el nombre de una ciudad, sin tu nombre ni tu cuenta.</li>
+    <li><b>mindicador.cl, ExchangeRate-API y currency-api (jsDelivr)</b>: valores de la UF, UTM y monedas. No reciben ningún dato tuyo.</li>
   </ul>
+  <p>Como cualquier servicio de internet, estos proveedores pueden ver la dirección IP desde la que se conecta tu dispositivo.</p>
 
-  <h2>Tus derechos</h2>
-  <p>Puedes pedir en cualquier momento que eliminemos tu cuenta y todos tus datos, o que te enviemos una copia de tu información. Para eso, escríbenos al correo de contacto abajo.</p>
+  <h2>7. Datos de Google (Uso Limitado)</h2>
+  <p>El uso y la transferencia a cualquier otra aplicación de la información recibida de las APIs de Google cumplen con la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Datos de Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado. Los datos de tu Google Calendar solo se usan para mostrarte y gestionar tus eventos dentro de TaskFlow Pro, no se venden, no se usan para publicidad y nadie los lee salvo para darte soporte cuando tú lo pidas.</p>
+
+  <h2>8. Cuánto tiempo guardamos tus datos</h2>
+  <p>Tus datos se guardan mientras tu cuenta exista. Si se elimina tu cuenta, se borran tus datos, tus sesiones, tus notificaciones y tus estadísticas de uso. Las sugerencias que hayas enviado se conservan para mejorar la app, pero sin tu nombre de usuario y sin la conversación.</p>
+
+  <h2>9. Tus derechos</h2>
+  <p>Puedes pedir en cualquier momento que eliminemos tu cuenta y todos tus datos, que corrijamos algo o que te enviemos una copia de tu información. También puedes desconectar Google Calendar y quitar los permisos de ubicación, micrófono o pantalla desde tu navegador cuando quieras. Para cualquier solicitud, escríbenos al correo de contacto.</p>
+
+  <h2>10. Cambios a esta política</h2>
+  <p>Si cambiamos esta política, actualizaremos la fecha de arriba. Si el cambio es importante, te avisaremos dentro de la app.</p>
 
   <h2>Contacto</h2>
   <p>Si tienes preguntas sobre esta política o sobre tus datos, escríbenos a: <a href="mailto:taskflowpro.alma.app@gmail.com">taskflowpro.alma.app@gmail.com</a></p>
