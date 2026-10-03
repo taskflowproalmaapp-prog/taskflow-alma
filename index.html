@@ -647,6 +647,21 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .bs-src.warn{background:color-mix(in srgb,#B8860B 14%,var(--surface));color:#B8860B;}
 .route-rec-start{display:inline-block;margin:6px 0 2px;border:0;border-radius:8px;padding:5px 10px;background:#8157EF;color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer;}
 @media (max-width:700px){ .bs-modes{grid-template-columns:1fr;} }
+
+.bs-autostop{background:color-mix(in srgb,#8157EF 10%,var(--surface));border:1px solid color-mix(in srgb,#8157EF 35%,var(--surface));border-radius:12px;padding:12px 14px;margin:6px 0 4px;font-size:13px;line-height:1.5;}
+
+.calmod-day-col{cursor:cell;}
+.calmod-hover-slot{display:none;position:absolute;left:2px;right:2px;border:1.5px dashed #8157EF;border-radius:6px;background:color-mix(in srgb,#8157EF 8%,transparent);color:#8157EF;font-size:11px;font-weight:700;padding:2px 6px;pointer-events:none;z-index:5;}
+@media (hover:none){ .calmod-hover-slot{display:none!important;} }
+.cq{min-width:min(440px,86vw);}
+.cq-when{text-align:center;font-weight:700;color:#8157EF;font-size:14px;}
+.cq-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cq-warn{font-size:12.5px;color:#B8860B;background:color-mix(in srgb,#B8860B 10%,var(--surface));border-radius:10px;padding:8px 10px;margin-top:10px;}
+.route-slot-box.joinable{cursor:pointer;transition:filter .15s;}
+.route-slot-box.joinable:hover{filter:brightness(.97);}
+.route-join{display:inline-block;margin:6px 6px 2px 0;border-radius:8px;padding:5px 10px;background:#1A73E8;color:#fff!important;font-size:11px;font-weight:700;text-decoration:none;}
+.route-join:hover{background:#1765cc;}
+@media (max-width:700px){ .cq-row{grid-template-columns:1fr;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -5311,7 +5326,8 @@ function renderDashRouteTimeline(){
     const kind = ev.isWork===true ? " · Laboral" : (ev.isWork===false ? " · Personal" : "");
     html += `<div class="route-slot">
       <span class="route-slot-time">${minutesTo12h(s0)}</span>
-      <div class="route-slot-box ${ongoing?'ongoing':''}">${esc(ev.title)}
+      <div class="route-slot-box ${ongoing?'ongoing':''} ${ev.joinLink||ev.htmlLink?'joinable':''}" ${ev.joinLink?`data-join="${esc(ev.joinLink)}" title="Entrar a la reunión"`:ev.htmlLink?`data-join="${esc(ev.htmlLink)}" title="Ver en Google Calendar"`:""}>${esc(ev.title)}
+        ${ev.joinLink?`<a class="route-join" href="${esc(ev.joinLink)}" target="_blank" rel="noopener">📹 ${ongoing||s0-c.nowMin<=15?"Entrar ahora":"Entrar"}</a>`:""}
         ${(s0 - c.nowMin <= 15 && c.nowMin < e0 && !(DB.brainstorms||[]).some(d=>d.eventId===ev.id))?`<button type="button" class="route-rec-start" data-rec-event="${esc(ev.id)}">🎙️ Grabar con Alma</button>`:""}
         <small>${ongoing?"En curso · ":""}${Math.max(0,e0-s0)} min${kind}${(()=>{ const p = wxRainAt(c.iso, ev.startTime); return p!==null && p>=50 ? `<span class="route-rain">🌧️ ${p}%</span>` : ""; })()}</small>
       </div>
@@ -5325,8 +5341,14 @@ function renderDashRouteTimeline(){
     </div>`;
   }
   wrap.innerHTML = html;
-  wrap.querySelectorAll("[data-rec-event]").forEach(b=>b.addEventListener("click", ()=>{
+  wrap.querySelectorAll("[data-rec-event]").forEach(b=>b.addEventListener("click", (e)=>{
+    e.stopPropagation();
     const ev = c.relevant.find(x=>x.id===b.dataset.recEvent); if(ev) openBrainstormRecorder({ event: ev });
+  }));
+  // tocar la reunión (en cualquier parte del bloque) abre Meet en otra pestaña
+  wrap.querySelectorAll("[data-join]").forEach(box=>box.addEventListener("click", (e)=>{
+    if(e.target.closest("a,button")) return;
+    window.open(box.dataset.join, "_blank", "noopener");
   }));
   wrap.querySelectorAll("[data-focus-task]").forEach(b=>b.addEventListener("click", ()=>{
     focusPickTask = b.dataset.focusTask; focusPickMin = +b.dataset.focusMin;
@@ -5351,6 +5373,12 @@ function renderDashAlmaDice(){
     if(a.total && left.length) msg = `Completaste ${a.done} de ${a.total} tareas. Queda ${left.join(" y ")}; puedes decidir qué cerrar y qué reprogramar.`;
     else if(a.total) msg = `Completaste ${a.done} de ${a.total} tareas hoy. Cierra tranquilo${nm}.`;
     else msg = `Día tranquilo${nm}. Descansa y nos vemos mañana.`;
+  }else if(c.relevant.length && timeToMinutes(c.relevant[0].startTime) <= c.nowMin){
+    // estás en una reunión ahora
+    const cur = c.relevant[0], nxt = c.relevant[1];
+    msg = `Estás en "${cur.title}" hasta las ${minutesTo12h(timeToMinutes(cur.endTime))}.`;
+    if(nxt) msg += ` Después tienes "${nxt.title}" a las ${minutesTo12h(timeToMinutes(nxt.startTime))}.`;
+    else if(c.topTask) msg += ` Después puedes avanzar en "${c.topTask.title}".`;
   }else if(c.gapMin>=30 && c.topTask && c.relevant.length){
     const which = c.meetingsBefore ? "tu próxima" : "tu primera";
     msg = `Tienes ${Math.min(c.gapMin,90)} minutos antes de ${which} reunión. Puedes avanzar en "${c.topTask.title}".`;
@@ -7587,6 +7615,7 @@ function almaConfirmSmartTask(rawText, parsed){
   const t = buildTaskFromParsedVoiceItem(rawText, parsed);
   DB.tasks.push(t); saveDB();
   recomputeAll(); saveDB(); render();
+  if(t.executionTime) syncTaskToGoogleCalendar(t); // igual que al agendar a mano
   closeGenericModal();
   const resumen = [];
   resumen.push(t.taskType==="laboral" ? "💼 laboral" : "🌿 personal");
@@ -7650,6 +7679,7 @@ function almaConfirmMultiVoiceTasks(rawText){
     const t = buildTaskFromParsedVoiceItem(rawText, r.parsed);
     if(!t.executionTime) sinHorario++;
     DB.tasks.push(t);
+    if(t.executionTime) syncTaskToGoogleCalendar(t);
   });
   saveDB(); recomputeAll(); saveDB(); render();
   closeGenericModal();
@@ -9607,7 +9637,7 @@ function renderCalHourGrid(daysArr, list){
       </div>`;
     }).join("");
 
-    dayCols += `<div class="calmod-day-col">${hourLines}${nowLine}${eventsHtml}</div>`;
+    dayCols += `<div class="calmod-day-col" data-date="${iso}">${hourLines}${nowLine}${eventsHtml}<div class="calmod-hover-slot" aria-hidden="true"></div></div>`;
   });
 
   let gutterLabels = "";
@@ -9657,6 +9687,26 @@ function renderCalHourGrid(daysArr, list){
     });
   }
 
+  // Tocar un espacio vacío del calendario → agendar ahí mismo (bloques de 30 min)
+  const slotFromEvent = (col, e)=>{
+    const y = e.clientY - col.getBoundingClientRect().top;
+    return Math.max(0, Math.min(23*60+30, Math.floor((y/CAL_HOUR_PX)*2)*30));
+  };
+  document.querySelectorAll("#calBody .calmod-day-col[data-date]").forEach(col=>{
+    const hover = col.querySelector(".calmod-hover-slot");
+    col.addEventListener("click", (e)=>{
+      if(e.target.closest(".calmod-event")) return;
+      openCalQuickSchedule(col.dataset.date, slotFromEvent(col, e));
+    });
+    col.addEventListener("mousemove", (e)=>{
+      if(!hover) return;
+      if(e.target.closest(".calmod-event")){ hover.style.display = "none"; return; }
+      const m = slotFromEvent(col, e);
+      hover.style.display = "block"; hover.style.top = (m/60*CAL_HOUR_PX) + "px"; hover.style.height = (CAL_HOUR_PX/2) + "px";
+      hover.textContent = "+ " + minutesTo12h(m);
+    });
+    col.addEventListener("mouseleave", ()=>{ if(hover) hover.style.display = "none"; });
+  });
   document.querySelectorAll("#calBody [data-task-id]").forEach(el=>{
     el.addEventListener("click", (e)=>{ e.stopPropagation(); openCalTaskActionCloud(el, el.dataset.taskId); });
     const t = byId(DB.tasks, el.dataset.taskId);
@@ -13673,14 +13723,78 @@ async function bsStartRecording(title, opts){
   bsRec = { title, mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
             startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
             segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, queue: Promise.resolve() };
-  if(tabAudio) tabAudio.addEventListener("ended", ()=>{ if(bsRec){ bsRec.tabLost = true; bsRenderRecorder(); toast("Dejaste de compartir la pestaña: sigo grabando solo tu micrófono.","info"); } });
+  // Si se corta el audio de la reunión (cerraste Meet o terminó), lo más probable
+  // es que la reunión terminó: cuenta regresiva y se cierra sola.
+  if(tabAudio) tabAudio.addEventListener("ended", ()=>{ if(bsRec && !bsRec.stopping){ bsRec.tabLost = true; bsAutoStop("La reunión terminó (se dejó de compartir la pestaña).", BS_AUTOSTOP_SEC); } });
+  bsSetupSilenceMeter();
   bsStartSegment();
-  bsRec.tick = setInterval(()=>{ bsUpdateClock(); if(bsElapsed() >= BS_MAX_MINUTES*60000) bsStopRecording(); }, 500);
+  bsRec.tick = setInterval(bsWatch, 500);
   bsRenderRecorder();
+}
+/* ---------- Término automático ---------- */
+const BS_AUTOSTOP_SEC = 15;          // cuenta regresiva antes de cerrar sola
+const BS_SILENCE_MIN = 3;            // minutos sin voz → termina
+const BS_EVENT_GRACE_MIN = 5;        // minutos después de la hora de término de la reunión
+// Mide el volumen de lo que se graba para detectar silencio largo
+function bsSetupSilenceMeter(){
+  const r = bsRec; if(!r) return;
+  r.lastSoundAt = Date.now();
+  try{
+    const ctx = r.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(!r.audioCtx){ r.meterCtx = ctx; }
+    const an = ctx.createAnalyser(); an.fftSize = 1024;
+    ctx.createMediaStreamSource(r.stream).connect(an);
+    r.analyser = an; r.meterBuf = new Float32Array(an.fftSize);
+    if(ctx.state==="suspended") ctx.resume().catch(()=>{});
+  }catch(e){ console.error("medidor", e); r.analyser = null; }
+}
+function bsWatch(){
+  const r = bsRec; if(!r || r.stopping) return;
+  bsUpdateClock();
+  if(bsElapsed() >= BS_MAX_MINUTES*60000){ bsStopRecording(); return; }
+  if(r.paused) { r.lastSoundAt = Date.now(); return; }   // en pausa no cuenta el silencio
+  // 1) ¿hay voz? (volumen promedio sobre un umbral bajo)
+  if(r.analyser){
+    r.analyser.getFloatTimeDomainData(r.meterBuf);
+    let sum = 0; for(let i=0;i<r.meterBuf.length;i++) sum += r.meterBuf[i]*r.meterBuf[i];
+    const rms = Math.sqrt(sum/r.meterBuf.length);
+    if(rms > 0.01) r.lastSoundAt = Date.now();
+    if(!r.autoStop && !r.keepGoingSilence && Date.now()-r.lastSoundAt > BS_SILENCE_MIN*60000){
+      bsAutoStop(`No se escucha a nadie hace ${BS_SILENCE_MIN} minutos.`, BS_AUTOSTOP_SEC, "silence");
+    }
+  }
+  // 2) ¿pasó la hora de término de la reunión del calendario?
+  if(r.event && r.event.endTime && !r.autoStop && !r.keepGoingEvent){
+    const now = new Date(), nowMin = now.getHours()*60+now.getMinutes();
+    if(nowMin >= timeToMinutes(r.event.endTime) + BS_EVENT_GRACE_MIN){
+      bsAutoStop(`La reunión debía terminar a las ${minutesTo12h(timeToMinutes(r.event.endTime))}.`, 60, "event");
+    }
+  }
+  // 3) cuenta regresiva en curso
+  if(r.autoStop){
+    const left = Math.ceil((r.autoStop.at - Date.now())/1000);
+    const el = document.getElementById("bsAutoLeft"); if(el) el.textContent = Math.max(0,left);
+    if(left <= 0){ r.autoStop = null; bsStopRecording(); }
+  }
+}
+function bsAutoStop(reason, seconds, kind){
+  const r = bsRec; if(!r || r.stopping || r.autoStop) return;
+  r.autoStop = { reason, at: Date.now()+seconds*1000, kind: kind||"tab" };
+  // si la ventana de grabación estaba cerrada, la volvemos a mostrar para que lo vea
+  bsRenderRecorder();
+  try{ playSuccessChime(); }catch(e){}
+}
+function bsKeepGoing(){
+  const r = bsRec; if(!r || !r.autoStop) return;
+  if(r.autoStop.kind==="silence"){ r.keepGoingSilence = true; r.lastSoundAt = Date.now(); setTimeout(()=>{ if(bsRec) bsRec.keepGoingSilence = false; }, 10*60000); }
+  if(r.autoStop.kind==="event") r.keepGoingEvent = true;
+  r.autoStop = null; bsRenderRecorder();
+  toast(r.tabLost ? "Sigo grabando, solo con tu micrófono." : "Sigo grabando.","info");
 }
 function bsStopStreams(r){
   [r.stream, r.mic, r.display].forEach(st=>{ try{ st && st.getTracks().forEach(t=>t.stop()); }catch(e){} });
   try{ r.audioCtx && r.audioCtx.close(); }catch(e){}
+  try{ r.meterCtx && r.meterCtx.close(); }catch(e){}
 }
 function bsElapsed(){ return bsRec ? bsRec.elapsedMs + (bsRec.paused ? 0 : Date.now()-bsRec.runStart) : 0; }
 function bsStartSegment(){
@@ -13727,7 +13841,7 @@ function bsPauseResume(){
 }
 async function bsStopRecording(){
   const r = bsRec; if(!r || r.stopping) return;
-  r.stopping = true; clearTimeout(r.segTimer); clearInterval(r.tick);
+  r.stopping = true; r.autoStop = null; clearTimeout(r.segTimer); clearInterval(r.tick);
   if(!r.paused) r.elapsedMs += Date.now()-r.runStart;
   r.paused = false;
   await new Promise(res=>{ if(r.recorder && r.recorder.state!=="inactive"){ const prev = r.recorder.onstop; r.recorder.onstop = (ev)=>{ prev(ev); res(); }; r.recorder.stop(); } else res(); });
@@ -13739,6 +13853,12 @@ async function bsStopRecording(){
   for(const seg of r.segments.filter(x=>x.status==="error" && x.blob)) await bsTranscribeSegment(seg);
   const failed = r.segments.filter(x=>x.status==="error").length;
   const transcript = r.segments.map(x=>x.text).filter(Boolean).join("\n");
+  // grabación sin voz: no se guarda un documento vacío, solo se avisa
+  if(!transcript.trim()){
+    bsRec = null; closeGenericModal(); bsUpdateClock();
+    toast(failed ? "No se pudo transcribir la grabación. Revisa tu conexión e inténtalo de nuevo." : "No se escuchó voz en la grabación, así que no guardé nada.","info");
+    return;
+  }
   const doc = { id: uid("bs"), title: r.title || (r.event && r.event.title) || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
                 source:"grabacion", mode: r.mode, eventId: r.event ? r.event.id : null, eventTitle: r.event ? r.event.title : "",
                 transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
@@ -13746,7 +13866,6 @@ async function bsStopRecording(){
   DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
   bsRec = null; closeGenericModal(); bsUpdateClock();
   bsOpenId = doc.id; showView("brainstorm");
-  if(!transcript.trim()){ doc.status = "error"; doc.error = "No se escuchó voz en la grabación."; saveDB(); renderBrainstorm(); return; }
   if(failed) toast(`⚠️ ${failed} trozo${failed===1?"":"s"} no se pudo transcribir; el documento queda sin esa parte.`,"info");
   bsProcessDoc(doc.id);
 }
@@ -13777,18 +13896,22 @@ function bsRenderRecorder(){
       <div class="bs-clock" id="bsClock">${bsFmtClock(bsElapsed()/1000)}</div>
       <div class="bs-sources"><span class="bs-src ok">🎙️ Tu micrófono</span>${r.mode==="online"?`<span class="bs-src ${r.tabLost?"warn":"ok"}">💻 Audio de la reunión ${r.tabLost?"· dejó de compartirse":""}</span>`:""}</div>
       <div class="af-wave bs-wave ${r.paused||r.stopping?"":"on"}"><span></span><span></span><span></span><span></span><span></span></div>
-      ${r.stopping?`<div class="bs-note" style="text-align:center;">✍️ Terminando de transcribir… luego Alma arma el documento.</div>`:`
+      ${(!r.stopping && r.autoStop)?`<div class="bs-autostop" role="alert"><div><b>${esc(r.autoStop.reason)}</b><br>Termino y armo el documento en <b id="bsAutoLeft">${Math.max(0,Math.ceil((r.autoStop.at-Date.now())/1000))}</b> s.</div>
+        <div class="tl-row" style="margin-top:10px;"><button class="btn btn-ghost" id="bsKeep">Seguir grabando</button><button class="btn btn-primary" id="bsStopNow">Terminar ahora</button></div></div>`:""}
+      ${r.stopping?`<div class="bs-note" style="text-align:center;">✍️ Terminando de transcribir… luego Alma arma el documento.</div>`:r.autoStop?"":`
       <div class="tl-row"><button class="btn btn-ghost" id="bsCancel">✕ Descartar</button><button class="btn btn-ghost" id="bsPause">${r.paused?"▶ Seguir":"⏸ Pausar"}</button><button class="btn btn-primary" id="bsStop">■ Terminar</button></div>`}
       <div class="tl-sec">Trozos de ${Math.round(BS_SEGMENT_SEC/60)||1} min</div>
       <div class="bs-segs">${r.segments.map(x=>`<span class="bs-seg ${x.status==="error"?"err":""}" title="${esc(x.status)}">${stIcon[x.status]||"•"} ${x.n}</span>`).join("")}</div>
       <div class="tl-sec">Transcripción en vivo</div>
       <div class="bs-live" id="bsLive">${live?esc(live).replace(/\n/g,"<br>"):`<span class="tl-muted">El texto aparece aquí a medida que se transcribe cada trozo (cada ${Math.round(BS_SEGMENT_SEC/60)||1} min).</span>`}</div>
-      <div class="tl-muted" style="margin-top:8px;">Tope: ${BS_MAX_MINUTES} minutos por grabación. No cierres esta pestaña mientras grabas.</div>
+      <div class="tl-muted" style="margin-top:8px;">Se termina sola si se corta la reunión, si hay ${BS_SILENCE_MIN} minutos de silencio${r.event?" o al pasar la hora de término":""}. Tope: ${BS_MAX_MINUTES} min. No cierres esta pestaña mientras grabas.</div>
     </div>`;
   const live2 = document.getElementById("bsLive"); if(live2) live2.scrollTop = live2.scrollHeight;
   const st = document.getElementById("bsStop"); if(st) st.addEventListener("click", bsStopRecording);
   const pa = document.getElementById("bsPause"); if(pa) pa.addEventListener("click", bsPauseResume);
   const ca = document.getElementById("bsCancel"); if(ca) ca.addEventListener("click", bsCancelRecording);
+  const kg = document.getElementById("bsKeep"); if(kg) kg.addEventListener("click", bsKeepGoing);
+  const sn = document.getElementById("bsStopNow"); if(sn) sn.addEventListener("click", bsStopRecording);
 }
 
 /* ---------- Pegar texto ---------- */
@@ -13807,7 +13930,7 @@ function openBrainstormPaste(){
     if(text.length < 40){ toast("Pega un poco más de texto para que Alma pueda ordenarlo.","info"); return; }
     const doc = { id: uid("bs"), title: document.getElementById("bsPasteTitle").value.trim(), createdAt: new Date().toISOString(), durationSec:0,
                   source:"texto", transcript: text.slice(0, 120000), status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[] };
-    DB.brainstorms.push(doc); saveDB(); closeGenericModal(); bsOpenId = doc.id; showView("brainstorm"); bsProcessDoc(doc.id);
+    DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB(); closeGenericModal(); bsOpenId = doc.id; showView("brainstorm"); bsProcessDoc(doc.id);
   });
 }
 
@@ -13938,6 +14061,72 @@ function bsOpenEmail(d){
   // si cierran el modal mientras graban, la grabación sigue: se puede volver con "Grabar"
   window.addEventListener("beforeunload", e=>{ if(bsRec){ e.preventDefault(); e.returnValue = ""; } });
 })();
+/* ---------------------------------------------------------------------- *
+ * AGENDAR DESDE EL CALENDARIO: tocar un espacio vacío abre esta ventana.
+ * Crea una actividad agendada en ese día y hora, y la refleja en Google
+ * Calendar igual que cuando agendas a mano (syncTaskToGoogleCalendar).
+ * ---------------------------------------------------------------------- */
+let calQuick = { dur: 1, type: "personal", kind: "actividad" };
+function calQuickConflicts(iso, startMin, endMin){
+  const out = [];
+  try{ getGoogleEventsForDate(iso).forEach(ev=>{ if(ev.allDay || !ev.startTime) return; const a = timeToMinutes(ev.startTime), b = timeToMinutes(ev.endTime); if(a < endMin && b > startMin) out.push(`${ev.title} (${formatTimeRange12h(a,b)})`); }); }catch(e){}
+  DB.tasks.forEach(t=>{ if(t.archived || t.status==="completada" || t.status==="cancelada" || t.startDate!==iso || !t.executionTime) return;
+    const a = timeToMinutes(t.executionTime), b = a + Math.max(30, Math.round((t.estimatedTime||0.5)*60));
+    if(a < endMin && b > startMin) out.push(`${t.title} (${formatTimeRange12h(a,b)})`); });
+  return out.slice(0,3);
+}
+function openCalQuickSchedule(iso, startMin){
+  // sugerencia de personal/laboral según si ese día trabajas (y en horario)
+  try{ const mod = dayModality(iso); calQuick.type = (mod && mod.kind!=="libre" && startMin>=8*60 && startMin<19*60) ? "laboral" : "personal"; }catch(e){}
+  const draw = (keepTitle)=>{
+    const endMin = startMin + Math.round(calQuick.dur*60);
+    const d = new Date(iso+"T00:00:00");
+    const dayTxt = d.toLocaleDateString("es-CL",{weekday:"long", day:"numeric", month:"long"});
+    const hol = holidayOn(iso);
+    const past = (iso < TODAY()) || (iso===TODAY() && startMin < new Date().getHours()*60+new Date().getMinutes());
+    const clash = calQuickConflicts(iso, startMin, endMin);
+    openGenericModal("", `
+      <div class="bs-modal cq">
+        <div class="bs-modal-title" style="margin-bottom:4px;">Agendar</div>
+        <div class="cq-when">📅 ${esc(dayTxt.charAt(0).toUpperCase()+dayTxt.slice(1))} · ${esc(formatTimeRange12h(startMin, endMin))}</div>
+        <input class="tl-input" id="cqTitle" placeholder="¿Qué vas a hacer? Ej: Llamar al banco" maxlength="120" style="margin-top:12px;font-size:15px;">
+        <div class="tl-sec">Duración</div>
+        <div class="tl-chips">${[[0.5,"30 min"],[1,"1 h"],[1.5,"1 h 30"],[2,"2 h"],[3,"3 h"]].map(([v,l])=>`<button type="button" class="tl-chip ${v===calQuick.dur?"on":""}" data-dur="${v}">${l}</button>`).join("")}</div>
+        <div class="cq-row">
+          <div><div class="tl-sec">Tipo</div><span class="asp-type-toggle"><button type="button" class="asp-type ${calQuick.type==="personal"?"on":""}" data-cqtype="personal">🌿 Personal</button><button type="button" class="asp-type ${calQuick.type==="laboral"?"on":""}" data-cqtype="laboral">💼 Laboral</button></span></div>
+          <div><div class="tl-sec">Es una…</div><span class="asp-type-toggle"><button type="button" class="asp-type ${calQuick.kind==="actividad"?"on":""}" data-cqkind="actividad">📅 Actividad</button><button type="button" class="asp-type ${calQuick.kind==="tarea"?"on":""}" data-cqkind="tarea">📋 Tarea</button></span></div>
+        </div>
+        ${hol?`<div class="cq-warn">🇨🇱 Ese día es feriado (${esc(hol.name)}).</div>`:""}
+        ${past?`<div class="cq-warn">⚠️ Esa hora ya pasó.</div>`:""}
+        ${clash.length?`<div class="cq-warn">⏰ Choca con: ${clash.map(esc).join(" · ")}</div>`:""}
+        <button class="btn btn-primary" id="cqGo" style="width:100%;justify-content:center;margin-top:14px;">✅ Agendar</button>
+        <div class="tl-muted" style="margin-top:8px;text-align:center;">Si tienes Google Calendar conectado, también aparece allá.</div>
+      </div>`);
+    document.getElementById("genericModalTitle").style.display = "none";
+    const inp = document.getElementById("cqTitle");
+    if(keepTitle) inp.value = keepTitle;
+    setTimeout(()=>inp.focus(), 50);
+    const redraw = ()=>draw(inp.value);
+    document.querySelectorAll("[data-dur]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.dur = +b.dataset.dur; redraw(); }));
+    document.querySelectorAll("[data-cqtype]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.type = b.dataset.cqtype; redraw(); }));
+    document.querySelectorAll("[data-cqkind]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.kind = b.dataset.cqkind; redraw(); }));
+    const go = ()=>{
+      const raw = inp.value.trim();
+      if(!raw){ inp.focus(); toast("Escribe qué vas a hacer.","info"); return; }
+      const title = almaTitleLooksLikeSentence(raw, raw) ? almaShortTitle(raw) : raw;
+      const hh = String(Math.floor(startMin/60)).padStart(2,"0")+":"+String(startMin%60).padStart(2,"0");
+      const t = buildTaskFromParsedVoiceItem(raw, { titulo:title, descripcion: title!==raw ? raw : "", kind: calQuick.kind, tipo_tarea: calQuick.type,
+        fecha_ejecucion: iso, hora_ejecucion: hh, horas_estimadas: calQuick.dur, prioridad:"media" });
+      DB.tasks.push(t); recomputeAll(); saveDB(); closeGenericModal(); render();
+      syncTaskToGoogleCalendar(t).then(()=>{ try{ refreshAfterGCalChange(); }catch(e){} });
+      playSuccessChime();
+      toast(`✅ Agendé "${t.title}" · ${almaFriendlyDate(iso)} ${minutesTo12h(startMin)}.`,"success");
+    };
+    document.getElementById("cqGo").addEventListener("click", go);
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+  };
+  draw("");
+}
 /* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
    la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
    lógica: cada opción "presiona" el botón original, que sigue en la página. */
