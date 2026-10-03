@@ -736,6 +736,28 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .pn-conv{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--text-muted);}
 .pn-conv summary{cursor:pointer;color:var(--accent-2);font-weight:700;}
 @media (max-width:900px){ .fb-layout{grid-template-columns:1fr;} .pn-kpis{grid-template-columns:1fr 1fr;} .pn-props{grid-template-columns:1fr;} }
+
+/* Grupo plegable HERRAMIENTAS en el menú */
+.nav-group-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;box-sizing:border-box;background:none;border:0;cursor:pointer;font-family:inherit;text-align:left;}
+.nav-group-toggle:hover{opacity:1;filter:brightness(1.25);}
+.nav-group-toggle .nav-chev{font-size:11px;transition:transform .2s;opacity:.8;margin-right:6px;}
+.nav-group-toggle.collapsed .nav-chev{transform:rotate(-90deg);}
+#navToolsList.collapsed{display:none;}
+
+/* ---- Mis rutinas y horarios ---- */
+.rh-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;}
+.rh-day{background:var(--surface-alt);border-radius:12px;padding:8px;min-height:110px;display:flex;flex-direction:column;gap:6px;}
+.rh-dname{font-family:var(--font-display);font-weight:800;font-size:12.5px;text-align:center;margin-bottom:2px;}
+.rh-item{border-radius:8px;padding:6px 7px;font-size:11.5px;line-height:1.3;background:var(--surface);border-left:3px solid #8157EF;}
+.rh-item b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rh-item small{display:block;color:var(--text-muted);font-size:10.5px;margin-top:2px;}
+.rh-item.work{border-left-color:#5B9BD5;} .rh-item.study{border-left-color:#ED3F7C;} .rh-item.routine{border-left-color:#3FA47A;}
+.rh-free{font-size:11.5px;color:var(--text-muted);text-align:center;margin-top:10px;}
+.rh-legend{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--text-muted);margin-top:10px;flex-wrap:wrap;}
+.rh-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-left:8px;}
+.rh-dot.work{background:#5B9BD5;} .rh-dot.study{background:#ED3F7C;} .rh-dot.routine{background:#3FA47A;}
+.rh-savebar{position:sticky;bottom:0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:12px 0;margin-top:4px;border-top:1px solid var(--border);z-index:5;}
+@media (max-width:900px){ .rh-week{grid-template-columns:repeat(7,minmax(92px,1fr));overflow-x:auto;} .rh-weekcard{overflow-x:auto;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2208,6 +2230,10 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 
     <div class="nav-group-label">Planificación</div>
     <ul class="nav-list">
+      <li class="nav-item" data-view="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span>Calendario</span>
+      </li>
       <li class="nav-item" data-view="projects">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
         <span>Proyectos y temas</span>
@@ -2215,10 +2241,6 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       <li class="nav-item" data-view="kanban">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z"/></svg>
         <span>Kanban</span>
-      </li>
-      <li class="nav-item" data-view="calendar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        <span>Calendario</span>
       </li>
       <li class="nav-item" data-view="gantt">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h9M4 12h13M4 18h6"/></svg>
@@ -2230,15 +2252,40 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       </li>
     </ul>
 
-    <div class="nav-group-label">Equipo</div>
-    <ul class="nav-list">
-      <li class="nav-item" data-view="responsables">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
-        <span>Personas</span>
+    <button type="button" class="nav-group-label nav-group-toggle" id="navToolsToggle" aria-expanded="true" aria-controls="navToolsList">Herramientas <span class="nav-chev" aria-hidden="true">▾</span></button>
+    <ul class="nav-list" id="navToolsList">
+      <li class="nav-item" data-view="rutinas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3M7.5 16.5h5M14.5 13h2"/></svg>
+        <span>Mis rutinas y horarios</span>
       </li>
-      <li class="nav-item hidden" id="navUsersItem" data-view="usuarios">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Usuarios</span>
+      <li class="nav-item" data-view="cumpleanos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6a2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 0-2 4Zm0 0a2.5 2.5 0 0 1-2-4 2.5 2.5 0 0 1 2 4Z"/><path d="M4 10.5C4 9 5 8 6.5 8S9 9 9 10.5m6 0C15 9 16 8 17.5 8S20 9 20 10.5"/><path d="M3 10.5h18v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3Z"/><path d="M4 15.5h16V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3.5Z"/></svg>
+        <span>Cumpleaños</span>
+        <span class="nav-badge queue hidden" id="navBirthdayBadge">0</span>
+      </li>
+      <li class="nav-item nav-tool" data-tool="calc" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg>
+        <span>Calculadora</span>
+      </li>
+      <li class="nav-item nav-tool" data-tool="focus" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5M12 2.5V5"/></svg>
+        <span>Temporizador de foco</span>
+      </li>
+      <li class="nav-item nav-tool" data-tool="ind" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5a6 6 0 1 1-6 6"/><path d="M9 6.5v5M7.5 7.8c0-.7.7-1.3 1.5-1.3s1.5.5 1.5 1.1-.6 1-1.5 1.2-1.5.6-1.5 1.2.7 1.1 1.5 1.1 1.5-.6 1.5-1.3"/></svg>
+        <span>Monedas</span>
+      </li>
+      <li class="nav-item nav-tool" data-tool="days" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M9 15h6"/></svg>
+        <span>Contador de días</span>
+      </li>
+      <li class="nav-item nav-tool" data-tool="hol" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4.5c4-2 6 2 10 0s4.5 0 4.5 0v8s-.5-2-4.5 0-6-2-10 0"/></svg>
+        <span>Feriados</span>
+      </li>
+      <li class="nav-item nav-tool" data-tool="split" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h12v19l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+        <span>Dividir cuenta</span>
       </li>
     </ul>
 
@@ -2253,14 +2300,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <span>Notificaciones</span>
         <span class="nav-badge" id="navNotifBadge">0</span>
       </li>
-      <li class="nav-item" data-view="cumpleanos">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6a2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 0-2 4Zm0 0a2.5 2.5 0 0 1-2-4 2.5 2.5 0 0 1 2 4Z"/><path d="M4 10.5C4 9 5 8 6.5 8S9 9 9 10.5m6 0C15 9 16 8 17.5 8S20 9 20 10.5"/><path d="M3 10.5h18v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3Z"/><path d="M4 15.5h16V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3.5Z"/></svg>
-        <span>Cumpleaños</span>
-        <span class="nav-badge queue hidden" id="navBirthdayBadge">0</span>
-      </li>
       <li class="nav-item" data-view="mejorar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M12 8v4M12 15.5h.01"/></svg>
         <span>Ayúdanos a mejorar</span>
+      </li>
+      <li class="nav-item hidden" id="navUsersItem" data-view="usuarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Usuarios</span>
       </li>
       <li class="nav-item hidden" id="navPanelItem" data-view="panel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
@@ -2468,6 +2514,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
     </section>
 
     <!-- ---------- NOTAS DEL DÍA (sticky note / libreta) ---------- -->
+    <section class="view hidden" id="view-rutinas">
+      <div class="view-header"><div>
+        <h1>Mis rutinas y horarios</h1>
+        <p>Tu jornada, tus ramos y tus rutinas. Alma los usa para no agendarte encima de nada y proponerte horarios que calcen con tu vida.</p>
+      </div><div><button class="btn btn-primary" id="rhSaveTop">💾 Guardar cambios</button></div></div>
+      <div id="rhWeek"></div>
+      <div id="rhFormSlot"></div>
+      <div class="rh-savebar"><button class="btn btn-primary" id="rhSave">💾 Guardar cambios</button><span class="tl-muted">También lo puedes editar en Configuración: es la misma información.</span></div>
+    </section>
     <section class="view hidden" id="view-mejorar">
       <div class="view-header"><div>
         <h1>Ayúdanos a mejorar</h1>
@@ -2801,7 +2856,8 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         </div>
 
       <div class="config-group-label">Jornada y disponibilidad</div>
-            <div class="panel" style="margin-bottom:16px;">
+            <div id="cf_lifePanelHome"></div>
+            <div class="panel" id="cf_lifePanel" style="margin-bottom:16px;">
         <div class="panel-title">🌤️ Mi perfil de vida</div>
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Esta información ayuda a que las sugerencias de horario (en la Cola "Por agendar") respeten cómo vives de verdad, no solo huecos vacíos.</p>
         <div class="form-grid" style="margin-bottom:14px;">
@@ -3146,7 +3202,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   </div>
   <div class="tools-tabs" role="tablist">
     <button type="button" role="tab" class="tools-tab" data-tool="calc">🧮<span>Calculadora</span></button>
-    <button type="button" role="tab" class="tools-tab" data-tool="focus">⏱️<span>Foco</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="focus">⏱️<span>Temporizador</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="ind">💱<span>Monedas</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="days">📆<span>Días</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="hol">🇨🇱<span>Feriados</span></button>
@@ -4509,7 +4565,7 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 /* ---------------------------------------------------------------------- *
  * Navegación entre vistas
  * ---------------------------------------------------------------------- */
-const VIEWS = ["dashboard","projects","notas","brainstorm","mejorar","panel","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
+const VIEWS = ["dashboard","projects","notas","brainstorm","mejorar","panel","rutinas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
 function showView(view){
   trackUse("view."+view);
   selectedTaskIds.clear();
@@ -12350,7 +12406,7 @@ function render(){
 
   const activeView = VIEWS.find(v=>{ const el=document.getElementById("view-"+v); return el && !el.classList.contains("hidden"); }) || "dashboard";
   const renderers = {
-    dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, brainstorm: renderBrainstorm, mejorar: renderMejorar, panel: renderPanel, mytasks: renderTaskList, kanban: renderKanban,
+    dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, brainstorm: renderBrainstorm, mejorar: renderMejorar, panel: renderPanel, rutinas: renderRutinas, mytasks: renderTaskList, kanban: renderKanban,
     agendar: renderPorAgendar, calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
     reportes: renderReportes, notificaciones: renderNotificaciones, cumpleanos: renderBirthdays, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
   };
@@ -14318,7 +14374,7 @@ const USE_LABELS = {
   "view.responsables":"Personas","view.reportes":"Reportes","view.notificaciones":"Notificaciones","view.cumpleanos":"Cumpleaños","view.configuracion":"Configuración","view.mejorar":"Ayúdanos a mejorar",
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
   "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo",
-  "tools.calc":"Calculadora","tools.focus":"Foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
+  "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
   "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas",
 };
 const useLabel = k => USE_LABELS[k] || k;
@@ -14506,6 +14562,143 @@ No inventes datos que no estén arriba.`;
     saveDB(); renderPanel();
   }catch(e){ btn.disabled = false; btn.textContent = "Analizar uso y sugerencias"; toast("Alma no pudo analizar ahora: "+e.message,"error"); }
 }
+/* ---------- Menú: grupo HERRAMIENTAS (abre cada herramienta y se puede plegar) ---------- */
+(function initNavTools(){
+  document.querySelectorAll(".nav-tool[data-tool]").forEach(li=>{
+    const go = ()=>{
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebarOverlay").classList.remove("show");
+      openTools(li.dataset.tool);
+    };
+    li.addEventListener("click", go);
+    li.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } });
+  });
+  const tg = document.getElementById("navToolsToggle"), list = document.getElementById("navToolsList");
+  if(!tg || !list) return;
+  const apply = (collapsed)=>{ list.classList.toggle("collapsed", collapsed); tg.setAttribute("aria-expanded", collapsed?"false":"true"); tg.classList.toggle("collapsed", collapsed); };
+  let collapsed = false; try{ collapsed = localStorage.getItem("tf_nav_tools_collapsed")==="1"; }catch(e){}
+  apply(collapsed);
+  tg.addEventListener("click", ()=>{ collapsed = !collapsed; apply(collapsed); try{ localStorage.setItem("tf_nav_tools_collapsed", collapsed?"1":"0"); }catch(e){} });
+})();
+// Carga el formulario "Mi perfil de vida" (país, día a día, jornada, ramos y
+// rutinas). Se usa en Configuración Y en Herramientas › Mis rutinas y horarios:
+// es el MISMO formulario (se mueve de lugar), así los datos nunca se desordenan.
+function loadLifeProfileForm(c){
+  // Mi perfil de vida
+  const knownCountries = ["Chile","Argentina","Perú","Colombia","México","Ecuador","Bolivia","Uruguay","Paraguay","Venezuela","España","Estados Unidos"];
+  if(c.country && !knownCountries.includes(c.country)){
+    document.getElementById("cf_country").value = "__other__";
+    document.getElementById("cf_countryOther").value = c.country;
+    document.getElementById("cf_countryOther").classList.remove("hidden");
+  }else{
+    document.getElementById("cf_country").value = c.country || "";
+    document.getElementById("cf_countryOther").value = "";
+    document.getElementById("cf_countryOther").classList.add("hidden");
+  }
+  const dailyModes = c.dailyModes || (c.dailyMode ? [c.dailyMode] : (c.workSchedule && c.workSchedule.mode ? ["trabajo"] : []));
+  document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.toggle("active", dailyModes.includes(b.dataset.daily)));
+  document.getElementById("cf_workBlock").classList.toggle("hidden", !dailyModes.includes("trabajo"));
+  document.getElementById("cf_studyBlock").classList.toggle("hidden", !dailyModes.includes("estudio"));
+  const cfExistingSubjects = (c.studySchedule && c.studySchedule.subjects) || [];
+  renderSubjectsList("cf_subjectsList", cfExistingSubjects);
+  renderSubjectsGrid("cf_subjectsGrid", cfExistingSubjects);
+  setCfSubjectsMode(cfExistingSubjects.length ? "grid" : "edit");
+  const ws = c.workSchedule || {};
+  document.querySelectorAll("#cf_workMode button").forEach(b=>b.classList.toggle("active", b.dataset.mode===ws.mode));
+  document.getElementById("cf_hybridDaysWrap").classList.toggle("hidden", ws.mode!=="hibrido");
+  bindDowPicker(document.getElementById("cf_workDays"), ()=>renderPerDayHours("cf_perDayHours","cf_workDays", ws));
+  bindDowPicker(document.getElementById("cf_hybridDays"));
+  setSelectedDows(document.getElementById("cf_workDays"), ws.days || ["lunes","martes","miércoles","jueves","viernes"]);
+  setSelectedDows(document.getElementById("cf_hybridDays"), ws.hybridOfficeDays || []);
+  const sameHours = ws.sameHoursAllDays!==false; // por defecto "sí" — es el caso más común
+  document.querySelectorAll("#cf_sameHoursToggle button").forEach(b=>b.classList.toggle("active", (b.dataset.same==="si")===sameHours));
+  document.getElementById("cf_sameHoursWrap").classList.toggle("hidden", !sameHours);
+  document.getElementById("cf_perDayHoursWrap").classList.toggle("hidden", sameHours);
+  document.getElementById("cf_workStart").value = ws.startTime || "09:00";
+  document.getElementById("cf_workEnd").value = ws.endTime || "18:00";
+  renderPerDayHours("cf_perDayHours", "cf_workDays", ws);
+  const copyHoursBtn = document.getElementById("cf_copyHoursBtn");
+  if(copyHoursBtn && !copyHoursBtn.dataset.bound){
+    copyHoursBtn.dataset.bound = "1";
+    copyHoursBtn.addEventListener("click", ()=>{
+      const rows = document.querySelectorAll("#cf_perDayHours .pdh-row");
+      if(!rows.length) return;
+      const first = rows[0];
+      const s = first.querySelector(".pdh-start").value, e = first.querySelector(".pdh-end").value;
+      rows.forEach(r=>{ r.querySelector(".pdh-start").value = s; r.querySelector(".pdh-end").value = e; });
+      toast("Copiado a todos los días.","success");
+    });
+  }
+  renderCfRoutinesList(c.routines || []);
+  renderWorkSummary("cf_workSummary", ws);
+  setCfWorkMode(ws.mode ? "summary" : "edit");
+}
+// Guarda SOLO "Mi perfil de vida" desde el formulario (esté donde esté).
+function saveLifeProfileFromForm(){
+  const countrySel = document.getElementById("cf_country").value;
+  DB.config.country = countrySel==="__other__" ? document.getElementById("cf_countryOther").value.trim() : countrySel;
+  DB.config.dailyModes = Array.from(document.querySelectorAll("#cf_dailyMode button.active")).map(b=>b.dataset.daily);
+  DB.config.dailyMode = DB.config.dailyModes[0] || ""; // por compatibilidad con código viejo
+  const cfIsStudent = DB.config.dailyModes.includes("estudio");
+  DB.config.studySchedule = { subjects: cfIsStudent ? collectSubjects("cf_subjectsList") : [] };
+  DB.config.workSchedule = computeCfWorkScheduleFromForm();
+  DB.config.routines = Array.from(document.querySelectorAll("#cf_routinesList .routine-row")).map(row=>({
+    id: uid("rt"),
+    name: row.querySelector(".routine-name").value.trim(),
+    slots: getRoutineSlots(row),
+  })).filter(r=>r.name);
+}
+
+/* ---------- Herramientas › Mis rutinas y horarios ---------- */
+function placeLifePanel(where){
+  const panel = document.getElementById("cf_lifePanel"); if(!panel) return;
+  const target = where==="rutinas" ? document.getElementById("rhFormSlot") : document.getElementById("cf_lifePanelHome");
+  if(target && panel.parentElement !== (where==="rutinas" ? target : target.parentElement)) {
+    if(where==="rutinas") target.appendChild(panel); else target.after(panel);
+  }
+}
+function renderRutinas(){
+  placeLifePanel("rutinas");
+  loadLifeProfileForm(DB.config);
+  renderRutinasWeek();
+}
+function renderRutinasWeek(){
+  const wrap = document.getElementById("rhWeek"); if(!wrap) return;
+  const c = DB.config, ws = c.workSchedule || {};
+  const days = DOW_ORDER; // lunes … domingo
+  const short = { "lunes":"Lun","martes":"Mar","miércoles":"Mié","jueves":"Jue","viernes":"Vie","sábado":"Sáb","domingo":"Dom" };
+  const fmt = (a,b)=>formatTimeRange12h(timeToMinutes(a), timeToMinutes(b));
+  const subjects = (c.studySchedule && c.studySchedule.subjects) || [];
+  const routines = c.routines || [];
+  let total = 0;
+  const cols = days.map(dow=>{
+    const items = [];
+    if(ws.mode && (ws.days||[]).includes(dow)){
+      const pd = (ws.perDayHours && ws.perDayHours[dow]) || null;
+      const st = pd ? pd.start : ws.startTime, en = pd ? pd.end : ws.endTime;
+      if(st && en){
+        const where = ws.mode==="remoto" ? "🏠 Remoto" : ws.mode==="hibrido" ? ((ws.hybridOfficeDays||[]).includes(dow) ? "🏢 Oficina" : "🏠 Remoto") : "🏢 Oficina";
+        items.push({ k:"work", t:timeToMinutes(st), html:`<b>💼 Trabajo</b><small>${esc(fmt(st,en))} · ${where}</small>` });
+      }
+    }
+    subjects.forEach(sb=>{ if((sb.days||[]).includes(dow) && sb.start && sb.end) items.push({ k:"study", t:timeToMinutes(sb.start), html:`<b>📚 ${esc(sb.name)}</b><small>${esc(fmt(sb.start,sb.end))}</small>` }); });
+    routines.forEach(r=>{ routineSlotsOf(r).forEach(sl=>{ if((sl.days||[]).includes(dow) && sl.startTime && sl.endTime) items.push({ k:"routine", t:timeToMinutes(sl.startTime), html:`<b>🔁 ${esc(r.name)}</b><small>${esc(fmt(sl.startTime,sl.endTime))}</small>` }); }); });
+    items.sort((x,y)=>x.t-y.t); total += items.length;
+    return `<div class="rh-day"><div class="rh-dname">${short[dow]||dow}</div>${items.length?items.map(it=>`<div class="rh-item ${it.k}">${it.html}</div>`).join(""):`<div class="rh-free">Libre</div>`}</div>`;
+  }).join("");
+  wrap.innerHTML = `<div class="bs-sec rh-weekcard">
+    <div class="bs-sec-head"><h3>🗓️ Tu semana tipo</h3><span class="tl-muted">${total?"Así la ve Alma al proponerte horarios":"Aún no has cargado nada: empieza abajo 👇"}</span></div>
+    <div class="rh-week">${cols}</div>
+    <div class="rh-legend"><span class="rh-dot work"></span>Trabajo <span class="rh-dot study"></span>Ramos <span class="rh-dot routine"></span>Rutinas</div>
+  </div>`;
+}
+(function initRutinas(){
+  const save = ()=>{
+    try{ saveLifeProfileFromForm(); saveDB(); recomputeAll(); renderRutinasWeek(); renderWorkSummary("cf_workSummary", DB.config.workSchedule||{}); playSuccessChime(); toast("✅ Guardé tus rutinas y horarios. Alma ya los considera al agendar.","success"); }
+    catch(e){ console.error(e); toast("No se pudo guardar: "+e.message,"error"); }
+  };
+  ["rhSave","rhSaveTop"].forEach(id=>{ const b = document.getElementById(id); if(b) b.addEventListener("click", save); });
+})();
 /* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
    la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
    lógica: cada opción "presiona" el botón original, que sigue en la página. */
@@ -14829,56 +15022,10 @@ function renderConfiguracion(){
   }
   document.getElementById("cf_emailNotifTarget").textContent = c.userEmail || "sin correo configurado";
 
-  // Mi perfil de vida
-  const knownCountries = ["Chile","Argentina","Perú","Colombia","México","Ecuador","Bolivia","Uruguay","Paraguay","Venezuela","España","Estados Unidos"];
-  if(c.country && !knownCountries.includes(c.country)){
-    document.getElementById("cf_country").value = "__other__";
-    document.getElementById("cf_countryOther").value = c.country;
-    document.getElementById("cf_countryOther").classList.remove("hidden");
-  }else{
-    document.getElementById("cf_country").value = c.country || "";
-    document.getElementById("cf_countryOther").value = "";
-    document.getElementById("cf_countryOther").classList.add("hidden");
-  }
-  const dailyModes = c.dailyModes || (c.dailyMode ? [c.dailyMode] : (c.workSchedule && c.workSchedule.mode ? ["trabajo"] : []));
-  document.querySelectorAll("#cf_dailyMode button").forEach(b=>b.classList.toggle("active", dailyModes.includes(b.dataset.daily)));
-  document.getElementById("cf_workBlock").classList.toggle("hidden", !dailyModes.includes("trabajo"));
-  document.getElementById("cf_studyBlock").classList.toggle("hidden", !dailyModes.includes("estudio"));
-  const cfExistingSubjects = (c.studySchedule && c.studySchedule.subjects) || [];
-  renderSubjectsList("cf_subjectsList", cfExistingSubjects);
-  renderSubjectsGrid("cf_subjectsGrid", cfExistingSubjects);
-  setCfSubjectsMode(cfExistingSubjects.length ? "grid" : "edit");
-  const ws = c.workSchedule || {};
-  document.querySelectorAll("#cf_workMode button").forEach(b=>b.classList.toggle("active", b.dataset.mode===ws.mode));
-  document.getElementById("cf_hybridDaysWrap").classList.toggle("hidden", ws.mode!=="hibrido");
-  bindDowPicker(document.getElementById("cf_workDays"), ()=>renderPerDayHours("cf_perDayHours","cf_workDays", ws));
-  bindDowPicker(document.getElementById("cf_hybridDays"));
-  setSelectedDows(document.getElementById("cf_workDays"), ws.days || ["lunes","martes","miércoles","jueves","viernes"]);
-  setSelectedDows(document.getElementById("cf_hybridDays"), ws.hybridOfficeDays || []);
-  const sameHours = ws.sameHoursAllDays!==false; // por defecto "sí" — es el caso más común
-  document.querySelectorAll("#cf_sameHoursToggle button").forEach(b=>b.classList.toggle("active", (b.dataset.same==="si")===sameHours));
-  document.getElementById("cf_sameHoursWrap").classList.toggle("hidden", !sameHours);
-  document.getElementById("cf_perDayHoursWrap").classList.toggle("hidden", sameHours);
-  document.getElementById("cf_workStart").value = ws.startTime || "09:00";
-  document.getElementById("cf_workEnd").value = ws.endTime || "18:00";
-  renderPerDayHours("cf_perDayHours", "cf_workDays", ws);
-  const copyHoursBtn = document.getElementById("cf_copyHoursBtn");
-  if(copyHoursBtn && !copyHoursBtn.dataset.bound){
-    copyHoursBtn.dataset.bound = "1";
-    copyHoursBtn.addEventListener("click", ()=>{
-      const rows = document.querySelectorAll("#cf_perDayHours .pdh-row");
-      if(!rows.length) return;
-      const first = rows[0];
-      const s = first.querySelector(".pdh-start").value, e = first.querySelector(".pdh-end").value;
-      rows.forEach(r=>{ r.querySelector(".pdh-start").value = s; r.querySelector(".pdh-end").value = e; });
-      toast("Copiado a todos los días.","success");
-    });
-  }
-  renderCfRoutinesList(c.routines || []);
+  placeLifePanel("config");
+  loadLifeProfileForm(c);
   renderCfLifeAreas();
   renderCfIntegrations();
-  renderWorkSummary("cf_workSummary", ws);
-  setCfWorkMode(ws.mode ? "summary" : "edit");
   // Mi asistente (Módulo 13)
   const alma = c.alma || {};
   document.getElementById("cf_almaName").value = alma.assistantName || "Alma";
@@ -15303,18 +15450,7 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   if(wasMin !== DB.config.alma.cloudMinimized){ almaCloudInit = false; } // re-aplica al próximo render
   DB.config.userEmail = document.getElementById("cf_userEmail").value.trim();
 
-  const countrySel = document.getElementById("cf_country").value;
-  DB.config.country = countrySel==="__other__" ? document.getElementById("cf_countryOther").value.trim() : countrySel;
-  DB.config.dailyModes = Array.from(document.querySelectorAll("#cf_dailyMode button.active")).map(b=>b.dataset.daily);
-  DB.config.dailyMode = DB.config.dailyModes[0] || ""; // por compatibilidad con código viejo
-  const cfIsStudent = DB.config.dailyModes.includes("estudio");
-  DB.config.studySchedule = { subjects: cfIsStudent ? collectSubjects("cf_subjectsList") : [] };
-  DB.config.workSchedule = computeCfWorkScheduleFromForm();
-  DB.config.routines = Array.from(document.querySelectorAll("#cf_routinesList .routine-row")).map(row=>({
-    id: uid("rt"),
-    name: row.querySelector(".routine-name").value.trim(),
-    slots: getRoutineSlots(row),
-  })).filter(r=>r.name);
+  saveLifeProfileFromForm();
   DB.config.dateFormat = document.getElementById("cf_dateFormat").value;
   DB.config.weekStart = document.getElementById("cf_weekStart").value;
   DB.config.notificationsEnabled = document.getElementById("cf_notifEnabled").checked;
@@ -15962,7 +16098,6 @@ const TOUR_STEPS = [
   { sel:"#view-calendar", view:"calendar", title:"Calendario", text:"Ve tus compromisos por mes, semana o día, mezclados con tus reuniones reales de Google Calendar." },
   { sel:"#view-gantt", view:"gantt", title:"Cronograma", text:"Una línea de tiempo tipo Gantt: ves cómo se distribuyen tus tareas y proyectos en los días, ideal para planificar plazos." },
   { sel:"#view-matrix", view:"matrix", title:"Matriz de prioridades", text:"Organiza según urgencia e importancia (Eisenhower). Te ayuda a decidir qué hacer ya, qué agendar, qué delegar y qué soltar." },
-  { sel:"#view-responsables", view:"responsables", title:"Personas", text:"Las personas de tu vida y trabajo: a quién le pediste algo o con quién compartes tareas. Guardas su relación o rol." },
   { sel:"#view-reportes", view:"reportes", title:"Reportes", text:"Una mirada tranquila a tu avance: cumplimiento por proyecto y por persona, tareas hechas y tiempo estimado vs. real. Nunca para juzgarte, solo para entender tu ritmo." },
   { sel:"#view-notificaciones", view:"notificaciones", title:"Notificaciones", text:"Aquí aparecen los avisos: lo que vence pronto, recordatorios y novedades. Todo en un solo lugar para no perderte nada importante." },
   { sel:"#view-configuracion", view:"configuracion", title:"Configuración", text:"Personaliza todo: el nombre de Alma, cómo te acompaña, tus áreas de vida, el tema claro/oscuro, y respaldas o exportas tus datos. Aquí también puedes repetir este tour." },
