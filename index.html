@@ -662,6 +662,17 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .route-join{display:inline-block;margin:6px 6px 2px 0;border-radius:8px;padding:5px 10px;background:#1A73E8;color:#fff!important;font-size:11px;font-weight:700;text-decoration:none;}
 .route-join:hover{background:#1765cc;}
 @media (max-width:700px){ .cq-row{grid-template-columns:1fr;} }
+
+.cq-kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.cq-kind{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:12px;padding:10px;font:inherit;font-size:13px;cursor:pointer;}
+.cq-kind small{color:var(--text-muted);font-size:11px;line-height:1.3;}
+.cq-kind.on{border-color:#8157EF;box-shadow:0 0 0 1px #8157EF;background:color-mix(in srgb,#8157EF 7%,var(--surface));}
+.cq-guests{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--border);border-radius:10px;padding:6px 8px;background:var(--surface);}
+.cq-guest{display:inline-flex;align-items:center;gap:4px;background:color-mix(in srgb,#8157EF 12%,var(--surface));color:var(--text);border-radius:999px;padding:3px 4px 3px 10px;font-size:12.5px;}
+.cq-guest button{border:0;background:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 4px;}
+.cq-guest-input{flex:1;min-width:160px;border:0;outline:none;background:transparent;color:var(--text);font:inherit;font-size:14px;padding:4px;}
+.cq-link{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface-alt);border-radius:10px;padding:8px 10px;margin-top:12px;font-size:13px;word-break:break-all;}
+@media (max-width:700px){ .cq-kinds{grid-template-columns:1fr;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -14066,7 +14077,7 @@ function bsOpenEmail(d){
  * Crea una actividad agendada en ese día y hora, y la refleja en Google
  * Calendar igual que cuando agendas a mano (syncTaskToGoogleCalendar).
  * ---------------------------------------------------------------------- */
-let calQuick = { dur: 1, type: "personal", kind: "actividad" };
+let calQuick = { dur: 1, type: "personal", kind: "actividad", guests: [], meet: true };
 function calQuickConflicts(iso, startMin, endMin){
   const out = [];
   try{ getGoogleEventsForDate(iso).forEach(ev=>{ if(ev.allDay || !ev.startTime) return; const a = timeToMinutes(ev.startTime), b = timeToMinutes(ev.endTime); if(a < endMin && b > startMin) out.push(`${ev.title} (${formatTimeRange12h(a,b)})`); }); }catch(e){}
@@ -14075,46 +14086,103 @@ function calQuickConflicts(iso, startMin, endMin){
     if(a < endMin && b > startMin) out.push(`${t.title} (${formatTimeRange12h(a,b)})`); });
   return out.slice(0,3);
 }
+const CQ_EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/;
 function openCalQuickSchedule(iso, startMin){
   // sugerencia de personal/laboral según si ese día trabajas (y en horario)
   try{ const mod = dayModality(iso); calQuick.type = (mod && mod.kind!=="libre" && startMin>=8*60 && startMin<19*60) ? "laboral" : "personal"; }catch(e){}
-  const draw = (keepTitle)=>{
+  calQuick.guests = [];
+  const draw = (keep)=>{
+    keep = keep || {};
+    const isMtg = calQuick.kind==="reunion";
     const endMin = startMin + Math.round(calQuick.dur*60);
     const d = new Date(iso+"T00:00:00");
     const dayTxt = d.toLocaleDateString("es-CL",{weekday:"long", day:"numeric", month:"long"});
     const hol = holidayOn(iso);
     const past = (iso < TODAY()) || (iso===TODAY() && startMin < new Date().getHours()*60+new Date().getMinutes());
     const clash = calQuickConflicts(iso, startMin, endMin);
+    const people = (DB.responsables||[]).filter(r=>r.email && CQ_EMAIL_RE.test(r.email));
     openGenericModal("", `
       <div class="bs-modal cq">
-        <div class="bs-modal-title" style="margin-bottom:4px;">Agendar</div>
+        <div class="bs-modal-title" style="margin-bottom:4px;">${isMtg?"Agendar reunión":"Agendar"}</div>
         <div class="cq-when">📅 ${esc(dayTxt.charAt(0).toUpperCase()+dayTxt.slice(1))} · ${esc(formatTimeRange12h(startMin, endMin))}</div>
-        <input class="tl-input" id="cqTitle" placeholder="¿Qué vas a hacer? Ej: Llamar al banco" maxlength="120" style="margin-top:12px;font-size:15px;">
+        <div class="tl-sec">¿Qué quieres agendar?</div>
+        <div class="cq-kinds">
+          <button type="button" class="cq-kind ${calQuick.kind==="tarea"?"on":""}" data-cqkind="tarea"><b>📋 Tarea</b><small>Algo que tienes que hacer</small></button>
+          <button type="button" class="cq-kind ${calQuick.kind==="actividad"?"on":""}" data-cqkind="actividad"><b>📅 Actividad</b><small>Algo con hora fija, tú solo</small></button>
+          <button type="button" class="cq-kind ${isMtg?"on":""}" data-cqkind="reunion"><b>👥 Reunión</b><small>Con invitados y Meet</small></button>
+        </div>
+        <input class="tl-input" id="cqTitle" placeholder="${isMtg?"Nombre de la reunión. Ej: Revisión de presupuesto":"¿Qué vas a hacer? Ej: Llamar al banco"}" maxlength="120" style="margin-top:12px;font-size:15px;">
         <div class="tl-sec">Duración</div>
         <div class="tl-chips">${[[0.5,"30 min"],[1,"1 h"],[1.5,"1 h 30"],[2,"2 h"],[3,"3 h"]].map(([v,l])=>`<button type="button" class="tl-chip ${v===calQuick.dur?"on":""}" data-dur="${v}">${l}</button>`).join("")}</div>
-        <div class="cq-row">
-          <div><div class="tl-sec">Tipo</div><span class="asp-type-toggle"><button type="button" class="asp-type ${calQuick.type==="personal"?"on":""}" data-cqtype="personal">🌿 Personal</button><button type="button" class="asp-type ${calQuick.type==="laboral"?"on":""}" data-cqtype="laboral">💼 Laboral</button></span></div>
-          <div><div class="tl-sec">Es una…</div><span class="asp-type-toggle"><button type="button" class="asp-type ${calQuick.kind==="actividad"?"on":""}" data-cqkind="actividad">📅 Actividad</button><button type="button" class="asp-type ${calQuick.kind==="tarea"?"on":""}" data-cqkind="tarea">📋 Tarea</button></span></div>
-        </div>
+        ${isMtg?`
+        <div class="tl-sec">Invitados</div>
+        <div class="cq-guests">${calQuick.guests.map((g,i)=>`<span class="cq-guest">${esc(g)}<button type="button" data-rmguest="${i}" aria-label="Quitar">✕</button></span>`).join("")}
+          <input class="cq-guest-input" id="cqGuestInput" type="email" inputmode="email" placeholder="${calQuick.guests.length?"Agregar otro correo…":"correo@ejemplo.cl y Enter"}"></div>
+        ${people.length?`<div class="tl-chips" style="margin-top:8px;">${people.filter(r=>!calQuick.guests.includes(r.email.toLowerCase())).slice(0,8).map(r=>`<button type="button" class="tl-chip" data-addguest="${esc(r.email.toLowerCase())}">＋ ${esc(r.name)}</button>`).join("")}</div>`:""}
+        <label class="bs-consent"><input type="checkbox" id="cqMeet" ${calQuick.meet?"checked":""}> <span>📹 Agregar videollamada de Google Meet</span></label>
+        <textarea class="tl-input" id="cqDesc" rows="2" placeholder="Descripción o agenda (opcional)" style="margin-top:10px;"></textarea>
+        `:`
+        <div class="cq-row"><div><div class="tl-sec">Tipo</div><span class="asp-type-toggle"><button type="button" class="asp-type ${calQuick.type==="personal"?"on":""}" data-cqtype="personal">🌿 Personal</button><button type="button" class="asp-type ${calQuick.type==="laboral"?"on":""}" data-cqtype="laboral">💼 Laboral</button></span></div></div>`}
         ${hol?`<div class="cq-warn">🇨🇱 Ese día es feriado (${esc(hol.name)}).</div>`:""}
         ${past?`<div class="cq-warn">⚠️ Esa hora ya pasó.</div>`:""}
         ${clash.length?`<div class="cq-warn">⏰ Choca con: ${clash.map(esc).join(" · ")}</div>`:""}
-        <button class="btn btn-primary" id="cqGo" style="width:100%;justify-content:center;margin-top:14px;">✅ Agendar</button>
-        <div class="tl-muted" style="margin-top:8px;text-align:center;">Si tienes Google Calendar conectado, también aparece allá.</div>
+        <button class="btn btn-primary" id="cqGo" style="width:100%;justify-content:center;margin-top:14px;">${isMtg?(calQuick.guests.length?`✅ Agendar y enviar invitación (${calQuick.guests.length})`:"✅ Agendar reunión"):"✅ Agendar"}</button>
+        <div class="tl-muted" style="margin-top:8px;text-align:center;">${isMtg?"Se crea en tu Google Calendar y les llega la invitación por correo a los invitados.":"Si tienes Google Calendar conectado, también aparece allá."}</div>
       </div>`);
     document.getElementById("genericModalTitle").style.display = "none";
     const inp = document.getElementById("cqTitle");
-    if(keepTitle) inp.value = keepTitle;
-    setTimeout(()=>inp.focus(), 50);
-    const redraw = ()=>draw(inp.value);
+    if(keep.title) inp.value = keep.title;
+    const desc = document.getElementById("cqDesc"); if(desc && keep.desc) desc.value = keep.desc;
+    const gi = document.getElementById("cqGuestInput");
+    setTimeout(()=>{ (keep.focusGuest && gi ? gi : inp).focus(); }, 50);
+    const state = ()=>({ title: inp.value, desc: desc ? desc.value : "" });
+    const redraw = (extra)=>draw(Object.assign(state(), extra||{}));
+    const addGuest = (raw)=>{
+      const list = String(raw||"").split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+      const bad = list.filter(x=>!CQ_EMAIL_RE.test(x));
+      if(bad.length){ toast(`Revisa este correo: ${bad[0]}`,"error"); return false; }
+      list.forEach(x=>{ if(!calQuick.guests.includes(x)) calQuick.guests.push(x); });
+      return true;
+    };
     document.querySelectorAll("[data-dur]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.dur = +b.dataset.dur; redraw(); }));
     document.querySelectorAll("[data-cqtype]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.type = b.dataset.cqtype; redraw(); }));
     document.querySelectorAll("[data-cqkind]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.kind = b.dataset.cqkind; redraw(); }));
-    const go = ()=>{
+    document.querySelectorAll("[data-addguest]").forEach(b=>b.addEventListener("click", ()=>{ addGuest(b.dataset.addguest); redraw({focusGuest:true}); }));
+    document.querySelectorAll("[data-rmguest]").forEach(b=>b.addEventListener("click", ()=>{ calQuick.guests.splice(+b.dataset.rmguest,1); redraw({focusGuest:true}); }));
+    const meetCb = document.getElementById("cqMeet"); if(meetCb) meetCb.addEventListener("change", ()=>{ calQuick.meet = meetCb.checked; });
+    if(gi){
+      gi.addEventListener("keydown", e=>{ if((e.key==="Enter" || e.key==="," || e.key===" ") && gi.value.trim()){ e.preventDefault(); if(addGuest(gi.value)) redraw({focusGuest:true}); } });
+      gi.addEventListener("blur", ()=>{ if(gi.value.trim() && CQ_EMAIL_RE.test(gi.value.trim())){ addGuest(gi.value); } });
+    }
+    const hh = String(Math.floor(startMin/60)).padStart(2,"0")+":"+String(startMin%60).padStart(2,"0");
+    const go = async ()=>{
       const raw = inp.value.trim();
-      if(!raw){ inp.focus(); toast("Escribe qué vas a hacer.","info"); return; }
+      if(!raw){ inp.focus(); toast(isMtg?"Ponle un nombre a la reunión.":"Escribe qué vas a hacer.","info"); return; }
       const title = almaTitleLooksLikeSentence(raw, raw) ? almaShortTitle(raw) : raw;
-      const hh = String(Math.floor(startMin/60)).padStart(2,"0")+":"+String(startMin%60).padStart(2,"0");
+      if(isMtg){
+        if(gi && gi.value.trim() && !addGuest(gi.value)) return;
+        const btn = document.getElementById("cqGo"); btn.disabled = true; btn.textContent = "Creando la reunión…";
+        try{
+          const offsetHours = (DB.config && typeof DB.config.utcOffsetHours==="number") ? DB.config.utcOffsetHours : -new Date().getTimezoneOffset()/60;
+          const toUtcIso = (dateStr, timeStr)=> new Date(Date.parse(dateStr+"T"+timeStr+":00Z") - offsetHours*3600000).toISOString();
+          const endHH = String(Math.floor((endMin%1440)/60)).padStart(2,"0")+":"+String(endMin%60).padStart(2,"0");
+          const res = await apiGCalAction("createMeeting", { summary: title, description: (desc && desc.value.trim()) || "", startIso: toUtcIso(iso, hh), endIso: toUtcIso(iso, endMin>=1440 ? "23:59" : endHH), attendees: calQuick.guests.slice(), addMeet: !!calQuick.meet });
+          if(res && res.connected===false){ btn.disabled = false; btn.textContent = "✅ Agendar reunión"; toast("Para crear reuniones, primero conecta Google Calendar en Configuración → Integraciones.","info"); return; }
+          try{ refreshAfterGCalChange(); }catch(e){}
+          playSuccessChime();
+          openGenericModal("", `<div class="bs-modal cq" style="text-align:center;">
+            <div class="bs-modal-ico">✅</div><div class="bs-modal-title">Reunión agendada</div>
+            <div><b>${esc(title)}</b></div><div class="tl-muted" style="margin-top:4px;">${esc(dayTxt)} · ${esc(formatTimeRange12h(startMin,endMin))}</div>
+            ${res.invited?`<div class="bs-note">✉️ Google les envió la invitación a ${res.invited} persona${res.invited===1?"":"s"}.</div>`:""}
+            ${res.joinLink?`<div class="cq-link"><span>${esc(res.joinLink.replace(/^https?:\/\//,""))}</span><button type="button" class="btn btn-ghost btn-sm" id="cqCopyLink">📋 Copiar link</button></div>`:res.meetPending?`<div class="bs-note">📹 Google está creando el link de Meet; aparecerá en la reunión en unos segundos.</div>`:""}
+            <div class="tl-row">${res.htmlLink?`<a class="btn btn-ghost" href="${esc(res.htmlLink)}" target="_blank" rel="noopener">Ver en Google Calendar</a>`:""}<button class="btn btn-primary" id="cqDone">Listo</button></div>
+          </div>`);
+          document.getElementById("genericModalTitle").style.display = "none";
+          const cl = document.getElementById("cqCopyLink"); if(cl) cl.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(res.joinLink); cl.textContent = "✓ Copiado"; }catch(e){} });
+          document.getElementById("cqDone").addEventListener("click", closeGenericModal);
+        }catch(e){ btn.disabled = false; btn.textContent = "✅ Agendar reunión"; toast("No se pudo crear la reunión: "+e.message,"error"); }
+        return;
+      }
       const t = buildTaskFromParsedVoiceItem(raw, { titulo:title, descripcion: title!==raw ? raw : "", kind: calQuick.kind, tipo_tarea: calQuick.type,
         fecha_ejecucion: iso, hora_ejecucion: hh, horas_estimadas: calQuick.dur, prioridad:"media" });
       DB.tasks.push(t); recomputeAll(); saveDB(); closeGenericModal(); render();
@@ -14125,7 +14193,7 @@ function openCalQuickSchedule(iso, startMin){
     document.getElementById("cqGo").addEventListener("click", go);
     inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
   };
-  draw("");
+  draw();
 }
 /* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
    la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
