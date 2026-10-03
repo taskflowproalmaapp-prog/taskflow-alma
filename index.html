@@ -7034,9 +7034,13 @@ function almaEntryMethod(method){
   }
 }
 function almaEntryCreate(title){
-  // crea una tarea base con el título y pregunta cómo agendarla (manual o IA)
+  // crea una tarea base y pregunta cómo agendarla (manual o IA). Si viene una
+  // frase larga ("hoy debo afinar…"), el título se acorta y la frase queda en la descripción.
+  const rawText = String(title||"").trim();
+  const shortT = almaTitleLooksLikeSentence(rawText, rawText) ? almaShortTitle(rawText) : rawText;
+  title = shortT;
   const t = {
-    id: uid("t"), title: title.slice(0,120), description:"", kind:"tarea", projectId:null, owner:null, ownerName:"",
+    id: uid("t"), title: shortT.slice(0,120), description: shortT!==rawText ? rawText : "", kind:"tarea", projectId:null, owner:null, ownerName:"",
     requestArea:"", lifeArea:"", requestedBy:"", company:"", taskType:"", requestDate:"", requestTime:"",
     startDate:"", executionTime:"", dueDate:"", dueTime:"", priority:"media", status:"pendiente",
     tags:[], estimatedTime:0, actualTime:0, progress:0, subtasks:[], checklist:[], comments:[],
@@ -7070,8 +7074,8 @@ Cada objeto de campos debe tener EXACTAMENTE esta forma:
 {"titulo":"...", "descripcion":"...", "kind":"tarea|actividad", "tipo_tarea":"personal|laboral", "proyecto":"...", "solicitante":"...", "fecha_vencimiento":"YYYY-MM-DD", "hora_vencimiento":"HH:MM", "fecha_ejecucion":"YYYY-MM-DD", "hora_ejecucion":"HH:MM", "horas_estimadas":0, "prioridad":"alta|media|baja", "etiquetas":["..."]}
 
 Cómo llenar cada campo:
-- "titulo": breve (máx 80 caracteres), qué hay que hacer, empezando con verbo cuando se pueda.
-- "descripcion": resumen breve con el contexto relevante, en español.
+- "titulo": CORTO, de 2 a 6 palabras (máx 50 caracteres), empezando con verbo en infinitivo. NUNCA copies la frase del usuario: quita fechas, horas, plazos y muletillas como "hoy", "mañana", "debo", "tengo que", "hay que", "necesito", "antes de las…". Ej: "hoy debo afinar el proyecto de asesorías antes de las 22:00 horas" → titulo "Afinar proyecto de asesorías", tipo_tarea "laboral", fecha_vencimiento = hoy, hora_vencimiento "22:00". Ej: "tengo que ir a comprar pan mañana a las 9" → titulo "Comprar pan".
+- "descripcion": el detalle completo y el contexto de lo que dijo el usuario (puede repetir lo que dijo, bien redactado). Aquí SÍ va todo lo que no cabe en el título.
 - "kind": "actividad" si es algo que ocurre en un momento (cita, reunión, peluquería, médico, ir a comprar a cierta hora, llamada agendada, clase, vuelo). "tarea" si es algo por hacer o entregar (informe, trámite, estudiar, pagar).
 - "tipo_tarea": DECÍDELO SIEMPRE tú, sin preguntar. "laboral" = trabajo, clientes, jefatura, colegas, informes, reuniones de la empresa, o cualquier cosa ligada a un proyecto laboral de la lista. "personal" = cuerpo y salud (cortarse el pelo, médico, gimnasio), familia, hogar, compras, trámites propios, estudios, amistades. Ej: "cortarme el pelo" → personal; "entregar el informe" → laboral; "comprar regalo para mi mamá" → personal; "reunión con el cliente" → laboral.
 - "proyecto": si la tarea calza CLARAMENTE con uno de estos proyectos del usuario, escribe su nombre exacto; si no, null.
@@ -7167,6 +7171,44 @@ function almaFriendlyDate(iso){
   const s = d.toLocaleDateString("es-ES",{weekday:"short", day:"numeric", month:"short"}).replace(/\./g,"");
   return s;
 }
+// Título corto de respaldo: si la IA no responde, o devuelve la frase completa
+// como título, lo acortamos aquí (sin IA). La frase original va a la descripción.
+function almaShortTitle(text){
+  let t = " " + String(text||"").replace(/\s+/g," ").trim() + " ";
+  const W = "(?=[\\s.,;:!?]|$)";
+  const drop = [
+    // fechas con mes, con o sin preposición ("máximo el 13 de octubre", "para el 20 de octubre")
+    "((antes|después|despues|a\\s+más\\s+tardar|a\\s+mas\\s+tardar|máximo|maximo|hasta|para)\\s+)?(del?|el|al)?\\s*\\d{1,2}\\s+de\\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)",
+    // plazos y momentos ("antes de las 22:00 horas", "a las 12 del día", "máximo el 13 de octubre")
+    "(antes|después|despues|a\\s+más\\s+tardar|a\\s+mas\\s+tardar|máximo|maximo|hasta|para)\\s+(de\\s+)?(las?|el|la|este|esta|del|al)?\\s*\\d{1,2}([:.]\\d{2})?\\s*(hrs?\\.?|horas?|am|pm|del\\s+día|del\\s+dia|de\\s+la\\s+(mañana|manana|tarde|noche))?",
+    "(antes|después|despues|a\\s+más\\s+tardar|a\\s+mas\\s+tardar|máximo|maximo|hasta|para)\\s+(el|del|este|esta|la)?\\s*(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|fin\\s+de\\s+semana|próxima\\s+semana|proxima\\s+semana|\\d{1,2}(\\s+de\\s+[a-záéíóú]+)?)",
+    "a\\s+las?\\s+\\d{1,2}([:.]\\d{2})?\\s*(hrs?\\.?|horas?|am|pm|del\\s+día|del\\s+dia|de\\s+la\\s+(mañana|manana|tarde|noche))?",
+    "(el|del|este|esta|la\\s+próxima|la\\s+proxima)\\s+(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|semana)(\\s+que\\s+viene)?",
+    "(el\\s+)?\\d{1,2}\\s+de\\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)",
+    "(hoy\\s+día|hoy\\s+dia|hoy|mañana|manana|pasado\\s+mañana|pasado\\s+manana|esta\\s+(tarde|noche|mañana|manana|semana)|en\\s+la\\s+(tarde|noche|mañana|manana))",
+    // muletillas del inicio ("debo", "tengo que", "acuérdate de")
+    "(yo\\s+)?(debo|debería|deberia|tengo\\s+que|hay\\s+que|necesito|quiero|me\\s+toca|me\\s+pidieron|me\\s+falta|recuérdame|recuerdame|acuérdate\\s+de|acuerdate\\s+de|recordar|no\\s+olvidar|ojo\\s+con)(\\s+que)?(\\s+ir\\s+a)?",
+  ];
+  drop.forEach(r=>{ t = t.replace(new RegExp("(^|\\s)"+r+W, "gi"), " "); });
+  t = t.replace(/\s+/g," ").replace(/^[\s,.;:–-]+|[\s,.;:–-]+$/g,"").trim();
+  if(!t) t = String(text||"").trim();
+  // si sigue largo, lo que viene después de "que …" suele ser contexto, no el título
+  if(t.length>30){ const q = t.search(/\s+que\s+/i); if(q>12) t = t.slice(0,q).trim(); }
+  // máx ~50 caracteres, cortando en palabra completa
+  if(t.length>50){ t = t.slice(0,50); t = t.slice(0, t.lastIndexOf(" ")>20 ? t.lastIndexOf(" ") : 50).trim(); }
+  // que no termine en una palabra suelta ("…de la prueba que")
+  for(let i=0;i<3;i++) t = t.replace(/\s+(que|de|del|el|la|los|las|y|o|para|a|al|en|con|por|un|una)$/i,"").trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+// ¿El "título" que dio la IA es en realidad la frase completa del usuario?
+function almaTitleLooksLikeSentence(title, rawText){
+  const n = x => String(x||"").toLowerCase().replace(/[^a-záéíóúñü0-9 ]/g,"").replace(/\s+/g," ").trim();
+  const a = n(title), b = n(rawText);
+  if(!a) return true;
+  if(a.length > 55) return true;
+  if(b && (a===b || (a.length > 25 && b.includes(a) && a.length > b.length*0.8))) return true;
+  return /^(hoy|mañana|manana|debo|tengo que|hay que|necesito)\b/.test(a);
+}
 function almaFriendlyTime(hhmm){ return hhmm ? minutesTo12h(timeToMinutes(hhmm)) : ""; }
 // Busca un proyecto / persona existente por nombre (sin inventar nada nuevo)
 function almaMatchByName(list, name){
@@ -7178,13 +7220,19 @@ function almaMatchByName(list, name){
 // Regla importante: una ACTIVIDAD sin fecha/hora clara NUNCA se agenda a medias — se
 // guarda como pendiente sin horario y cae sola en "Por agendar".
 function buildTaskFromParsedVoiceItem(rawTextFallback, parsed){
-  const title = String((parsed&&parsed.titulo) || rawTextFallback || "Tarea").slice(0,120);
+  let title = String((parsed&&parsed.titulo) || "").trim();
+  if(almaTitleLooksLikeSentence(title, rawTextFallback)) title = almaShortTitle(title || rawTextFallback);
+  title = (title || "Tarea").slice(0,120);
+  // la descripción conserva el detalle: lo que redactó la IA y, si no, tu frase original
+  let description = String((parsed&&parsed.descripcion)||"").trim();
+  const raw = String(rawTextFallback||"").trim();
+  if(!description && raw && raw!==title) description = raw;
   const w = almaResolveWhen(parsed);
   const estimatedTime = (parsed && typeof parsed.horas_estimadas === "number") ? parsed.horas_estimadas : (Number(parsed&&parsed.horas_estimadas)||0);
   const proj = almaMatchByName(DB.projects, parsed && parsed.proyecto);
   const person = almaMatchByName(DB.responsables, parsed && parsed.solicitante);
   return {
-    id: uid("t"), title, description: (parsed&&parsed.descripcion)||"", kind: w.kind,
+    id: uid("t"), title, description, kind: w.kind,
     projectId: proj ? proj.id : null, owner:null, ownerName:"",
     requestArea: (parsed&&parsed.area)||"", lifeArea:"",
     requestedBy: w.kind==="actividad" ? "" : (person ? person.name : ((parsed&&parsed.solicitante)||"")),
@@ -7208,7 +7256,7 @@ function almaRenderSmartPreview(rawText, parsed){
   parsed = parsed || {};
   if(parsed.tipo_tarea!=="laboral") parsed.tipo_tarea = "personal";
   const draw = ()=>{
-    const title = String(parsed.titulo || rawText).slice(0,120);
+    const title = buildTaskFromParsedVoiceItem(rawText, parsed).title;
     const w = almaResolveWhen(parsed);
     const isLab = parsed.tipo_tarea==="laboral";
     const priority = ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media";
@@ -7281,7 +7329,7 @@ function almaRenderMultiVoicePreview(rawText, items){
     return `<div class="amv-row" data-amv="${rec.idx}">
       <input type="checkbox" data-amv-inc ${rec.include?"checked":""} aria-label="Incluir">
       <div class="amv-body">
-        <div class="amv-title">${w.kind==="actividad"?"📅":"📋"} ${esc(String(p.titulo).slice(0,90))}</div>
+        <div class="amv-title">${w.kind==="actividad"?"📅":"📋"} ${esc(buildTaskFromParsedVoiceItem("", p).title)}</div>
         <div class="amv-meta"><button type="button" class="asp-type on" data-amv-type title="Toca para cambiar">${isLab?"💼 Laboral":"🌿 Personal"}</button> · ${when}</div>
       </div>
     </div>`;
