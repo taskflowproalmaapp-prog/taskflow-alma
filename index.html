@@ -2716,11 +2716,13 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
           </div>
           <div class="form-field">
             <label>Tu huso horario</label>
-            <select id="cf_utcOffset">
-              <option value="-5">Perú, Colombia, Ecuador, México (UTC-5)</option>
-              <option value="-4">Chile, Bolivia, Venezuela (UTC-4)</option>
-              <option value="-3">Argentina, Uruguay, Brasil-este (UTC-3)</option>
+            <select id="cf_utcOffset" disabled>
+              <option value="-6">México centro (UTC-6)</option>
+              <option value="-5">Perú, Colombia, Ecuador (UTC-5)</option>
+              <option value="-4">Chile en invierno, Bolivia, Venezuela (UTC-4)</option>
+              <option value="-3">Chile en verano, Argentina, Uruguay, Brasil-este (UTC-3)</option>
             </select>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Se ajusta solo con la hora de tu teléfono o computador (incluye el cambio de horario de Chile).</div>
           </div>
         </div>
       </div>
@@ -11555,24 +11557,32 @@ async function askAI(content){
 async function callGeminiFunction(content){
   // 'content' puede ser texto (prompt simple) o un array estilo Claude (texto + imágenes).
   // Lo convertimos a lo que tu función espera: { prompt } y opcionalmente { image }.
+  // Acepta imagen o audio (type "image" o "audio" con source.data en base64).
   let prompt = "";
-  let image = null;
+  let media = null;
   if(typeof content === "string"){
     prompt = content;
   } else if(Array.isArray(content)){
     for(const part of content){
       if(part.type==="text") prompt += (part.text||"") + "\n";
-      else if(part.type==="image" && part.source && part.source.data){
-        image = { data: part.source.data, mediaType: part.source.media_type || "image/png" };
+      else if((part.type==="image" || part.type==="audio") && part.source && part.source.data){
+        media = { data: part.source.data, mediaType: part.source.media_type || (part.type==="audio" ? "audio/webm" : "image/png") };
       }
     }
   }
+  // La función "ia" ahora exige la sesión (igual que "data"), así nadie de
+  // afuera puede usar la clave de Gemini.
   const response = await fetch("/.netlify/functions/ia", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: prompt.trim(), image }),
+    body: JSON.stringify({ prompt: prompt.trim(), media, token: getAuthToken() }),
   });
-  if(!response.ok) throw new Error("HTTP "+response.status);
+  if(!response.ok){
+    let msg = "HTTP "+response.status;
+    try{ const j = await response.json(); if(j && j.error) msg = j.error; }catch(e){}
+    if(response.status===429) toast(msg, "info");
+    throw new Error(msg);
+  }
   const data = await response.json();
   const text = (data.texto || "").trim();
   if(!text) throw new Error("Respuesta vacía");
@@ -14024,7 +14034,7 @@ document.getElementById("cf_saveBtn").addEventListener("click", ()=>{
   DB.config.notificationsEnabled = document.getElementById("cf_notifEnabled").checked;
   DB.config.reminderLeadDays = parseInt(document.getElementById("cf_reminderLeadDays").value, 10) || 3;
   DB.config.pushAlertHoursBefore = parseInt(document.getElementById("cf_pushHoursBefore").value, 10) || 3;
-  DB.config.utcOffsetHours = parseInt(document.getElementById("cf_utcOffset").value, 10);
+  DB.config.utcOffsetHours = -new Date().getTimezoneOffset()/60; // automático (la lista solo muestra el valor)
   DB.config.emailNotifications = {};
   ["dueSoon","overdue","blocked","atRiskProjects","milestones","unassigned","overloaded","dailySummary","weeklyReport"].forEach(key=>{
     DB.config.emailNotifications[key] = document.getElementById("cf_email_"+key).checked;
@@ -14764,6 +14774,15 @@ if("serviceWorker" in navigator && window.isSecureContext){
 function bootApp(){
   try{
     try{ ensureStickyToday(); }catch(e){ console.error("sticky init",e); }
+    // Zona horaria automática: Chile cambia entre UTC-4 (invierno) y UTC-3
+    // (verano). Se toma del dispositivo para que los recordatorios del
+    // servidor calculen bien "hoy" sin que nadie tenga que cambiarlo a mano.
+    try{
+      const devOffset = -new Date().getTimezoneOffset()/60;
+      if(DB && DB.config && Number.isFinite(devOffset) && DB.config.utcOffsetHours !== devOffset){
+        DB.config.utcOffsetHours = devOffset; saveDB();
+      }
+    }catch(e){ console.error("tz", e); }
     applyTheme((DB && DB.config && DB.config.theme) || "light");
     handleGoogleCalendarRedirectParams();
     // Enlace directo: si el link trae ?view=agendar (o cualquier otra vista
