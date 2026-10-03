@@ -423,6 +423,15 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .btn-alma-voice .mic-ai-icon{flex:none;}
 .route-more-menu button:focus-visible,.route-actions .btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
 .route-more-menu button:focus-visible{outline-color:var(--accent-2);}
+
+/* "Esto entendí": selector Personal/Laboral y estado de agenda */
+.asp-type-toggle{display:inline-flex;gap:4px;background:var(--surface-alt);border-radius:999px;padding:3px;}
+.asp-type{border:0;background:transparent;color:var(--text-muted);font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;cursor:pointer;}
+.asp-type.on{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.amv-meta .asp-type{background:var(--surface-alt);padding:2px 8px;font-size:11.5px;}
+.asp-when b{font-weight:700;}
+.asp-when.ok{color:var(--success);}
+.asp-warn{color:#B8860B;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2769,7 +2778,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 <div class="modal-backdrop hidden" id="aiModalBackdrop">
   <div class="modal modal-lg">
     <div class="modal-head">
-      <h3>Asistente inteligente (simulado)</h3>
+      <h3>Asistente</h3>
       <button class="modal-close" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="modal-body">
@@ -5462,11 +5471,10 @@ document.getElementById("dashAvatarInput").addEventListener("change", async (e)=
   }
 });
 document.getElementById("dashCaptureBtn").addEventListener("click", ()=>{
-  openTaskModal(null);
-  setTimeout(()=>{
-    const dropzone = document.getElementById("tf_emailDropzone");
-    if(dropzone){ dropzone.focus(); dropzone.scrollIntoView({block:"center", behavior:"smooth"}); }
-  }, 200);
+  // misma conversación con Alma que "Hablar", pero abierta directo en Foto
+  openAlmaEntry();
+  const b = document.querySelector('.af-entry-method[data-method="photo"]');
+  if(b) b.click();
 });
 document.getElementById("dashNewProjectBtn").addEventListener("click", ()=>openProjectModal(null));
 
@@ -6974,12 +6982,12 @@ function almaEntryMethod(method){
   if(method==="write"){
     area.innerHTML = `
       <div style="position:relative;">
-        <input type="text" id="afEntryInput" class="af-input" placeholder="Ej: comprar pan el sábado" style="padding-right:52px;">
+        <input type="text" id="afEntryInput" class="af-input" placeholder="Ej: cortarme el pelo mañana a las 11" style="padding-right:52px;">
         <button id="afEntryGo" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,#8B9DF0,#C9A7F5);color:#fff;cursor:pointer;font-size:18px;">→</button>
       </div>`;
     const inp = document.getElementById("afEntryInput");
     inp.focus();
-    const go = ()=>{ const v=inp.value.trim(); if(v) almaEntryCreate(v); };
+    const go = ()=>{ const v=inp.value.trim(); if(v) almaEntryCreateSmart(v, "write"); };
     document.getElementById("afEntryGo").addEventListener("click", go);
     inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
   } else if(method==="dictate"){
@@ -7041,75 +7049,150 @@ function almaEntryCreate(title){
 // Prompt específico para el dictado rápido de Alma: además de los campos de siempre,
 // le pide a la IA que decida si es una TAREA (algo pendiente, sin hora fija todavía)
 // o una ACTIVIDAD (un evento que ya tiene fecha y hora, como una reunión o una cita).
+// Instrucciones ÚNICAS para que la IA entienda una tarea, venga por audio,
+// texto escrito o foto. Las tres entradas usan exactamente este mismo "cerebro".
 function almaVoiceCaptureInstructions(){
-  return `Hoy es ${TODAY()}. Analiza este texto dictado por voz para crear tareas y/o actividades.
+  const now = new Date();
+  const dias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const hhmm = String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+  const projects = (DB.projects||[]).filter(p=>!p.archived && p.status!=="completado" && p.status!=="cancelado")
+    .map(p=>`- ${p.name}${(p.tags||[]).length?` (etiquetas: ${p.tags.join(", ")})`:""}${p.description?`: ${String(p.description).slice(0,80)}`:""}`).join("\n") || "(no tiene proyectos)";
+  const people = (DB.responsables||[]).map(r=>r.name).filter(Boolean).join(", ") || "(no tiene personas registradas)";
+  return `Hoy es ${dias[now.getDay()]} ${TODAY()} y son las ${hhmm} (hora local del usuario).
 
-Primero decide: ¿el texto describe UNA sola cosa, o VARIAS tareas/actividades distintas? (ej. "compra pan, llama al dentista y paga la luz" son 3 cosas distintas — cada verbo/pendiente independiente cuenta como una).
+Primero decide: ¿describe UNA sola cosa, o VARIAS tareas/actividades distintas? (ej. "compra pan, llama al dentista y paga la luz" son 3 cosas — cada pendiente independiente cuenta como una).
 
 Responde SOLO con un JSON válido, sin texto adicional ni comillas de bloque:
 - Si es UNA sola: {"varias": false, "item": { ...campos... }}
 - Si son VARIAS: {"varias": true, "items": [ { ...campos... }, { ...campos... } ] }
 
-Cada objeto de campos (ya sea "item" o cada elemento de "items") debe tener EXACTAMENTE esta forma:
-{"titulo":"...", "descripcion":"...", "kind":"tarea|actividad", "tipo_tarea":"personal|laboral", "solicitante":"...", "fecha_vencimiento":"YYYY-MM-DD", "hora_vencimiento":"HH:MM", "fecha_ejecucion":"YYYY-MM-DD", "hora_ejecucion":"HH:MM", "horas_estimadas":0, "prioridad":"alta|media|baja", "etiquetas":["..."]}
+Cada objeto de campos debe tener EXACTAMENTE esta forma:
+{"titulo":"...", "descripcion":"...", "kind":"tarea|actividad", "tipo_tarea":"personal|laboral", "proyecto":"...", "solicitante":"...", "fecha_vencimiento":"YYYY-MM-DD", "hora_vencimiento":"HH:MM", "fecha_ejecucion":"YYYY-MM-DD", "hora_ejecucion":"HH:MM", "horas_estimadas":0, "prioridad":"alta|media|baja", "etiquetas":["..."]}
 
-Instrucciones para cada campo:
-- "kind": usa "actividad" SOLO si es un evento que ya tiene su cuándo (una reunión, una cita, una llamada agendada, un vuelo, etc). Usa "tarea" para todo lo demás — algo pendiente por hacer, sin hora fija todavía.
-- "titulo": breve (máx 80 caracteres), qué hay que hacer.
-- "descripcion": resume la tarea o actividad y su contexto relevante, en español.
-- "tipo_tarea": "personal" (vida, familia, salud, hogar) o "laboral" (trabajo, clientes, empresa).
-- "solicitante": quién se la pidió, si lo menciona. Si no aplica, usa null.
-- "fecha_vencimiento"/"hora_vencimiento": SOLO para una TAREA con plazo límite mencionado. Para una actividad, deja ambos en null.
-- "fecha_ejecucion"/"hora_ejecucion": el día y hora en que ocurre la actividad, o en que el usuario piensa hacer la tarea, si lo menciona.
-- "horas_estimadas": número (puede ser decimal, ej 0.5, 1, 2) de cuánto cree que toma. Si no lo menciona, usa null.
-- "prioridad": "alta" si es urgente/importante, "media" si es normal, "baja" si puede esperar. Si no hay pistas, usa "media".
+Cómo llenar cada campo:
+- "titulo": breve (máx 80 caracteres), qué hay que hacer, empezando con verbo cuando se pueda.
+- "descripcion": resumen breve con el contexto relevante, en español.
+- "kind": "actividad" si es algo que ocurre en un momento (cita, reunión, peluquería, médico, ir a comprar a cierta hora, llamada agendada, clase, vuelo). "tarea" si es algo por hacer o entregar (informe, trámite, estudiar, pagar).
+- "tipo_tarea": DECÍDELO SIEMPRE tú, sin preguntar. "laboral" = trabajo, clientes, jefatura, colegas, informes, reuniones de la empresa, o cualquier cosa ligada a un proyecto laboral de la lista. "personal" = cuerpo y salud (cortarse el pelo, médico, gimnasio), familia, hogar, compras, trámites propios, estudios, amistades. Ej: "cortarme el pelo" → personal; "entregar el informe" → laboral; "comprar regalo para mi mamá" → personal; "reunión con el cliente" → laboral.
+- "proyecto": si la tarea calza CLARAMENTE con uno de estos proyectos del usuario, escribe su nombre exacto; si no, null.
+${projects}
+- "solicitante": quién se la pidió, si lo menciona. Si coincide con una de estas personas, usa su nombre exacto: ${people}. Si no aplica, null.
+- Fechas relativas: calcula "hoy", "mañana", "pasado mañana", "el viernes", "la próxima semana" a partir de la fecha de hoy indicada arriba. "el viernes" = el próximo viernes (si hoy es viernes, es hoy).
+- Horas: "a las 12 del día" o "a mediodía" = 12:00; "a las 3 de la tarde" = 15:00; "a las 8 de la noche" = 20:00. Si dice solo "en la tarde" o "en la mañana" sin hora exacta, NO inventes hora: deja la hora en null.
+- "fecha_ejecucion"/"hora_ejecucion": cuándo ocurre la actividad, o cuándo el usuario dice que la va a hacer ("voy a ir hoy a las 12", "la hago mañana a las 9").
+- "fecha_vencimiento"/"hora_vencimiento": SOLO el plazo límite de una tarea ("entregar máximo el 13", "antes del viernes", "vence el lunes a las 18"). No es lo mismo que cuándo la va a hacer.
+- "horas_estimadas": número (ej 0.5, 1, 2) solo si lo menciona o es muy obvio; si no, null.
+- "prioridad": "alta" si es urgente/importante o vence hoy/mañana, "baja" si puede esperar, si no "media".
 - "etiquetas": 0 a 3 palabras clave relevantes, en minúscula.
-Nunca inventes datos que no estén sugeridos por el texto — usa null si no aparece. Responde solo el JSON.`;
+Nunca inventes fechas, horas, proyectos ni personas que no se desprendan del contenido — usa null. Responde solo el JSON.`;
 }
 // Igual que almaEntryCreate, pero primero le pide a la IA que interprete el texto
 // dictado (una o varias tareas/actividades, fecha, hora, prioridad, personal/laboral, etc.),
 // muestra un resumen de lo que entendió, y pide confirmación antes de crear. Si detecta
 // varias cosas distintas en el mismo audio, muestra una lista para elegir cuáles crear.
 // Si la IA falla, cae de vuelta al flujo normal (texto literal + wizard manual).
-async function almaEntryCreateSmart(rawText){
+// Audio, texto escrito y foto pasan TODOS por aquí: la IA interpreta, se muestra
+// "Esto entendí" y se confirma. "source" = "dictate" | "write" | "photo" (para
+// que "Corregir" te devuelva al mismo lugar). Si la IA falla, cae al flujo manual.
+let almaCaptureSource = "dictate";
+async function almaEntryCreateSmart(rawText, source, imageFile){
+  almaCaptureSource = source || "dictate";
   const area = document.getElementById("afEntryArea");
-  if(area) area.innerHTML = `<div class="af-hint">✨ Entendiendo tu tarea...</div>`;
+  if(area) area.innerHTML = `<div class="af-hint">✨ ${imageFile?"Leyendo la imagen…":"Entendiendo tu tarea…"}</div>`;
   try{
-    const content = `Instrucción o texto dictado por voz para crear una o varias tareas: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
-    const raw = await askAI(content);
-    const cleaned = raw.replace(/```json|```/g,"").trim();
-    const parsed = JSON.parse(cleaned);
-    if(parsed && parsed.varias===true && Array.isArray(parsed.items) && parsed.items.length>1){
-      almaRenderMultiVoicePreview(rawText, parsed.items);
+    let content;
+    if(imageFile){
+      const base64 = await fileToBase64(imageFile);
+      content = [
+        { type:"image", source:{ type:"base64", media_type: imageFile.type || "image/png", data: base64 } },
+        { type:"text", text: `Esta imagen es una lista, captura, correo, chat o nota con una o varias tareas/actividades del usuario. Léela completa y extrae cada una.\n\n${almaVoiceCaptureInstructions()}` },
+      ];
     }else{
-      const item = (parsed && parsed.item) ? parsed.item : (Array.isArray(parsed && parsed.items) ? parsed.items[0] : parsed);
+      const origen = almaCaptureSource==="write" ? "escrito" : "dictado por voz";
+      content = `Texto ${origen} por el usuario para crear una o varias tareas: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
+    }
+    const raw = await askAI(content);
+    const parsed = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
+    const items = (parsed && Array.isArray(parsed.items)) ? parsed.items.filter(x=>x && x.titulo) : [];
+    if(parsed && parsed.varias===true && items.length>1){
+      almaRenderMultiVoicePreview(rawText, items);
+    }else{
+      const item = (parsed && parsed.item) ? parsed.item : (items[0] || parsed);
+      if(imageFile && !(item && item.titulo)){
+        if(area) area.innerHTML = `<div class="af-hint">No pude leer tareas en la imagen. Prueba con otra o escríbela.</div><div id="afEntryPhotoResult"></div>`;
+        return;
+      }
       almaRenderSmartPreview(rawText, item||{});
     }
   }catch(e){
-    // si la IA no responde, seguimos con el flujo normal (texto literal + wizard manual)
+    if(imageFile){
+      if(area) area.innerHTML = `<div class="af-hint" style="color:var(--danger);">${(typeof aiUnavailableMessage==="function")?aiUnavailableMessage():"No pude leer la imagen ahora. Puedes escribir la tarea."}</div>`;
+      return;
+    }
+    // si la IA no responde, seguimos con el flujo normal (texto literal + agendar a mano)
     almaEntryCreate(rawText);
   }
+}
+// Reglas de "cuándo" — UNA sola fuente de verdad que usan tanto la tarjeta
+// "Esto entendí" como la tarea que se crea (así nunca dicen cosas distintas).
+//  1) día + hora de ejecución → se agenda al tiro (sea tarea o actividad)
+//  2) solo plazo → Por agendar, con la fecha límite guardada
+//  3) día sin hora → Por agendar, guardando ese día como fecha límite
+//  4) nada → Por agendar
+function almaResolveWhen(parsed){
+  const okD = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : "";
+  const okT = v => (typeof v==="string" && /^\d{1,2}:\d{2}$/.test(v)) ? v.padStart(5,"0") : "";
+  const execDate = okD(parsed&&parsed.fecha_ejecucion), execTime = okT(parsed&&parsed.hora_ejecucion);
+  let dueDate = okD(parsed&&parsed.fecha_vencimiento), dueTime = okT(parsed&&parsed.hora_vencimiento);
+  const scheduled = !!(execDate && execTime);
+  let dayOnly = false;
+  if(!scheduled && execDate && !dueDate){ dueDate = execDate; dayOnly = true; }
+  if(!dueDate) dueTime = "";
+  const now = new Date(), nowMin = now.getHours()*60+now.getMinutes();
+  const pastTime = scheduled && (execDate < TODAY() || (execDate===TODAY() && timeToMinutes(execTime) < nowMin));
+  const isActivity = parsed && parsed.kind==="actividad";
+  return {
+    scheduled, dayOnly, pastTime,
+    kind: (isActivity && scheduled) ? "actividad" : "tarea",
+    startDate: scheduled ? execDate : "", executionTime: scheduled ? execTime : "",
+    dueDate: (isActivity && scheduled) ? "" : dueDate, dueTime: (isActivity && scheduled) ? "" : dueTime,
+  };
+}
+function almaFriendlyDate(iso){
+  if(!iso) return "";
+  const d = new Date(iso+"T00:00:00"), t = new Date(TODAY()+"T00:00:00");
+  const diff = Math.round((d - t)/86400000);
+  if(diff===0) return "hoy"; if(diff===1) return "mañana"; if(diff===2) return "pasado mañana";
+  if(diff===-1) return "ayer";
+  const s = d.toLocaleDateString("es-ES",{weekday:"short", day:"numeric", month:"short"}).replace(/\./g,"");
+  return s;
+}
+function almaFriendlyTime(hhmm){ return hhmm ? minutesTo12h(timeToMinutes(hhmm)) : ""; }
+// Busca un proyecto / persona existente por nombre (sin inventar nada nuevo)
+function almaMatchByName(list, name){
+  if(!name || typeof name!=="string") return null;
+  const n = name.trim().toLowerCase();
+  return (list||[]).find(x=>x && !x.archived && String(x.name||"").trim().toLowerCase()===n) || null;
 }
 // Construye el objeto de tarea (sin guardarlo aún) a partir de lo que interpretó la IA.
 // Regla importante: una ACTIVIDAD sin fecha/hora clara NUNCA se agenda a medias — se
 // guarda como pendiente sin horario y cae sola en "Por agendar".
 function buildTaskFromParsedVoiceItem(rawTextFallback, parsed){
   const title = String((parsed&&parsed.titulo) || rawTextFallback || "Tarea").slice(0,120);
-  const isActivity = parsed && parsed.kind === "actividad";
-  const startDate = (parsed&&parsed.fecha_ejecucion)||"", execTime = (parsed&&parsed.hora_ejecucion)||"";
-  const activityComplete = isActivity && startDate && execTime;
+  const w = almaResolveWhen(parsed);
   const estimatedTime = (parsed && typeof parsed.horas_estimadas === "number") ? parsed.horas_estimadas : (Number(parsed&&parsed.horas_estimadas)||0);
+  const proj = almaMatchByName(DB.projects, parsed && parsed.proyecto);
+  const person = almaMatchByName(DB.responsables, parsed && parsed.solicitante);
   return {
-    id: uid("t"), title, description: (parsed&&parsed.descripcion)||"", kind: activityComplete ? "actividad" : "tarea",
-    projectId:null, owner:null, ownerName:"",
-    requestArea: (parsed&&parsed.area)||"", lifeArea:"", requestedBy: activityComplete ? "" : ((parsed&&parsed.solicitante)||""), company: (parsed&&parsed.empresa)||"",
+    id: uid("t"), title, description: (parsed&&parsed.descripcion)||"", kind: w.kind,
+    projectId: proj ? proj.id : null, owner:null, ownerName:"",
+    requestArea: (parsed&&parsed.area)||"", lifeArea:"",
+    requestedBy: w.kind==="actividad" ? "" : (person ? person.name : ((parsed&&parsed.solicitante)||"")),
+    company: (parsed&&parsed.empresa)||"",
     taskType: (parsed&&parsed.tipo_tarea==="laboral"?"laboral":"personal"),
     requestDate: (parsed&&parsed.fecha_solicitud)||"", requestTime:"",
-    // una actividad incompleta NO se agenda a medias: se guarda sin fecha/hora de ejecución
-    startDate: activityComplete ? startDate : "",
-    executionTime: activityComplete ? execTime : "",
-    dueDate: activityComplete ? "" : ((parsed&&parsed.fecha_vencimiento)||""),
-    dueTime: activityComplete ? "" : ((parsed&&parsed.hora_vencimiento)||""),
+    startDate: w.startDate, executionTime: w.executionTime,
+    dueDate: w.dueDate, dueTime: w.dueTime,
     priority: (parsed && ["alta","media","baja"].includes(parsed.prioridad)) ? parsed.prioridad : "media",
     status:"pendiente", tags: (parsed && Array.isArray(parsed.etiquetas))?parsed.etiquetas:[], estimatedTime, actualTime:0, progress:0,
     subtasks:[], checklist:[], comments:[], files:[], dependencies:[], updates:[],
@@ -7122,38 +7205,46 @@ function buildTaskFromParsedVoiceItem(rawTextFallback, parsed){
 function almaRenderSmartPreview(rawText, parsed){
   const area = document.getElementById("afEntryArea");
   if(!area) return;
-  const title = String(parsed.titulo || rawText).slice(0,120);
-  const isActivity = parsed.kind === "actividad";
-  const taskType = (parsed.tipo_tarea==="laboral") ? "laboral" : "personal";
-  const priority = ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media";
-  const dueDate = parsed.fecha_vencimiento||"", dueTime = parsed.hora_vencimiento||"";
-  const startDate = parsed.fecha_ejecucion||"", execTime = parsed.hora_ejecucion||"";
-  const activityIncomplete = isActivity && !(startDate && execTime);
-  const prioLabel = {alta:"🔴 Alta", media:"🟡 Media", baja:"🟢 Baja"}[priority];
-  const filas = [];
-  filas.push(`<div class="asp-row"><span>${isActivity?"📅":"📋"}</span><span>${isActivity?"Actividad":"Tarea"}</span></div>`);
-  filas.push(`<div class="asp-row"><span>${taskType==="laboral"?"💼":"🌿"}</span><span>${taskType==="laboral"?"Laboral":"Personal"}</span></div>`);
-  if(dueDate) filas.push(`<div class="asp-row"><span>⏰</span><span>Vence ${esc(dueDate)}${dueTime?" · "+esc(dueTime):""}</span></div>`);
-  if(startDate) filas.push(`<div class="asp-row"><span>📅</span><span>La harías ${esc(startDate)}${execTime?" · "+esc(execTime):""}</span></div>`);
-  filas.push(`<div class="asp-row"><span>🚩</span><span>Prioridad ${prioLabel}</span></div>`);
-  if(activityIncomplete){
-    filas.push(`<div class="asp-row" style="color:#B8860B;"><span>⚠️</span><span>Es una actividad pero no capté bien cuándo — quedará en "Por agendar" para que le pongas día y hora</span></div>`);
-  } else if(!dueDate && !startDate){
-    filas.push(`<div class="asp-row" style="color:#9B8BB5;"><span>💭</span><span>Sin fecha aún — quedará en "Por agendar"</span></div>`);
-  }
-
-  area.innerHTML = `
-    <div class="asp-card">
-      <div class="af-hint" style="margin-bottom:8px;">✨ Esto entendí:</div>
-      <div class="asp-title">${esc(title)}</div>
-      ${filas.join("")}
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn btn-ghost" id="almaSpCancel" style="flex:1;">✏️ Corregir</button>
-        <button class="btn btn-primary" id="almaSpConfirm" style="flex:1;">✅ Generar tarea</button>
-      </div>
-    </div>`;
-  document.getElementById("almaSpConfirm").addEventListener("click", ()=>almaConfirmSmartTask(rawText, parsed));
-  document.getElementById("almaSpCancel").addEventListener("click", ()=>almaEntryMethod("dictate"));
+  parsed = parsed || {};
+  if(parsed.tipo_tarea!=="laboral") parsed.tipo_tarea = "personal";
+  const draw = ()=>{
+    const title = String(parsed.titulo || rawText).slice(0,120);
+    const w = almaResolveWhen(parsed);
+    const isLab = parsed.tipo_tarea==="laboral";
+    const priority = ["alta","media","baja"].includes(parsed.prioridad) ? parsed.prioridad : "media";
+    const prioLabel = {alta:"🔴 Alta", media:"🟡 Media", baja:"🟢 Baja"}[priority];
+    const proj = almaMatchByName(DB.projects, parsed.proyecto);
+    const filas = [];
+    filas.push(`<div class="asp-row"><span>${w.kind==="actividad"?"📅":"📋"}</span><span>${w.kind==="actividad"?"Actividad":"Tarea"}</span></div>`);
+    filas.push(`<div class="asp-row"><span>${isLab?"💼":"🌿"}</span><span class="asp-type-toggle" role="group" aria-label="Personal o laboral">
+      <button type="button" class="asp-type ${!isLab?"on":""}" data-type="personal">Personal</button>
+      <button type="button" class="asp-type ${isLab?"on":""}" data-type="laboral">Laboral</button></span></div>`);
+    if(proj) filas.push(`<div class="asp-row"><span>📁</span><span>Proyecto: ${esc(proj.name)}</span></div>`);
+    if(parsed.solicitante && w.kind!=="actividad") filas.push(`<div class="asp-row"><span>🙋</span><span>Te lo pidió: ${esc(String(parsed.solicitante))}</span></div>`);
+    if(w.scheduled){
+      filas.push(`<div class="asp-row asp-when ok"><span>✅</span><span>Se agenda al tiro: <b>${esc(almaFriendlyDate(w.startDate))} · ${esc(almaFriendlyTime(w.executionTime))}</b></span></div>`);
+      if(w.pastTime) filas.push(`<div class="asp-row asp-warn"><span>⚠️</span><span>Ojo: esa hora ya pasó. Si no es así, toca "Corregir".</span></div>`);
+    }
+    if(w.dueDate) filas.push(`<div class="asp-row"><span>⏰</span><span>${w.dayOnly?"Para el":"Plazo:"} ${esc(almaFriendlyDate(w.dueDate))}${w.dueTime?" · "+esc(almaFriendlyTime(w.dueTime)):""}</span></div>`);
+    if(!w.scheduled){
+      filas.push(`<div class="asp-row asp-when"><span>💭</span><span>Queda en <b>Por agendar</b>${w.dayOnly?" (no dijiste a qué hora)":w.dueDate?" (tiene plazo, pero no dijiste cuándo hacerla)":" (no dijiste cuándo)"}</span></div>`);
+    }
+    filas.push(`<div class="asp-row"><span>🚩</span><span>Prioridad ${prioLabel}</span></div>`);
+    area.innerHTML = `
+      <div class="asp-card">
+        <div class="af-hint" style="margin-bottom:8px;">✨ Esto entendí:</div>
+        <div class="asp-title">${esc(title)}</div>
+        ${filas.join("")}
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn btn-ghost" id="almaSpCancel" style="flex:1;">✏️ Corregir</button>
+          <button class="btn btn-primary" id="almaSpConfirm" style="flex:1;">✅ ${w.kind==="actividad"?"Crear actividad":"Crear tarea"}</button>
+        </div>
+      </div>`;
+    area.querySelectorAll(".asp-type").forEach(b=>b.addEventListener("click", ()=>{ parsed.tipo_tarea = b.dataset.type; draw(); }));
+    document.getElementById("almaSpConfirm").addEventListener("click", ()=>almaConfirmSmartTask(rawText, parsed));
+    document.getElementById("almaSpCancel").addEventListener("click", ()=>almaEntryMethod(almaCaptureSource));
+  };
+  draw();
 }
 // Crea la tarea de verdad, ya confirmada por el usuario desde la tarjeta de resumen.
 function almaConfirmSmartTask(rawText, parsed){
@@ -7162,12 +7253,10 @@ function almaConfirmSmartTask(rawText, parsed){
   recomputeAll(); saveDB(); render();
   closeGenericModal();
   const resumen = [];
-  resumen.push(t.kind==="actividad" ? "📅 actividad" : "📋 tarea");
   resumen.push(t.taskType==="laboral" ? "💼 laboral" : "🌿 personal");
-  if(t.dueDate) resumen.push(`vence ${t.dueDate}${t.dueTime?" "+t.dueTime:""}`);
-  if(t.startDate) resumen.push(`la harías ${t.startDate}${t.executionTime?" "+t.executionTime:""}`);
-  if(!t.startDate) resumen.push(`en "Por agendar"`);
-  resumen.push(`prioridad ${t.priority}`);
+  if(t.executionTime) resumen.push(`agendada ${almaFriendlyDate(t.startDate)} · ${almaFriendlyTime(t.executionTime)}`);
+  else resumen.push(`en "Por agendar"`);
+  if(t.dueDate) resumen.push(`plazo ${almaFriendlyDate(t.dueDate)}`);
   playSuccessChime();
   toast(`✨ Creé "${t.title}" · ${resumen.join(" · ")}`, "success");
 }
@@ -7178,61 +7267,59 @@ let almaMultiVoiceItems = [];
 function almaRenderMultiVoicePreview(rawText, items){
   const area = document.getElementById("afEntryArea");
   if(!area) return;
-  almaMultiVoiceItems = items.filter(it=>it && it.titulo).map((it,i)=>({ idx:i, parsed:it, include:true }));
+  almaMultiVoiceItems = items.filter(it=>it && it.titulo).map((it,i)=>{
+    if(it.tipo_tarea!=="laboral") it.tipo_tarea = "personal";
+    return { idx:i, parsed:it, include:true };
+  });
   if(!almaMultiVoiceItems.length){ almaRenderSmartPreview(rawText, {}); return; }
-
   const rowHTML = (rec)=>{
-    const p = rec.parsed;
-    const isActivity = p.kind === "actividad";
-    const startDate = p.fecha_ejecucion||"", execTime = p.hora_ejecucion||"";
-    const dueDate = p.fecha_vencimiento||"";
-    const activityIncomplete = isActivity && !(startDate && execTime);
-    let when = "";
-    if(startDate) when = `${isActivity?"📅":"🗓️"} ${esc(startDate)}${execTime?" · "+esc(execTime):""}`;
-    else if(dueDate) when = `⏰ vence ${esc(dueDate)}`;
-    else when = `<span style="color:#9B8BB5;">💭 sin fecha — por agendar</span>`;
-    return `<label class="amv-row" data-amv="${rec.idx}">
-      <input type="checkbox" data-amv-inc ${rec.include?"checked":""}>
+    const p = rec.parsed, w = almaResolveWhen(p), isLab = p.tipo_tarea==="laboral";
+    let when;
+    if(w.scheduled) when = `✅ ${esc(almaFriendlyDate(w.startDate))} · ${esc(almaFriendlyTime(w.executionTime))}${w.pastTime?' <span style="color:#B8860B;">⚠️ ya pasó</span>':""}`;
+    else if(w.dueDate) when = `<span style="color:#9B8BB5;">💭 por agendar · ${w.dayOnly?"para el":"plazo"} ${esc(almaFriendlyDate(w.dueDate))}</span>`;
+    else when = `<span style="color:#9B8BB5;">💭 por agendar</span>`;
+    return `<div class="amv-row" data-amv="${rec.idx}">
+      <input type="checkbox" data-amv-inc ${rec.include?"checked":""} aria-label="Incluir">
       <div class="amv-body">
-        <div class="amv-title">${isActivity?"📅":"📋"} ${esc(String(p.titulo).slice(0,90))}</div>
-        <div class="amv-meta">${p.tipo_tarea==="laboral"?"💼 laboral":"🌿 personal"} · ${when}${activityIncomplete?' · <span style="color:#B8860B;">⚠️ sin hora clara</span>':""}</div>
-      </div>
-    </label>`;
-  };
-  const renderList = ()=> almaMultiVoiceItems.map(rowHTML).join("");
-
-  area.innerHTML = `
-    <div class="asp-card">
-      <div class="af-hint" style="margin-bottom:8px;">✨ Detecté ${almaMultiVoiceItems.length} cosas distintas — elige cuáles crear:</div>
-      <div id="amvList">${renderList()}</div>
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn btn-ghost" id="amvCancel" style="flex:1;">✖️ Cancelar</button>
-        <button class="btn btn-primary" id="amvConfirm" style="flex:1;">✅ Generar seleccionadas</button>
+        <div class="amv-title">${w.kind==="actividad"?"📅":"📋"} ${esc(String(p.titulo).slice(0,90))}</div>
+        <div class="amv-meta"><button type="button" class="asp-type on" data-amv-type title="Toca para cambiar">${isLab?"💼 Laboral":"🌿 Personal"}</button> · ${when}</div>
       </div>
     </div>`;
-  area.querySelectorAll("[data-amv]").forEach(row=>{
-    const idx = parseInt(row.dataset.amv,10);
-    row.querySelector("[data-amv-inc]").addEventListener("change", e=>{
-      const rec = almaMultiVoiceItems.find(r=>r.idx===idx);
-      if(rec) rec.include = e.target.checked;
+  };
+  const draw = ()=>{
+    area.innerHTML = `
+      <div class="asp-card">
+        <div class="af-hint" style="margin-bottom:8px;">✨ Detecté ${almaMultiVoiceItems.length} cosas distintas — elige cuáles crear:</div>
+        <div id="amvList">${almaMultiVoiceItems.map(rowHTML).join("")}</div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn btn-ghost" id="amvCancel" style="flex:1;">✖️ Cancelar</button>
+          <button class="btn btn-primary" id="amvConfirm" style="flex:1;">✅ Crear seleccionadas</button>
+        </div>
+      </div>`;
+    area.querySelectorAll("[data-amv]").forEach(row=>{
+      const rec = almaMultiVoiceItems.find(r=>r.idx===parseInt(row.dataset.amv,10));
+      row.querySelector("[data-amv-inc]").addEventListener("change", e=>{ rec.include = e.target.checked; });
+      row.querySelector("[data-amv-type]").addEventListener("click", ()=>{ rec.parsed.tipo_tarea = rec.parsed.tipo_tarea==="laboral" ? "personal" : "laboral"; draw(); });
     });
-  });
-  document.getElementById("amvConfirm").addEventListener("click", ()=>almaConfirmMultiVoiceTasks(rawText));
-  document.getElementById("amvCancel").addEventListener("click", ()=>{ almaMultiVoiceItems=[]; almaEntryMethod("dictate"); });
+    document.getElementById("amvConfirm").addEventListener("click", ()=>almaConfirmMultiVoiceTasks(rawText));
+    document.getElementById("amvCancel").addEventListener("click", ()=>{ almaMultiVoiceItems=[]; almaEntryMethod(almaCaptureSource); });
+  };
+  draw();
 }
 function almaConfirmMultiVoiceTasks(rawText){
   const chosen = almaMultiVoiceItems.filter(r=>r.include);
   if(!chosen.length){ toast("No hay ninguna seleccionada.","info"); return; }
-  let sinFecha = 0;
+  let sinHorario = 0;
   chosen.forEach(r=>{
     const t = buildTaskFromParsedVoiceItem(rawText, r.parsed);
-    if(!t.startDate) sinFecha++;
+    if(!t.executionTime) sinHorario++;
     DB.tasks.push(t);
   });
   saveDB(); recomputeAll(); saveDB(); render();
   closeGenericModal();
   playSuccessChime();
-  toast(`✨ Creé ${chosen.length} ${chosen.length===1?"tarea":"tareas"}${sinFecha?` · ${sinFecha} en "Por agendar"`:""}.`,"success");
+  const agendadas = chosen.length - sinHorario;
+  toast(`✨ Creé ${chosen.length} ${chosen.length===1?"tarea":"tareas"}${agendadas?` · ${agendadas} agendada${agendadas===1?"":"s"}`:""}${sinHorario?` · ${sinHorario} en "Por agendar"`:""}.`,"success");
   almaMultiVoiceItems = [];
 }
 // Pregunta cómo agendar (manual o con sugerencia de IA), igual que en "Por agendar".
@@ -7240,40 +7327,9 @@ function almaConfirmMultiVoiceTasks(rawText){
 // conversacional (no muestra el formulario técnico). Si hay varias, crea todas y
 // acompaña con la primera; el resto queda en "Por agendar".
 async function almaEntryReadImage(file){
-  const box = document.getElementById("afEntryPhotoResult");
-  if(box) box.innerHTML = `<div class="af-hint">🔎 Leyendo la imagen…</div>`;
-  try{
-    const base64 = await fileToBase64(file);
-    const mediaType = file.type || "image/png";
-    const content = [
-      { type:"image", source:{ type:"base64", media_type: mediaType, data: base64 } },
-      { type:"text", text: smartCaptureImageInstructions() },
-    ];
-    const raw = await askAI(content);
-    const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
-    let titles = [];
-    if(parsed && parsed.varias && Array.isArray(parsed.tareas)) titles = parsed.tareas.map(x=>x.titulo||x.title||x.tarea).filter(Boolean);
-    else { const s = parsed.tarea||parsed; if(s && (s.titulo||s.title)) titles=[s.titulo||s.title]; }
-    if(!titles.length){ if(box) box.innerHTML = `<div class="af-hint">No pude leer tareas en la imagen. Prueba con otra o escríbela.</div>`; return; }
-    // crear todas; la primera acompaña el flujo conversacional
-    const first = titles[0];
-    const rest = titles.slice(1);
-    rest.forEach(tt=>{
-      DB.tasks.push({ id: uid("t"), title: String(tt).slice(0,120), description:"", kind:"tarea", projectId:null, owner:null, ownerName:"",
-        requestArea:"", lifeArea:"", requestedBy:"", company:"", taskType:"", requestDate:"", requestTime:"",
-        startDate:"", executionTime:"", dueDate:"", dueTime:"", priority:"media", status:"pendiente",
-        tags:["captura"], estimatedTime:0, actualTime:0, progress:0, subtasks:[], checklist:[], comments:[],
-        files:[], dependencies:[], updates:[], blocking:false, recurring:{enabled:false, frequency:"semanal"},
-        reminders:[], realStart:"", realEnd:"", createdAt: TODAY(), updatedAt: TODAY(), archived:false });
-    });
-    saveDB();
-    if(rest.length && box){ /* aviso breve */ }
-    // la primera sigue el flujo conversacional (pregunta Manual/IA → tarea/actividad → ...)
-    almaEntryCreate(String(first));
-    if(rest.length) setTimeout(()=>toast(`📷 Leí ${titles.length} tareas. Te acompaño con la primera; las demás quedaron en “Por agendar”.`,"success"), 500);
-  }catch(e){
-    if(box) box.innerHTML = `<div class="af-hint" style="color:var(--danger);">${(typeof aiUnavailableMessage==="function")?aiUnavailableMessage():"No pude leer la imagen ahora. Puedes escribir la tarea."}</div>`;
-  }
+  // Foto = mismo flujo que el audio: la IA lee todo (fechas, horas, personal/laboral)
+  // y se muestra "Esto entendí" para confirmar.
+  almaEntryCreateSmart("", "photo", file);
 }
 // Acción "Reagendar": mueve una tarea ya agendada a otra fecha. Limpia la fecha de
 // ejecución y abre la pregunta manual/IA (reutiliza el flujo de siempre). NO cambia el estado.
@@ -10784,40 +10840,7 @@ function nextWeekday(name){
   d.setDate(d.getDate()+diff);
   return isoOf(d);
 }
-function parseInstruction(text){
-  const lower = text.toLowerCase();
-  // fecha: buscar día de la semana mencionado
-  let dueDate = null;
-  for(const w of WEEKDAY_NAMES){ if(lower.includes(w)){ dueDate = nextWeekday(w); break; } }
-  if(!dueDate){ const d=new Date(); d.setDate(d.getDate()+3); dueDate = isoOf(d); }
 
-  // prioridad: por palabras clave o cercanía de fecha
-  let priority = "media";
-  if(/urgente|crítico|crítica|hoy mismo|inmediato/.test(lower)) priority="alta";
-  else if(/importante|prioridad alta|pronto/.test(lower)) priority="alta";
-  else if(daysDiff(dueDate)!==null && daysDiff(dueDate)<=2) priority="alta";
-
-  // título: primera cláusula antes de " y " o punto
-  const firstClause = text.split(/\by\s+ped|\by\s+solicit|\. /i)[0].trim();
-  const title = firstClause.charAt(0).toUpperCase()+firstClause.slice(1).replace(/[.,]+$/,"");
-
-  // subtareas: detectar "pedir/solicitar ... a X y Y" o "a X, Y y Z"
-  const subtasks = [];
-  const m = lower.match(/(?:pedir|solicitar)[^.]*\sa\s([^.]+)/);
-  if(m){
-    const namesRaw = m[1].split(/,| y /).map(s=>s.trim()).filter(Boolean);
-    namesRaw.forEach(n=>{
-      const clean = n.replace(/[^a-záéíóúñ0-9\s]/gi,"").trim();
-      if(clean) subtasks.push("Solicitar información a " + clean.charAt(0).toUpperCase()+clean.slice(1));
-    });
-  }
-  subtasks.push("Consolidar información recopilada");
-  subtasks.push("Preparar entregable");
-  subtasks.push("Revisar antes de enviar");
-  subtasks.push("Enviar versión final");
-
-  return {title, dueDate, priority, subtasks};
-}
 document.getElementById("aiAssistantBtn").addEventListener("click", ()=>{
   document.getElementById("aiResult").innerHTML=""; document.getElementById("aiQuickResult").innerHTML="";
   openModal("aiModalBackdrop");
@@ -10825,33 +10848,12 @@ document.getElementById("aiAssistantBtn").addEventListener("click", ()=>{
 document.getElementById("aiGenerateBtn").addEventListener("click", ()=>{
   const text = document.getElementById("aiInput").value.trim();
   if(!text){ toast("Escribe una instrucción para generar la tarea.","error"); return; }
-  const parsed = parseInstruction(text);
-  document.getElementById("aiResult").innerHTML = `
-    <div class="panel" style="margin-top:14px;">
-      <div class="panel-title">Tarea sugerida</div>
-      <p style="font-size:13.5px;font-weight:600;margin:0 0 6px;">${esc(parsed.title)}</p>
-      <div class="project-meta" style="margin-bottom:10px;">
-        <span class="badge" style="background:color-mix(in srgb, ${colorOf(PRIORITIES,parsed.priority)} 18%, transparent);color:${colorOf(PRIORITIES,parsed.priority)}">Prioridad ${labelOf(PRIORITIES,parsed.priority)}</span>
-        <span class="tag">Vence ${fmtDate(parsed.dueDate)}</span>
-      </div>
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Subtareas sugeridas</div>
-      <ul class="activity-list">${parsed.subtasks.map(s=>`<li class="activity-item">${esc(s)}</li>`).join("")}</ul>
-      <button class="btn btn-primary btn-sm" id="aiCreateTaskBtn" style="margin-top:10px;">Crear esta tarea</button>
-    </div>`;
-  document.getElementById("aiCreateTaskBtn").addEventListener("click", ()=>{
-    DB.tasks.push({
-      id:uid("t"), title:parsed.title, description:text, projectId:null, owner:null,
-      startDate:TODAY(), dueDate:parsed.dueDate, dueTime:"18:00", priority:parsed.priority, status:"pendiente",
-      tags:["asistente-ia"], estimatedTime:0, actualTime:0, progress:0,
-      subtasks: parsed.subtasks.map(name=>({id:uid("s"), name, owner:"", dueDate:parsed.dueDate, done:false})),
-      checklist:[], comments:[], files:[], dependencies:[], blocking:false,
-      recurring:{enabled:false,frequency:"semanal"}, reminders:[],
-      createdAt:TODAY(), updatedAt:TODAY(), archived:false,
-    });
-    recomputeAll(); saveDB(); render();
-    toast("Tarea creada a partir de la instrucción.","success");
-    closeModal("aiModalBackdrop");
-  });
+  // Mismo cerebro que audio/foto: la IA entiende fecha, hora y personal/laboral,
+  // y muestra "Esto entendí" para confirmar (antes inventaba un plazo a 3 días).
+  closeModal("aiModalBackdrop");
+  document.getElementById("aiInput").value = "";
+  openAlmaEntry();
+  almaEntryCreateSmart(text, "write");
 });
 document.querySelectorAll("[data-aiquick]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -11209,7 +11211,7 @@ function setupHoldMic(container){
       if(cancelled){ cancelled = false; return; }
       const raw = committedText.trim();
       if(!raw){ hintEl.textContent = "No escuché nada — mantén presionado y habla."; return; }
-      almaEntryCreateSmart(raw);
+      almaEntryCreateSmart(raw, "dictate");
     };
     try{ recognition.start(); }catch(err){ toast("No se pudo iniciar el micrófono.","error"); held=false; }
   };
