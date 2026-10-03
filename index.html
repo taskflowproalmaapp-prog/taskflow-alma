@@ -624,6 +624,29 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .bs-dl-opt:hover{border-color:#8157EF;}
 .bs-dl-opt small{color:var(--text-muted);font-size:11.5px;}
 @media (max-width:700px){ .bs-two{grid-template-columns:1fr;} .bs-dl{grid-template-columns:1fr;} .bs-doc-title{font-size:20px;} }
+
+.bs-meetings{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:14px;}
+.bs-meet-title{font-family:var(--font-display);font-weight:800;font-size:14px;margin-bottom:6px;}
+.bs-meet{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.bs-meet:last-child{border-bottom:0;}
+.bs-meet-main{min-width:0;font-size:13.5px;}
+.bs-meet-main small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
+.bs-live-tag{color:#E5484D;font-weight:700;}
+.bs-meet-empty{font-size:12.5px;margin:0 0 12px;}
+.bs-evcard{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-alt);border-radius:12px;padding:10px 12px;margin-bottom:6px;}
+.bs-evcard small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
+.bs-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.bs-mode{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:12px;padding:11px;font:inherit;font-size:13px;cursor:pointer;}
+.bs-mode small{color:var(--text-muted);font-size:11.5px;line-height:1.35;}
+.bs-mode.on{border-color:#8157EF;box-shadow:0 0 0 1px #8157EF;background:color-mix(in srgb,#8157EF 7%,var(--surface));}
+.bs-mode:disabled{opacity:.5;cursor:not-allowed;}
+.bs-copy-notice{display:block;width:100%;margin-top:8px;border:1px dashed var(--border);background:none;color:var(--accent-2);border-radius:10px;padding:8px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
+.bs-sources{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px 0 8px;}
+.bs-src{font-size:12px;border-radius:999px;padding:4px 10px;background:var(--surface-alt);}
+.bs-src.ok{background:color-mix(in srgb,var(--success) 13%,var(--surface));color:var(--success);}
+.bs-src.warn{background:color-mix(in srgb,#B8860B 14%,var(--surface));color:#B8860B;}
+.route-rec-start{display:inline-block;margin:6px 0 2px;border:0;border-radius:8px;padding:5px 10px;background:#8157EF;color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer;}
+@media (max-width:700px){ .bs-modes{grid-template-columns:1fr;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -5289,6 +5312,7 @@ function renderDashRouteTimeline(){
     html += `<div class="route-slot">
       <span class="route-slot-time">${minutesTo12h(s0)}</span>
       <div class="route-slot-box ${ongoing?'ongoing':''}">${esc(ev.title)}
+        ${(s0 - c.nowMin <= 15 && c.nowMin < e0 && !(DB.brainstorms||[]).some(d=>d.eventId===ev.id))?`<button type="button" class="route-rec-start" data-rec-event="${esc(ev.id)}">🎙️ Grabar con Alma</button>`:""}
         <small>${ongoing?"En curso · ":""}${Math.max(0,e0-s0)} min${kind}${(()=>{ const p = wxRainAt(c.iso, ev.startTime); return p!==null && p>=50 ? `<span class="route-rain">🌧️ ${p}%</span>` : ""; })()}</small>
       </div>
     </div>`;
@@ -5301,6 +5325,9 @@ function renderDashRouteTimeline(){
     </div>`;
   }
   wrap.innerHTML = html;
+  wrap.querySelectorAll("[data-rec-event]").forEach(b=>b.addEventListener("click", ()=>{
+    const ev = c.relevant.find(x=>x.id===b.dataset.recEvent); if(ev) openBrainstormRecorder({ event: ev });
+  }));
   wrap.querySelectorAll("[data-focus-task]").forEach(b=>b.addEventListener("click", ()=>{
     focusPickTask = b.dataset.focusTask; focusPickMin = +b.dataset.focusMin;
     openTools("focus");
@@ -13434,6 +13461,7 @@ function renderBrainstorm(){
   if(doc){ renderBrainstormDoc(wrap, doc); return; }
   bsOpenId = null;
   const docs = bsDocs();
+  const meetingsHTML = bsMeetingsTodayHTML(docs);
   if(!docs.length){
     wrap.innerHTML = `<div class="bs-empty">
       <div class="bs-empty-ico">🎙️</div>
@@ -13441,10 +13469,12 @@ function renderBrainstorm(){
       <p>Graba una reunión, una conversación o tus propias ideas en voz alta. Alma las ordena en un documento con resumen, decisiones y tareas con responsable.</p>
       <button class="btn btn-primary" id="bsEmptyRec">🎙️ Empezar a grabar</button>
     </div>`;
-    document.getElementById("bsEmptyRec").addEventListener("click", openBrainstormRecorder);
+    wrap.insertAdjacentHTML("afterbegin", meetingsHTML);
+    document.getElementById("bsEmptyRec").addEventListener("click", ()=>openBrainstormRecorder());
+    bsBindMeetings(wrap);
     return;
   }
-  wrap.innerHTML = `<div class="bs-grid">${docs.map(d=>{
+  wrap.innerHTML = meetingsHTML + `<div class="bs-grid">${docs.map(d=>{
     const nTasks = (d.actions||[]).length, nDone = (d.actions||[]).filter(a=>a.taskId).length;
     return `<button type="button" class="bs-card" data-bs="${d.id}">
       <div class="bs-card-top"><span class="bs-chip">${d.source==="texto"?"📝 Texto":"🎙️ "+bsFmtDur(d.durationSec)}</span><span class="tl-muted">${esc(bsFmtDate(d.createdAt))}</span></div>
@@ -13453,6 +13483,35 @@ function renderBrainstorm(){
       <div class="bs-card-foot">${nTasks?`<span>✅ ${nDone}/${nTasks} tareas creadas</span>`:""}${(d.tags||[]).slice(0,3).map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>
     </button>`; }).join("")}</div>`;
   wrap.querySelectorAll("[data-bs]").forEach(c=>c.addEventListener("click", ()=>{ bsOpenId = c.dataset.bs; renderBrainstorm(); window.scrollTo({top:0}); }));
+  bsBindMeetings(wrap);
+}
+// Reuniones de hoy desde Google Calendar (las que no han terminado + las ya grabadas)
+let bsMeetingsFetched = false;
+function bsMeetingsToday(){
+  try{
+    const now = new Date(), nowMin = now.getHours()*60+now.getMinutes();
+    return getGoogleEventsForDate(TODAY()).filter(ev=>ev && !ev.allDay && ev.startTime)
+      .map(ev=>({ ev, past: timeToMinutes(ev.endTime) <= nowMin, live: timeToMinutes(ev.startTime) <= nowMin+10 && timeToMinutes(ev.endTime) > nowMin }))
+      .sort((a,b)=>timeToMinutes(a.ev.startTime)-timeToMinutes(b.ev.startTime));
+  }catch(e){ return []; }
+}
+function bsMeetingsTodayHTML(docs){
+  if(!bsMeetingsFetched){ bsMeetingsFetched = true; refreshGoogleEventsForToday().then(()=>{ if(!document.getElementById("view-brainstorm").classList.contains("hidden") && !bsOpenId) renderBrainstorm(); }).catch(()=>{}); }
+  const list = bsMeetingsToday().filter(m=>!m.past || docs.some(d=>d.eventId===m.ev.id));
+  if(!list.length) return `<div class="bs-meet-empty tl-muted">📅 Tus reuniones de hoy de Google Calendar aparecen aquí para grabarlas con un toque.</div>`;
+  return `<div class="bs-meetings"><div class="bs-meet-title">📅 Reuniones de hoy</div>${list.map(m=>{
+    const doc = docs.find(d=>d.eventId===m.ev.id);
+    const when = `${minutesTo12h(timeToMinutes(m.ev.startTime))} – ${minutesTo12h(timeToMinutes(m.ev.endTime))}`;
+    return `<div class="bs-meet ${m.live?"live":""}">
+      <div class="bs-meet-main"><b>${esc(m.ev.title||"Reunión")}</b><small>${when}${m.live?" · <span class='bs-live-tag'>● ahora</span>":""}${m.ev.joinLink?" · Meet":" · presencial"}</small></div>
+      ${doc?`<button class="bs-act-done" data-bs-open="${doc.id}">✓ Grabada · ver</button>`:`<button class="btn ${m.live?"btn-primary":"btn-ghost"} btn-sm" data-bs-meet="${esc(m.ev.id)}">🎙️ Grabar</button>`}
+    </div>`; }).join("")}</div>`;
+}
+function bsBindMeetings(wrap){
+  wrap.querySelectorAll("[data-bs-meet]").forEach(b=>b.addEventListener("click", ()=>{
+    const m = bsMeetingsToday().find(x=>x.ev.id===b.dataset.bsMeet); if(m) openBrainstormRecorder({ event: m.ev });
+  }));
+  wrap.querySelectorAll("[data-bs-open]").forEach(b=>b.addEventListener("click", ()=>{ bsOpenId = b.dataset.bsOpen; renderBrainstorm(); }));
 }
 function bsList(arr){ return (arr&&arr.length) ? `<ul class="bs-list">${arr.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : `<div class="tl-muted">—</div>`; }
 function renderBrainstormDoc(wrap, d){
@@ -13470,7 +13529,7 @@ function renderBrainstormDoc(wrap, d){
         </div>
       </div>
       <div class="bs-doc-head">
-        <div class="tl-muted">${esc(bsFmtDate(d.createdAt))} · ${d.source==="texto"?"desde texto":"grabación de "+bsFmtDur(d.durationSec)}${people?` · ${esc(people)}`:""}</div>
+        <div class="tl-muted">${d.eventId?"📅 Reunión de Calendar · ":""}${esc(bsFmtDate(d.createdAt))} · ${d.source==="texto"?"desde texto":(d.mode==="online"?"reunión online de ":"grabación de ")+bsFmtDur(d.durationSec)}${people?` · ${esc(people)}`:""}</div>
         <h2 class="bs-doc-title" contenteditable="true" spellcheck="false" id="bsTitle" title="Toca para editar el título">${esc(d.title||"Sin título")}</h2>
         ${(d.tags||[]).length?`<div class="bs-card-foot" style="margin-top:6px;">${d.tags.map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>`:""}
       </div>
@@ -13530,36 +13589,98 @@ function bsPickMime(){
   if(!window.MediaRecorder) return null;
   return opts.find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } }) || "";
 }
-function openBrainstormRecorder(){
+// Graba en el computador la reunión online (micrófono + audio de la pestaña de
+// Meet/Zoom/Teams web) o solo el micrófono (presencial o en el celular).
+function bsCanTabAudio(){
+  const touchOnly = window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && !touchOnly;
+}
+const BS_CHAT_NOTICE = "Hola 👋 Voy a tomar notas de esta reunión con Alma (IA) para no perder acuerdos ni tareas. Si alguien prefiere que no, me avisa y lo apago.";
+let bsPickMode = "online";
+function openBrainstormRecorder(opts){
+  opts = opts || {};
   if(bsRec){ bsRenderRecorder(); return; }
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || bsPickMime()===null){
     openGenericModal("Grabar", `<p>Este navegador no permite grabar audio. Prueba con Chrome, Edge o Safari actualizados, o usa <b>📝 Pegar texto</b>.</p>`); return;
   }
-  openGenericModal("", `
+  const ev = opts.event || null;
+  const canTab = bsCanTabAudio();
+  bsPickMode = canTab && (ev ? !!ev.joinLink : true) ? "online" : "mic";
+  const draw = ()=>{
+    openGenericModal("", `
     <div class="bs-modal">
       <div class="bs-modal-ico">🎙️</div>
-      <div class="bs-modal-title">Nueva grabación</div>
-      <label class="tl-muted" for="bsRecTitle">¿De qué se trata? (opcional)</label>
-      <input class="tl-input" id="bsRecTitle" placeholder="Ej: Reunión de planificación con el equipo" style="margin-top:6px;">
+      <div class="bs-modal-title">${ev?"Grabar reunión":"Nueva grabación"}</div>
+      ${ev?`<div class="bs-evcard"><div><b>${esc(ev.title||"Reunión")}</b><small>${ev.startTime?esc(minutesTo12h(timeToMinutes(ev.startTime)))+" – "+esc(minutesTo12h(timeToMinutes(ev.endTime))):""} · Google Calendar</small></div>
+        ${ev.joinLink?`<a class="btn btn-ghost btn-sm" href="${esc(ev.joinLink)}" target="_blank" rel="noopener" id="bsOpenMeet">Abrir Meet ↗</a>`:""}</div>`:""}
+      <div class="tl-sec" style="margin-top:4px;">¿Qué vas a grabar?</div>
+      <div class="bs-modes">
+        <button type="button" class="bs-mode ${bsPickMode==="online"?"on":""}" data-mode="online" ${canTab?"":"disabled"}>
+          <b>💻 Reunión online</b><small>${canTab?"Tu micrófono + el audio de la pestaña (Meet, Zoom o Teams en el navegador)":"Solo en Chrome o Edge en computador"}</small></button>
+        <button type="button" class="bs-mode ${bsPickMode==="mic"?"on":""}" data-mode="mic">
+          <b>🎙️ Presencial o solo yo</b><small>Solo el micrófono de este dispositivo</small></button>
+      </div>
+      ${bsPickMode==="online"?`<div class="bs-note" style="margin-top:10px;">💡 Al empezar, Chrome te pedirá elegir qué compartir: toca la pestaña de la reunión y deja <b>activado “Compartir audio de la pestaña”</b>. Usa audífonos si puedes: se escucha mejor.</div>`:""}
+      <label class="tl-muted" for="bsRecTitle" style="display:block;margin-top:12px;">Título</label>
+      <input class="tl-input" id="bsRecTitle" placeholder="Ej: Reunión de planificación con el equipo" value="${esc(ev?ev.title||"":"")}" style="margin-top:6px;">
       <label class="bs-consent"><input type="checkbox" id="bsConsent"> <span>Les avisé a las personas que voy a grabar y están de acuerdo.</span></label>
+      ${bsPickMode==="online"?`<button type="button" class="bs-copy-notice" id="bsCopyNotice">📋 Copiar aviso para el chat de la reunión</button>`:""}
       <div class="bs-note">🔒 El audio se envía a la IA (Gemini) para transcribirlo y <b>no se guarda</b>: solo queda el texto, en tu cuenta privada.</div>
       <button class="btn btn-primary" id="bsStart" disabled style="width:100%;justify-content:center;margin-top:12px;">● Empezar a grabar</button>
     </div>`);
-  document.getElementById("genericModalTitle").style.display = "none";
-  const c = document.getElementById("bsConsent"), go = document.getElementById("bsStart");
-  c.addEventListener("change", ()=>{ go.disabled = !c.checked; });
-  go.addEventListener("click", ()=>bsStartRecording(document.getElementById("bsRecTitle").value.trim()));
+    document.getElementById("genericModalTitle").style.display = "none";
+    const c = document.getElementById("bsConsent"), go = document.getElementById("bsStart");
+    c.addEventListener("change", ()=>{ go.disabled = !c.checked; });
+    document.querySelectorAll(".bs-mode").forEach(b=>b.addEventListener("click", ()=>{ if(b.disabled) return; const t = document.getElementById("bsRecTitle").value; bsPickMode = b.dataset.mode; draw(); document.getElementById("bsRecTitle").value = t; }));
+    const cn = document.getElementById("bsCopyNotice");
+    if(cn) cn.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(BS_CHAT_NOTICE); cn.textContent = "✓ Aviso copiado: pégalo en el chat de la reunión"; }catch(e){ toast("No pude copiar.","error"); } });
+    go.addEventListener("click", ()=>bsStartRecording(document.getElementById("bsRecTitle").value.trim(), { mode: bsPickMode, event: ev }));
+  };
+  draw();
 }
-async function bsStartRecording(title){
-  let stream;
-  try{ stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); }
+async function bsStartRecording(title, opts){
+  opts = opts || {};
+  let mic, display = null, tabAudio = null;
+  try{ mic = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); }
   catch(e){ toast("No tengo permiso para usar el micrófono. Revísalo en la configuración del navegador.","error"); return; }
+  if(opts.mode==="online"){
+    try{
+      display = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true, selfBrowserSurface:"exclude", surfaceSwitching:"include", systemAudio:"include", preferCurrentTab:false });
+      tabAudio = display.getAudioTracks()[0] || null;
+      display.getVideoTracks().forEach(t=>{ t.enabled = false; }); // solo nos interesa el audio
+    }catch(e){
+      mic.getTracks().forEach(t=>t.stop());
+      toast("No se compartió ninguna pestaña. Vuelve a intentarlo y elige la pestaña de la reunión.","info"); return;
+    }
+    if(!tabAudio){
+      const ok = confirm("No se compartió el audio de la pestaña, así que Alma solo escucharía tu micrófono (no a los demás).\n\n¿Grabar igual solo tu micrófono? (Cancelar para volver a intentarlo y activar “Compartir audio de la pestaña”).");
+      if(!ok){ display.getTracks().forEach(t=>t.stop()); mic.getTracks().forEach(t=>t.stop()); return; }
+    }
+  }
+  // Mezcla: micrófono + audio de la reunión en un solo canal para grabar
+  let stream = mic, audioCtx = null;
+  if(tabAudio){
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const dest = audioCtx.createMediaStreamDestination();
+      audioCtx.createMediaStreamSource(mic).connect(dest);
+      audioCtx.createMediaStreamSource(new MediaStream([tabAudio])).connect(dest);
+      if(audioCtx.state==="suspended") await audioCtx.resume();
+      stream = dest.stream;
+    }catch(e){ console.error("mezcla", e); stream = mic; }
+  }
   const mime = bsPickMime();
-  bsRec = { title, stream, mime, startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
+  bsRec = { title, mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
+            startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
             segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, queue: Promise.resolve() };
+  if(tabAudio) tabAudio.addEventListener("ended", ()=>{ if(bsRec){ bsRec.tabLost = true; bsRenderRecorder(); toast("Dejaste de compartir la pestaña: sigo grabando solo tu micrófono.","info"); } });
   bsStartSegment();
   bsRec.tick = setInterval(()=>{ bsUpdateClock(); if(bsElapsed() >= BS_MAX_MINUTES*60000) bsStopRecording(); }, 500);
   bsRenderRecorder();
+}
+function bsStopStreams(r){
+  [r.stream, r.mic, r.display].forEach(st=>{ try{ st && st.getTracks().forEach(t=>t.stop()); }catch(e){} });
+  try{ r.audioCtx && r.audioCtx.close(); }catch(e){}
 }
 function bsElapsed(){ return bsRec ? bsRec.elapsedMs + (bsRec.paused ? 0 : Date.now()-bsRec.runStart) : 0; }
 function bsStartSegment(){
@@ -13584,7 +13705,7 @@ async function bsTranscribeSegment(seg){
   seg.status = "transcribiendo"; bsRenderRecorder();
   if(!seg.blob || seg.blob.size < 2000){ seg.status="listo"; seg.text=""; bsRenderRecorder(); return; }
   const prompt = `Transcribe en español este audio. Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
-Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
+${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
 Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si no hay voz entendible, responde exactamente: (sin voz)
 Responde solo con la transcripción, en texto plano.`;
   for(let attempt=1; attempt<=2; attempt++){
@@ -13610,7 +13731,7 @@ async function bsStopRecording(){
   if(!r.paused) r.elapsedMs += Date.now()-r.runStart;
   r.paused = false;
   await new Promise(res=>{ if(r.recorder && r.recorder.state!=="inactive"){ const prev = r.recorder.onstop; r.recorder.onstop = (ev)=>{ prev(ev); res(); }; r.recorder.stop(); } else res(); });
-  r.stream.getTracks().forEach(t=>t.stop());
+  bsStopStreams(r);
   { const b = document.getElementById("bsRecordBtn"); if(b) b.textContent = "⏳ Procesando…"; }
   bsRenderRecorder();
   await r.queue;                          // espera que terminen todas las transcripciones
@@ -13618,8 +13739,9 @@ async function bsStopRecording(){
   for(const seg of r.segments.filter(x=>x.status==="error" && x.blob)) await bsTranscribeSegment(seg);
   const failed = r.segments.filter(x=>x.status==="error").length;
   const transcript = r.segments.map(x=>x.text).filter(Boolean).join("\n");
-  const doc = { id: uid("bs"), title: r.title || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
-                source:"grabacion", transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
+  const doc = { id: uid("bs"), title: r.title || (r.event && r.event.title) || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
+                source:"grabacion", mode: r.mode, eventId: r.event ? r.event.id : null, eventTitle: r.event ? r.event.title : "",
+                transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
                 missingParts: failed };
   DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
   bsRec = null; closeGenericModal(); bsUpdateClock();
@@ -13633,7 +13755,7 @@ function bsCancelRecording(){
   if(!confirm("¿Descartar esta grabación? No se guardará nada.")) return;
   r.stopping = true; clearTimeout(r.segTimer); clearInterval(r.tick);
   try{ r.recorder.onstop = null; r.recorder.stop(); }catch(e){}
-  r.stream.getTracks().forEach(t=>t.stop()); bsRec = null; closeGenericModal(); bsUpdateClock();
+  bsStopStreams(r); bsRec = null; closeGenericModal(); bsUpdateClock();
 }
 function bsUpdateClock(){
   const el = document.getElementById("bsClock"); if(el) el.textContent = bsFmtClock(bsElapsed()/1000);
@@ -13653,6 +13775,7 @@ function bsRenderRecorder(){
     <div class="bs-modal">
       <div class="bs-rec-head"><span class="bs-dot ${r.paused?"paused":""} ${r.stopping?"stopped":""}"></span>${r.stopping?"Terminando…":r.paused?"En pausa":"Grabando"}${r.title?` · ${esc(r.title)}`:""}</div>
       <div class="bs-clock" id="bsClock">${bsFmtClock(bsElapsed()/1000)}</div>
+      <div class="bs-sources"><span class="bs-src ok">🎙️ Tu micrófono</span>${r.mode==="online"?`<span class="bs-src ${r.tabLost?"warn":"ok"}">💻 Audio de la reunión ${r.tabLost?"· dejó de compartirse":""}</span>`:""}</div>
       <div class="af-wave bs-wave ${r.paused||r.stopping?"":"on"}"><span></span><span></span><span></span><span></span><span></span></div>
       ${r.stopping?`<div class="bs-note" style="text-align:center;">✍️ Terminando de transcribir… luego Alma arma el documento.</div>`:`
       <div class="tl-row"><button class="btn btn-ghost" id="bsCancel">✕ Descartar</button><button class="btn btn-ghost" id="bsPause">${r.paused?"▶ Seguir":"⏸ Pausar"}</button><button class="btn btn-primary" id="bsStop">■ Terminar</button></div>`}
@@ -13810,7 +13933,7 @@ function bsOpenEmail(d){
 }
 (function initBrainstorm(){
   const r = document.getElementById("bsRecordBtn"), p2 = document.getElementById("bsPasteBtn");
-  if(r) r.addEventListener("click", openBrainstormRecorder);
+  if(r) r.addEventListener("click", ()=>openBrainstormRecorder());
   if(p2) p2.addEventListener("click", openBrainstormPaste);
   // si cierran el modal mientras graban, la grabación sigue: se puede volver con "Grabar"
   window.addEventListener("beforeunload", e=>{ if(bsRec){ e.preventDefault(); e.returnValue = ""; } });
