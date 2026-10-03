@@ -673,6 +673,69 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .cq-guest-input{flex:1;min-width:160px;border:0;outline:none;background:transparent;color:var(--text);font:inherit;font-size:14px;padding:4px;}
 .cq-link{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface-alt);border-radius:10px;padding:8px 10px;margin-top:12px;font-size:13px;word-break:break-all;}
 @media (max-width:700px){ .cq-kinds{grid-template-columns:1fr;} }
+
+/* ---- Ayúdanos a mejorar / Panel de mejoras ---- */
+.fb-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start;}
+.fb-chatcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;min-height:460px;}
+.fb-msgs{flex:1;padding:18px 16px;overflow-y:auto;max-height:560px;display:flex;flex-direction:column;gap:10px;}
+.fb-msg{display:flex;gap:8px;align-items:flex-end;}
+.fb-msg.usuario{justify-content:flex-end;}
+.fb-orb{width:28px;height:28px;flex:none;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fbeafb,#c9a7f5 45%,#8b9df0 80%);}
+.fb-bubble{max-width:82%;padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.5;background:var(--surface-alt);color:var(--text);}
+.fb-msg.usuario .fb-bubble{background:linear-gradient(125deg,#FF6B45,#ED3F7C 52%,#8157EF);color:#fff;border-bottom-right-radius:4px;}
+.fb-msg.alma .fb-bubble{border-bottom-left-radius:4px;}
+.fb-typing{display:flex;gap:4px;padding:14px 16px;}
+.fb-typing span{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:fbDot 1s infinite;}
+.fb-typing span:nth-child(2){animation-delay:.15s}.fb-typing span:nth-child(3){animation-delay:.3s}
+@keyframes fbDot{0%,100%{opacity:.25}50%{opacity:1}}
+.fb-quick{padding:0 16px 10px;}
+.fb-inputbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);}
+.fb-inputbar textarea{flex:1;resize:none;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;background:var(--surface);color:var(--text);max-height:120px;}
+.fb-summary{background:color-mix(in srgb,#8157EF 7%,var(--surface));border:1px solid color-mix(in srgb,#8157EF 30%,var(--surface));border-radius:14px;padding:14px;margin-top:4px;}
+.fb-sum-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.fb-sum-title{font-family:var(--font-display);font-weight:800;font-size:15px;margin:8px 0 4px;}
+.fb-sum-detail{font-size:13.5px;line-height:1.55;color:var(--text);}
+.fb-side{display:flex;flex-direction:column;gap:12px;}
+.fb-note{background:var(--surface-alt);border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.5;}
+.fb-mine{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;}
+.fb-mine-title{font-family:var(--font-display);font-weight:800;font-size:14px;margin-bottom:6px;}
+.fb-mine-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.fb-mine-row:last-child{border-bottom:0;}
+.fb-mine-row small{display:block;color:var(--text-muted);font-size:11.5px;margin-top:2px;}
+.fb-st{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap;background:var(--surface-alt);}
+.fb-st.st-planificado,.fb-st.st-en-revision{background:color-mix(in srgb,#8157EF 13%,var(--surface));color:#8157EF;}
+.fb-st.st-hecho{background:color-mix(in srgb,var(--success) 14%,var(--surface));color:var(--success);}
+.pn-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;}
+.pn-kpi{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;}
+.pn-kpi span{font-size:12px;color:var(--text-muted);}
+.pn-kpi b{display:block;font-family:var(--font-display);font-size:24px;margin-top:4px;}
+.pn-kpi b small{font-size:13px;color:var(--text-muted);font-weight:500;}
+.pn-ai{background:linear-gradient(125deg,color-mix(in srgb,#FF6B45 7%,var(--surface)),color-mix(in srgb,#8157EF 9%,var(--surface)));}
+.pn-props{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pn-prop{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;}
+.pn-prop-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;font-size:14px;}
+.pn-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}
+.pn-tag{font-size:10.5px;border-radius:999px;padding:2px 7px;background:var(--surface-alt);white-space:nowrap;}
+.pn-tag.imp-alto{background:color-mix(in srgb,#ED3F7C 14%,var(--surface));color:#ED3F7C;font-weight:700;}
+.pn-prop-why{font-size:13px;line-height:1.5;margin-top:6px;}
+.pn-ev{margin-top:6px;}
+.pn-bar{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 36px;gap:8px;align-items:center;font-size:12.5px;padding:4px 0;}
+.pn-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pn-bar b{text-align:right;}
+.pn-bar-track{height:8px;background:var(--surface-alt);border-radius:8px;overflow:hidden;}
+.pn-bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,#FF6B45,#ED3F7C,#8157EF);}
+.pn-unused{display:flex;gap:6px;flex-wrap:wrap;}
+.pn-table-wrap{overflow-x:auto;}
+.pn-table{width:100%;border-collapse:collapse;font-size:13px;}
+.pn-table th{text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;border-bottom:1px solid var(--border);}
+.pn-table td{padding:9px 8px;border-bottom:1px solid var(--border);}
+.pn-fb{padding:12px 0;border-bottom:1px solid var(--border);}
+.pn-fb:last-child{border-bottom:0;}
+.pn-fb-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.pn-st{width:auto;margin-left:auto;padding:5px 8px;font-size:12px;}
+.pn-conv{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--text-muted);}
+.pn-conv summary{cursor:pointer;color:var(--accent-2);font-weight:700;}
+@media (max-width:900px){ .fb-layout{grid-template-columns:1fr;} .pn-kpis{grid-template-columns:1fr 1fr;} .pn-props{grid-template-columns:1fr;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2195,6 +2258,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <span>Cumpleaños</span>
         <span class="nav-badge queue hidden" id="navBirthdayBadge">0</span>
       </li>
+      <li class="nav-item" data-view="mejorar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M12 8v4M12 15.5h.01"/></svg>
+        <span>Ayúdanos a mejorar</span>
+      </li>
+      <li class="nav-item hidden" id="navPanelItem" data-view="panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+        <span>Panel de mejoras</span>
+      </li>
       <li class="nav-item" data-view="configuracion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
         <span>Configuración</span>
@@ -2397,6 +2468,20 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
     </section>
 
     <!-- ---------- NOTAS DEL DÍA (sticky note / libreta) ---------- -->
+    <section class="view hidden" id="view-mejorar">
+      <div class="view-header"><div>
+        <h1>Ayúdanos a mejorar</h1>
+        <p>Cuéntale a Alma qué te gustaría que funcionara distinto, qué te falta o qué te encanta.</p>
+      </div></div>
+      <div id="fbContainer"></div>
+    </section>
+    <section class="view hidden" id="view-panel">
+      <div class="view-header"><div>
+        <h1>Panel de mejoras</h1>
+        <p>Cómo se usa TaskFlow y qué propone la gente. Solo lo ves tú.</p>
+      </div><div style="display:flex;gap:8px;align-items:center;"><select class="tl-select" id="panelMonth" style="width:auto;"></select></div></div>
+      <div id="panelContainer"></div>
+    </section>
     <section class="view hidden" id="view-brainstorm">
       <div class="view-header">
         <div>
@@ -4424,8 +4509,9 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 /* ---------------------------------------------------------------------- *
  * Navegación entre vistas
  * ---------------------------------------------------------------------- */
-const VIEWS = ["dashboard","projects","notas","brainstorm","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
+const VIEWS = ["dashboard","projects","notas","brainstorm","mejorar","panel","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
 function showView(view){
+  trackUse("view."+view);
   selectedTaskIds.clear();
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
     document.body.classList.remove("cal-fullscreen");
@@ -7427,6 +7513,7 @@ Nunca inventes fechas, horas, proyectos ni personas que no se desprendan del con
 let almaCaptureSource = "dictate";
 async function almaEntryCreateSmart(rawText, source, imageFile){
   almaCaptureSource = source || "dictate";
+  trackUse("alma."+almaCaptureSource);
   const area = document.getElementById("afEntryArea");
   if(area) area.innerHTML = `<div class="af-hint">✨ ${imageFile?"Leyendo la imagen…":"Entendiendo tu tarea…"}</div>`;
   try{
@@ -7623,6 +7710,7 @@ function almaRenderSmartPreview(rawText, parsed){
 }
 // Crea la tarea de verdad, ya confirmada por el usuario desde la tarjeta de resumen.
 function almaConfirmSmartTask(rawText, parsed){
+  trackUse("alma.tarea_creada");
   const t = buildTaskFromParsedVoiceItem(rawText, parsed);
   DB.tasks.push(t); saveDB();
   recomputeAll(); saveDB(); render();
@@ -12262,7 +12350,7 @@ function render(){
 
   const activeView = VIEWS.find(v=>{ const el=document.getElementById("view-"+v); return el && !el.classList.contains("hidden"); }) || "dashboard";
   const renderers = {
-    dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, brainstorm: renderBrainstorm, mytasks: renderTaskList, kanban: renderKanban,
+    dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, brainstorm: renderBrainstorm, mejorar: renderMejorar, panel: renderPanel, mytasks: renderTaskList, kanban: renderKanban,
     agendar: renderPorAgendar, calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
     reportes: renderReportes, notificaciones: renderNotificaciones, cumpleanos: renderBirthdays, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
   };
@@ -12986,7 +13074,7 @@ function wxBindCityPicker(root){
   const close = ()=>{ panel.classList.add("hidden"); chip.setAttribute("aria-expanded","false"); };
   chip.addEventListener("click", (e)=>{
     e.stopPropagation();
-    if(panel.classList.contains("hidden")){ wxPanelDay = null; renderWeatherPanel(); panel.classList.remove("hidden"); chip.setAttribute("aria-expanded","true"); }
+    if(panel.classList.contains("hidden")){ wxPanelDay = null; trackUse("clima.pronostico"); renderWeatherPanel(); panel.classList.remove("hidden"); chip.setAttribute("aria-expanded","true"); }
     else close();
   });
   panel.addEventListener("click", e=>e.stopPropagation());
@@ -13001,6 +13089,7 @@ let toolsCurrent = "calc";
 function fmtCLP(n, dec){ return "$" + Number(n).toLocaleString("es-CL",{minimumFractionDigits:dec||0, maximumFractionDigits:dec||0}); }
 function openTools(tool){
   if(tool) toolsCurrent = tool;
+  trackUse("tools."+toolsCurrent);
   document.getElementById("toolsDrawer").classList.remove("hidden");
   document.getElementById("toolsOverlay").classList.remove("hidden");
   renderTools();
@@ -13103,6 +13192,7 @@ function focusState(){ return (DB && DB.config && DB.config.focusTimer) || null;
 function focusLeftMs(){ const f = focusState(); if(!f) return 0; return f.paused ? f.leftMs : Math.max(0, f.endsAt - Date.now()); }
 function focusFmt(ms){ const t = Math.ceil(ms/1000), m = Math.floor(t/60), sec = t%60; return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`; }
 function focusStart(taskId, minutes){
+  trackUse("tools.foco_iniciado");
   DB.config.focusTimer = { taskId: taskId||"", minutes, endsAt: Date.now()+minutes*60000, paused:false, leftMs:0 };
   focusAskTask = null; saveDB(); focusEnsureTick(); focusUpdateBadge();
 }
@@ -13493,7 +13583,7 @@ function renderToolSplit(body){
   btn.addEventListener("click", ()=> toolsIsOpen() ? closeTools() : openTools());
   document.getElementById("toolsClose").addEventListener("click", closeTools);
   document.getElementById("toolsOverlay").addEventListener("click", closeTools);
-  document.querySelectorAll(".tools-tab").forEach(t=>t.addEventListener("click", ()=>{ toolsCurrent = t.dataset.tool; renderTools(); }));
+  document.querySelectorAll(".tools-tab").forEach(t=>t.addEventListener("click", ()=>{ toolsCurrent = t.dataset.tool; trackUse("tools."+toolsCurrent); renderTools(); }));
   const card = document.getElementById("dashIndCard");
   if(card) card.addEventListener("click", ()=>openTools("ind"));
   if(focusState()){ focusEnsureTick(); focusUpdateBadge(); }
@@ -13681,7 +13771,10 @@ function openBrainstormRecorder(opts){
         <button type="button" class="bs-mode ${bsPickMode==="mic"?"on":""}" data-mode="mic">
           <b>🎙️ Presencial o solo yo</b><small>Solo el micrófono de este dispositivo</small></button>
       </div>
-      ${bsPickMode==="online"?`<div class="bs-note" style="margin-top:10px;">💡 Al empezar, Chrome te pedirá elegir qué compartir: toca la pestaña de la reunión y deja <b>activado “Compartir audio de la pestaña”</b>. Usa audífonos si puedes: se escucha mejor.</div>`:""}
+      ${bsPickMode==="online"?`<div class="bs-note" style="margin-top:10px;line-height:1.55;">💡 Al empezar, Chrome te pedirá elegir qué compartir:<br>
+        • <b>Meet, o Zoom/Teams en el navegador:</b> pestaña <b>“Pestaña de Chrome”</b> → elige la de la reunión → deja activado <b>“Compartir audio de la pestaña”</b>.<br>
+        • <b>Zoom o Teams instalados:</b> pestaña <b>“Toda la pantalla”</b> → activa <b>“Compartir con audio del sistema”</b> (silencia música y videos: también se graban).<br>
+        La app usa solo el audio, no guarda lo que se ve en tu pantalla. Usa audífonos si puedes.</div>`:""}
       <label class="tl-muted" for="bsRecTitle" style="display:block;margin-top:12px;">Título</label>
       <input class="tl-input" id="bsRecTitle" placeholder="Ej: Reunión de planificación con el equipo" value="${esc(ev?ev.title||"":"")}" style="margin-top:6px;">
       <label class="bs-consent"><input type="checkbox" id="bsConsent"> <span>Les avisé a las personas que voy a grabar y están de acuerdo.</span></label>
@@ -13731,6 +13824,7 @@ async function bsStartRecording(title, opts){
     }catch(e){ console.error("mezcla", e); stream = mic; }
   }
   const mime = bsPickMime();
+  trackUse(tabAudio ? "bs.grabar_online" : "bs.grabar");
   bsRec = { title, mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
             startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
             segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, queue: Promise.resolve() };
@@ -13941,6 +14035,7 @@ function openBrainstormPaste(){
     if(text.length < 40){ toast("Pega un poco más de texto para que Alma pueda ordenarlo.","info"); return; }
     const doc = { id: uid("bs"), title: document.getElementById("bsPasteTitle").value.trim(), createdAt: new Date().toISOString(), durationSec:0,
                   source:"texto", transcript: text.slice(0, 120000), status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[] };
+    trackUse("bs.texto");
     DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB(); closeGenericModal(); bsOpenId = doc.id; showView("brainstorm"); bsProcessDoc(doc.id);
   });
 }
@@ -14060,7 +14155,7 @@ function bsOpenEmail(d){
                 transcript: document.getElementById("bsMailTrans").checked ? d.transcript : "" } }) });
       const j = await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(j.error || ("HTTP "+res.status));
-      closeGenericModal(); toast(`✉️ Enviado a ${to.join(", ")}.`,"success");
+      trackUse("bs.correo"); closeGenericModal(); toast(`✉️ Enviado a ${to.join(", ")}.`,"success");
       d.sentLog = (d.sentLog||[]).concat({ to, at:new Date().toISOString() }); saveDB();
     }catch(e){ btn.disabled = false; btn.textContent = "Enviar desde TaskFlow Pro"; toast("No se pudo enviar: "+e.message,"error"); }
   });
@@ -14157,6 +14252,7 @@ function openCalQuickSchedule(iso, startMin){
     const hh = String(Math.floor(startMin/60)).padStart(2,"0")+":"+String(startMin%60).padStart(2,"0");
     const go = async ()=>{
       const raw = inp.value.trim();
+      if(raw) trackUse("cal.agendar."+calQuick.kind);
       if(!raw){ inp.focus(); toast(isMtg?"Ponle un nombre a la reunión.":"Escribe qué vas a hacer.","info"); return; }
       const title = almaTitleLooksLikeSentence(raw, raw) ? almaShortTitle(raw) : raw;
       if(isMtg){
@@ -14194,6 +14290,221 @@ function openCalQuickSchedule(iso, startMin){
     inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
   };
   draw();
+}
+/* ====================================================================== *
+ * USO DE LA APP (solo conteos) + "AYÚDANOS A MEJORAR" + PANEL DE MEJORAS
+ * El conteo NUNCA incluye contenido (títulos, tareas, documentos): solo
+ * "cuántas veces se usó tal función". Se envía cada minuto, agrupado.
+ * ====================================================================== */
+const ADMIN_DISPLAY_NAME = "Miguel";
+let useBuf = {};
+function trackUse(k){ try{ if(!getAuthToken() || !k) return; k = String(k).toLowerCase().replace(/[^a-z0-9_.-]/g,"").slice(0,40); if(k) useBuf[k] = (useBuf[k]||0)+1; }catch(e){} }
+function flushUse(){
+  const keys = Object.keys(useBuf); if(!keys.length || !getAuthToken()) return;
+  const counts = useBuf; useBuf = {};
+  try{ fetch("/.netlify/functions/feedback", { method:"POST", keepalive:true, headers:{"Content-Type":"application/json"}, body: JSON.stringify({ action:"track", token:getAuthToken(), counts }) }).catch(()=>{}); }catch(e){}
+}
+setInterval(flushUse, 60000);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") flushUse(); });
+async function apiFeedback(action, payload){
+  const res = await fetch("/.netlify/functions/feedback", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(Object.assign({ action, token:getAuthToken() }, payload||{})) });
+  const j = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(j.error || ("HTTP "+res.status));
+  return j;
+}
+const USE_LABELS = {
+  "view.dashboard":"Inicio","view.mytasks":"Mis tareas","view.agendar":"Por agendar","view.notas":"Memoria de Alma","view.brainstorm":"Alma Brainstorm",
+  "view.projects":"Proyectos y temas","view.kanban":"Kanban","view.calendar":"Calendario","view.gantt":"Cronograma","view.matrix":"Matriz",
+  "view.responsables":"Personas","view.reportes":"Reportes","view.notificaciones":"Notificaciones","view.cumpleanos":"Cumpleaños","view.configuracion":"Configuración","view.mejorar":"Ayúdanos a mejorar",
+  "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
+  "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo",
+  "tools.calc":"Calculadora","tools.focus":"Foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
+  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas",
+};
+const useLabel = k => USE_LABELS[k] || k;
+
+/* ---------- Ayúdanos a mejorar (conversación con Alma) ---------- */
+let fbChat = null, fbMine = null;
+const FB_TIPO = { idea:"💡 Idea", mejora:"✨ Mejora", problema:"🐞 Problema", elogio:"❤️ Me gusta", otro:"💬 Otro" };
+const FB_ESTADO = { "nuevo":"Recibida", "en revision":"En revisión", "planificado":"Planificada", "hecho":"¡Hecha!", "descartado":"Descartada" };
+function fbReset(){
+  const name = ((DB.config.alma&&DB.config.alma.userPreferredName)||DB.config.userName||"").split(" ")[0];
+  fbChat = { msgs:[{ role:"alma", text:`¡Hola${name?" "+name:""}! 😊 Quiero que TaskFlow te sirva cada vez más. ¿Hay algo que te gustaría que funcionara distinto, algo que te falte, o algo que te encante? Cuéntamelo con tus palabras.` }], summary:null, busy:false, sent:false };
+}
+function renderMejorar(){
+  const wrap = document.getElementById("fbContainer"); if(!wrap) return;
+  if(!fbChat) fbReset();
+  if(fbMine===null){ fbMine = []; apiFeedback("myFeedback").then(r=>{ fbMine = r.items||[]; renderMejorar(); }).catch(()=>{}); }
+  const userTurns = fbChat.msgs.filter(m=>m.role==="usuario").length;
+  wrap.innerHTML = `
+    <div class="fb-layout">
+      <div class="fb-chatcard">
+        <div class="fb-msgs" id="fbMsgs">${fbChat.msgs.map(m=>`<div class="fb-msg ${m.role}">${m.role==="alma"?`<span class="tf-orb fb-orb"></span>`:""}<div class="fb-bubble">${esc(m.text).replace(/\n/g,"<br>")}</div></div>`).join("")}
+          ${fbChat.busy?`<div class="fb-msg alma"><span class="tf-orb fb-orb"></span><div class="fb-bubble fb-typing"><span></span><span></span><span></span></div></div>`:""}
+          ${fbChat.summary && !fbChat.sent?`<div class="fb-summary"><div class="tl-muted" style="margin-bottom:6px;">✨ Esto es lo que le voy a enviar a ${ADMIN_DISPLAY_NAME}:</div>
+            <div class="fb-sum-top"><span class="bs-chip">${FB_TIPO[fbChat.summary.tipo]||FB_TIPO.otro}</span>${fbChat.summary.area?`<span class="tl-muted">${esc(fbChat.summary.area)}</span>`:""}</div>
+            <div class="fb-sum-title">${esc(fbChat.summary.titulo||"")}</div><div class="fb-sum-detail">${esc(fbChat.summary.detalle||"")}</div>
+            <div class="tl-row"><button class="btn btn-ghost" id="fbMore">Quiero agregar algo</button><button class="btn btn-primary" id="fbSend">📨 Enviar</button></div></div>`:""}
+        </div>
+        ${userTurns===0 && !fbChat.busy?`<div class="tl-chips fb-quick">${["💡 Tengo una idea","🐞 Algo no funciona bien","✨ Algo se podría mejorar","❤️ Algo que me encanta"].map(q=>`<button type="button" class="tl-chip" data-fbq="${esc(q)}">${q}</button>`).join("")}</div>`:""}
+        ${fbChat.sent?`<div class="tl-row" style="padding:0 16px 16px;"><button class="btn btn-primary" id="fbAgain">💬 Contarle otra cosa</button></div>`:`
+        <div class="fb-inputbar"><textarea id="fbInput" rows="1" placeholder="Escribe aquí…" ${fbChat.busy?"disabled":""}></textarea><button class="btn btn-primary" id="fbGo" ${fbChat.busy?"disabled":""} aria-label="Enviar mensaje">➤</button></div>`}
+      </div>
+      <div class="fb-side">
+        <div class="fb-note">🔒 <b>Tu privacidad:</b> ${ADMIN_DISPLAY_NAME} ve cuánto se usa cada función para mejorar la app, pero <b>no ve tus tareas ni tus documentos</b>. Lo que escribas aquí sí le llega, con tu nombre de usuario.</div>
+        <div class="fb-mine"><div class="fb-mine-title">Tus sugerencias</div>
+          ${fbMine && fbMine.length ? fbMine.map(i=>`<div class="fb-mine-row"><div><b>${esc(i.titulo)}</b><small>${FB_TIPO[i.tipo]||""} · ${esc(new Date(i.createdAt).toLocaleDateString("es-CL",{day:"numeric",month:"short"}))}</small></div><span class="fb-st st-${String(i.status).replace(/\s/g,"-")}">${FB_ESTADO[i.status]||i.status}</span></div>`).join("") : `<div class="tl-muted">Aún no has enviado ninguna. ¡La primera cuenta mucho!</div>`}
+        </div>
+      </div>
+    </div>`;
+  const box = document.getElementById("fbMsgs"); if(box) box.scrollTop = box.scrollHeight;
+  const inp = document.getElementById("fbInput");
+  const go = ()=>{ const v = inp.value.trim(); if(v) fbUserSays(v); };
+  if(inp){ inp.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); go(); } }); if(!fbChat.busy) setTimeout(()=>inp.focus(),30); }
+  const g = document.getElementById("fbGo"); if(g) g.addEventListener("click", go);
+  wrap.querySelectorAll("[data-fbq]").forEach(b=>b.addEventListener("click", ()=>{ const i = document.getElementById("fbInput"); i.value = b.dataset.fbq.replace(/^\S+\s/,"")+": "; i.focus(); }));
+  const sd = document.getElementById("fbSend"); if(sd) sd.addEventListener("click", fbSubmit);
+  const mo = document.getElementById("fbMore"); if(mo) mo.addEventListener("click", ()=>{ fbChat.summary = null; fbChat.msgs.push({ role:"alma", text:"¡Claro! ¿Qué más te gustaría agregar?" }); renderMejorar(); });
+  const ag = document.getElementById("fbAgain"); if(ag) ag.addEventListener("click", ()=>{ fbReset(); renderMejorar(); });
+}
+async function fbUserSays(text){
+  fbChat.msgs.push({ role:"usuario", text: text.slice(0,1000) }); fbChat.summary = null; fbChat.busy = true; renderMejorar();
+  const userTurns = fbChat.msgs.filter(m=>m.role==="usuario").length;
+  const convo = fbChat.msgs.map(m=>`${m.role==="alma"?"Alma":"Usuario"}: ${m.text}`).join("\n");
+  const prompt = `Eres Alma, la asistente de la app TaskFlow Pro (app personal de tareas con IA). Tono cercano, chileno-neutro, cálido pero no cursi, frases cortas.
+Estás conversando con un usuario para recoger una sugerencia de mejora para ${ADMIN_DISPLAY_NAME}, quien desarrolla la app.
+Funciones que existen: Inicio (ruta del día, clima, UF), Mis tareas, Por agendar, Memoria de Alma, Alma Brainstorm (grabar reuniones), Calendario (con Google Calendar), Kanban, Cronograma, Matriz, Proyectos, Personas, Reportes, Notificaciones, Cumpleaños, Herramientas (calculadora, foco, monedas, días, feriados, dividir cuenta), crear tareas por voz/texto/foto.
+
+Conversación hasta ahora:
+${convo}
+
+Tu objetivo: entender bien QUÉ propone, PARA QUÉ le serviría o QUÉ problema tuvo (si es un problema: dónde y qué pasó). Haz como máximo UNA pregunta por turno, concreta. Si ya entendiste lo suficiente, o el usuario ya respondió ${userTurns>=3?"varias veces (ya van "+userTurns+" respuestas: CIERRA ahora)":"2 preguntas tuyas"}, cierra.
+Responde SOLO un JSON válido, sin texto extra:
+{"respuesta":"lo que dice Alma (si cierras: agradece breve y di que abajo está el resumen para confirmar)","listo":true|false,"resumen":{"tipo":"idea|mejora|problema|elogio|otro","area":"sección de la app o 'General'","titulo":"máx 70 caracteres, claro","detalle":"2-4 frases con lo que dijo el usuario, sin inventar","impacto":"alto|medio|bajo"}}
+"resumen" solo es obligatorio si "listo" es true.`;
+  try{
+    const raw = await askAI(prompt);
+    const j = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
+    fbChat.msgs.push({ role:"alma", text: String(j.respuesta||"¡Gracias! Te entendí.").slice(0,600) });
+    if(j.listo && j.resumen) fbChat.summary = j.resumen;
+    else if(userTurns>=4) fbChat.summary = fbFallbackSummary();
+  }catch(e){
+    fbChat.msgs.push({ role:"alma", text:"¡Gracias! No pude ordenarlo con IA ahora, pero lo anoto tal cual lo dijiste. Revisa el resumen abajo 👇" });
+    fbChat.summary = fbFallbackSummary();
+  }
+  fbChat.busy = false; renderMejorar();
+}
+function fbFallbackSummary(){
+  const said = fbChat.msgs.filter(m=>m.role==="usuario").map(m=>m.text);
+  return { tipo:"otro", area:"General", titulo: almaShortTitle(said[0]||"Sugerencia"), detalle: said.join(" · ").slice(0,1500), impacto:"medio" };
+}
+async function fbSubmit(){
+  const btn = document.getElementById("fbSend"); if(btn){ btn.disabled = true; btn.textContent = "Enviando…"; }
+  try{
+    await apiFeedback("submitFeedback", { item: Object.assign({}, fbChat.summary, { conversacion: fbChat.msgs.map(m=>({ role:m.role, text:m.text })) }) });
+    trackUse("feedback.enviada");
+    fbChat.sent = true; fbChat.msgs.push({ role:"alma", text:`¡Listo, se lo envié a ${ADMIN_DISPLAY_NAME}! 🙌 Gracias por darte el tiempo. En "Tus sugerencias" vas a ver cuando la revise.` });
+    fbMine = null; renderMejorar();
+  }catch(e){ if(btn){ btn.disabled = false; btn.textContent = "📨 Enviar"; } toast("No se pudo enviar: "+e.message,"error"); }
+}
+
+/* ---------- Panel de mejoras (solo admin; el servidor también lo exige) ---------- */
+let panelData = null, panelMonth = null, panelFilter = "abiertas", panelLoading = false;
+function panelMonths(){ const out=[]; const d=new Date(); for(let i=0;i<6;i++){ const x=new Date(d.getFullYear(), d.getMonth()-i, 1); out.push(`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}`); } return out; }
+function renderPanel(){
+  const wrap = document.getElementById("panelContainer"); if(!wrap) return;
+  const sel = document.getElementById("panelMonth");
+  if(!panelMonth) panelMonth = panelMonths()[0];
+  if(sel && !sel.dataset.ready){
+    sel.innerHTML = panelMonths().map(m=>{ const [y,mm]=m.split("-"); const l = new Date(+y,+mm-1,1).toLocaleDateString("es-CL",{month:"long",year:"numeric"}); return `<option value="${m}">${l.charAt(0).toUpperCase()+l.slice(1)}</option>`; }).join("");
+    sel.dataset.ready = "1"; sel.addEventListener("change", ()=>{ panelMonth = sel.value; panelData = null; renderPanel(); });
+  }
+  if(!panelData){
+    wrap.innerHTML = `<div class="tl-muted" style="padding:20px;">Cargando…</div>`;
+    if(!panelLoading){ panelLoading = true;
+      apiFeedback("adminOverview", { month: panelMonth }).then(r=>{ panelData = r; panelLoading = false; renderPanel(); })
+        .catch(e=>{ panelLoading = false; wrap.innerHTML = `<div class="bs-sec bs-warn">⚠️ ${esc(e.message)}</div>`; });
+    }
+    return;
+  }
+  const d = panelData, people = d.people||[];
+  const totals = {}; let totalActs = 0;
+  people.forEach(p=>Object.entries(p.counts).forEach(([k,v])=>{ totals[k]=(totals[k]||0)+v; totalActs+=v; }));
+  const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const max = ranked.length ? ranked[0][1] : 1;
+  const unused = Object.keys(USE_LABELS).filter(k=>!k.startsWith("view.mejorar") && (totals[k]||0) <= 1);
+  const fb = d.feedback||[];
+  const openFb = fb.filter(i=>!["hecho","descartado"].includes(i.status));
+  const shownFb = panelFilter==="abiertas" ? openFb : panelFilter==="todas" ? fb : fb.filter(i=>i.status===panelFilter);
+  const userOf = u => (u.username||"").replace(/^./, c=>c.toUpperCase());
+  const ins = (DB.config.lastInsights && DB.config.lastInsights.month===panelMonth) ? DB.config.lastInsights : null;
+  wrap.innerHTML = `
+    <div class="pn-kpis">
+      <div class="pn-kpi"><span>Personas activas</span><b>${people.length}${d.totalUsers?` <small>de ${d.totalUsers}</small>`:""}</b></div>
+      <div class="pn-kpi"><span>Acciones registradas</span><b>${totalActs.toLocaleString("es-CL")}</b></div>
+      <div class="pn-kpi"><span>Lo más usado</span><b style="font-size:16px;">${ranked.length?esc(useLabel(ranked[0][0])):"—"}</b></div>
+      <div class="pn-kpi"><span>Sugerencias abiertas</span><b>${openFb.length}</b></div>
+    </div>
+    <div class="bs-sec pn-ai">
+      <div class="bs-sec-head"><h3>✨ Propuestas de Alma</h3><button class="btn btn-primary btn-sm" id="pnInsights">${ins?"🔄 Actualizar":"Analizar uso y sugerencias"}</button></div>
+      ${ins?`<p class="bs-p" style="margin-bottom:10px;">${esc(ins.data.resumen||"")}</p>
+        <div class="pn-props">${(ins.data.propuestas||[]).map(pr=>`<div class="pn-prop"><div class="pn-prop-top"><b>${esc(pr.titulo)}</b><span class="pn-tags"><span class="pn-tag imp-${esc(pr.impacto)}">Impacto ${esc(pr.impacto)}</span><span class="pn-tag">Esfuerzo ${esc(pr.esfuerzo)}</span></span></div><div class="pn-prop-why">${esc(pr.por_que)}</div>${pr.evidencia?`<div class="tl-muted pn-ev">📊 ${esc(pr.evidencia)}</div>`:""}</div>`).join("")}</div>
+        <div class="tl-muted" style="margin-top:8px;">Analizado el ${esc(new Date(ins.at).toLocaleString("es-CL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}.</div>`
+      :`<div class="tl-muted">Alma cruza el uso de este mes con las sugerencias y te propone qué mejorar primero.</div>`}
+    </div>
+    <div class="bs-two">
+      <div class="bs-sec"><h3>📊 Funciones más usadas</h3>${ranked.length?ranked.slice(0,12).map(([k,v])=>`<div class="pn-bar"><span>${esc(useLabel(k))}</span><div class="pn-bar-track"><div class="pn-bar-fill" style="width:${Math.max(4,Math.round(v/max*100))}%"></div></div><b>${v}</b></div>`).join(""):`<div class="tl-muted">Aún no hay datos este mes. El conteo empezó al instalar esta versión.</div>`}</div>
+      <div class="bs-sec"><h3>💤 Casi no se usan</h3>${ranked.length?`<div class="pn-unused">${unused.slice(0,14).map(k=>`<span class="bs-tag">${esc(useLabel(k))}</span>`).join("")}</div><div class="tl-muted" style="margin-top:8px;">0 o 1 uso este mes, sumando a todas las personas.</div>`:`<div class="tl-muted">—</div>`}</div>
+    </div>
+    <div class="bs-sec"><h3>👥 Uso por persona</h3>
+      ${people.length?`<div class="pn-table-wrap"><table class="pn-table"><thead><tr><th>Persona</th><th>Días activos</th><th>Acciones</th><th>Lo que más usa</th><th>Último uso</th></tr></thead><tbody>
+      ${people.slice().sort((a,b)=>Object.values(b.counts).reduce((x,y)=>x+y,0)-Object.values(a.counts).reduce((x,y)=>x+y,0)).map(p=>{ const tot = Object.values(p.counts).reduce((x,y)=>x+y,0); const top = Object.entries(p.counts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>useLabel(k));
+        return `<tr><td><b>${esc(userOf(p))}</b></td><td>${p.activeDays}</td><td>${tot}</td><td>${esc(top.join(" · "))}</td><td>${p.lastSeen?esc(new Date(p.lastSeen).toLocaleDateString("es-CL",{day:"numeric",month:"short"})):"—"}</td></tr>`; }).join("")}
+      </tbody></table></div>`:`<div class="tl-muted">Nadie ha usado la app este mes (o aún no hay datos).</div>`}
+    </div>
+    <div class="bs-sec">
+      <div class="bs-sec-head"><h3>💬 Sugerencias</h3><div class="tl-chips">${[["abiertas","Abiertas"],["nuevo","Nuevas"],["planificado","Planificadas"],["hecho","Hechas"],["todas","Todas"]].map(([k,l])=>`<button type="button" class="tl-chip ${panelFilter===k?"on":""}" data-pf="${k}">${l}</button>`).join("")}</div></div>
+      ${shownFb.length?shownFb.map(i=>`<div class="pn-fb">
+        <div class="pn-fb-top"><span class="bs-chip">${FB_TIPO[i.tipo]||FB_TIPO.otro}</span><span class="tl-muted">${esc(userOf(i))} · ${esc(i.area||"General")} · ${esc(new Date(i.createdAt).toLocaleDateString("es-CL",{day:"numeric",month:"short"}))}</span>
+          <select class="tl-select pn-st" data-fbid="${esc(i.id)}">${Object.entries(FB_ESTADO).map(([k,l])=>`<option value="${k}" ${i.status===k?"selected":""}>${l}</option>`).join("")}</select></div>
+        <div class="fb-sum-title">${esc(i.titulo)}</div><div class="fb-sum-detail">${esc(i.detalle)}</div>
+        ${(i.conversacion||[]).length?`<details class="pn-conv"><summary>Ver conversación</summary>${i.conversacion.map(m=>`<div><b>${m.role==="alma"?"Alma":esc(userOf(i))}:</b> ${esc(m.text)}</div>`).join("")}</details>`:""}
+      </div>`).join(""):`<div class="tl-muted">No hay sugerencias en esta vista.</div>`}
+    </div>`;
+  wrap.querySelectorAll("[data-pf]").forEach(b=>b.addEventListener("click", ()=>{ panelFilter = b.dataset.pf; renderPanel(); }));
+  wrap.querySelectorAll("[data-fbid]").forEach(sel2=>sel2.addEventListener("change", async ()=>{
+    try{ await apiFeedback("setFeedbackStatus", { id: sel2.dataset.fbid, status: sel2.value }); const it = fb.find(x=>x.id===sel2.dataset.fbid); if(it) it.status = sel2.value; toast("Estado actualizado.","success"); renderPanel(); }
+    catch(e){ toast("No se pudo actualizar: "+e.message,"error"); }
+  }));
+  document.getElementById("pnInsights").addEventListener("click", ()=>panelRunInsights(ranked, people, fb));
+}
+async function panelRunInsights(ranked, people, fb){
+  const btn = document.getElementById("pnInsights"); btn.disabled = true; btn.textContent = "Analizando…";
+  const usoTxt = ranked.slice(0,30).map(([k,v])=>`- ${useLabel(k)}: ${v}`).join("\n") || "(sin datos de uso)";
+  const porPersona = people.map(p=>{ const tot = Object.values(p.counts).reduce((x,y)=>x+y,0); const top = Object.entries(p.counts).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k,v])=>`${useLabel(k)} ${v}`).join(", "); return `- ${p.username}: ${p.activeDays} días activos, ${tot} acciones (${top})`; }).join("\n") || "(nadie)";
+  const sug = fb.filter(i=>i.status!=="descartado").slice(0,60).map(i=>`- [${i.tipo}/${i.impacto}/${i.status}] (${i.area}) ${i.titulo}: ${i.detalle}`).join("\n") || "(sin sugerencias)";
+  const prompt = `Eres Alma. Ayudas a ${ADMIN_DISPLAY_NAME}, quien desarrolla TaskFlow Pro (app personal de tareas usada por ~30 personas: familia, amigos y compañeros), a decidir qué mejorar.
+Mes analizado: ${panelMonth}. Personas activas: ${people.length}${panelData.totalUsers?` de ${panelData.totalUsers} registradas`:""}.
+
+USO POR FUNCIÓN (veces usada, sumando a todos):
+${usoTxt}
+
+USO POR PERSONA:
+${porPersona}
+
+SUGERENCIAS DE LOS USUARIOS:
+${sug}
+
+Cruza el uso con las sugerencias y propone entre 3 y 6 mejoras concretas y viables, ordenadas por prioridad. Considera: lo que piden varias personas, funciones muy usadas que se pueden potenciar, funciones casi sin uso (¿se entienden? ¿se encuentran?), problemas reportados.
+Responde SOLO un JSON válido:
+{"resumen":"2-3 frases con lo más importante del mes","propuestas":[{"titulo":"...","por_que":"1-2 frases","evidencia":"datos concretos que lo respaldan (cifras o quién lo pidió)","impacto":"alto|medio|bajo","esfuerzo":"alto|medio|bajo"}]}
+No inventes datos que no estén arriba.`;
+  try{
+    const raw = await askAI(prompt);
+    const j = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
+    DB.config.lastInsights = { month: panelMonth, at: new Date().toISOString(), data: { resumen: String(j.resumen||""), propuestas: (j.propuestas||[]).slice(0,8).map(p=>({ titulo:String(p.titulo||""), por_que:String(p.por_que||""), evidencia:String(p.evidencia||""), impacto:["alto","medio","bajo"].includes(p.impacto)?p.impacto:"medio", esfuerzo:["alto","medio","bajo"].includes(p.esfuerzo)?p.esfuerzo:"medio" })) } };
+    saveDB(); renderPanel();
+  }catch(e){ btn.disabled = false; btn.textContent = "Analizar uso y sugerencias"; toast("Alma no pudo analizar ahora: "+e.message,"error"); }
 }
 /* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
    la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
@@ -15786,6 +16097,8 @@ function bootApp(){
     apiAuth("amIAdmin", { token: getAuthToken() }).then(r=>{
       const navItem = document.getElementById("navUsersItem");
       if(navItem) navItem.classList.toggle("hidden", !r.isAdmin);
+      const navPanel = document.getElementById("navPanelItem");
+      if(navPanel) navPanel.classList.toggle("hidden", !r.isAdmin);
     }).catch(()=>{});
   }catch(e){
     console.error("Error crítico durante la inicialización:", e);
