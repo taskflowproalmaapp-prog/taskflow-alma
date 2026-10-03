@@ -7,6 +7,11 @@
 //  día y hora — le crea automáticamente el evento reflejo en su Google
 //  Calendar real, y devuelve el eventId para poder editarlo/borrarlo
 //  después si la tarea se reagenda o se elimina.
+//
+//  "createMeeting" (nuevo): crea una REUNIÓN de verdad — con invitados
+//  (Google les manda la invitación por correo) y, si se pide, link de
+//  Google Meet. Se marca distinto a las tareas reflejo ("taskflowMeeting")
+//  para que siempre se muestre como una reunión normal de Google.
 // ────────────────────────────────────────────────────────────────
 
 const { getUsernameFromSession, getValidGoogleAccessToken } = require("./google-helpers");
@@ -21,6 +26,7 @@ exports.handler = async function (event) {
   let body;
   try { body = JSON.parse(event.body || "{}"); } catch (e) { return json(400, { error: "Cuerpo inválido" }); }
   const { action, token, calendarId, eventId, summary, description, startIso, endIso } = body;
+  const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/;
 
   try {
     const username = await getUsernameFromSession(token);
@@ -49,6 +55,54 @@ exports.handler = async function (event) {
       const data = await resp.json();
       if (!resp.ok) return json(500, { error: data.error?.message || "No se pudo crear el evento" });
       return json(200, { ok: true, eventId: data.id, calendarId: calId });
+    }
+
+    if (action === "createMeeting") {
+      if (!startIso || !endIso) return json(400, { error: "Falta la fecha/hora de la reunión" });
+      if (!summary || !String(summary).trim()) return json(400, { error: "Falta el nombre de la reunión" });
+      const attendees = (Array.isArray(body.attendees) ? body.attendees : [])
+        .map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+      const uniq = [...new Set(attendees)];
+      if (uniq.length > 30) return json(400, { error: "Máximo 30 invitados" });
+      const bad = uniq.find((x) => !EMAIL_RE.test(x));
+      if (bad) return json(400, { error: "Correo inválido: " + bad });
+
+      const eventBody = {
+        summary: String(summary).slice(0, 200),
+        description: String(description || "").slice(0, 4000),
+        start: { dateTime: startIso },
+        end: { dateTime: endIso },
+        attendees: uniq.map((email) => ({ email })),
+        extendedProperties: { private: { taskflowMeeting: "true" } },
+      };
+      if (body.addMeet) {
+        eventBody.conferenceData = {
+          createRequest: {
+            requestId: "tf-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10),
+            conferenceSolutionKey: { type: "hangoutsMeet" },
+          },
+        };
+      }
+      const calId = calendarId || "primary";
+      // conferenceDataVersion=1 → Google crea el link de Meet
+      // sendUpdates=all → a los invitados les llega la invitación por correo
+      const createUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`
+        + `?conferenceDataVersion=1&sendUpdates=${uniq.length ? "all" : "none"}`;
+      const resp = await fetch(createUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(eventBody),
+      });
+      const data = await resp.json();
+      if (!resp.ok) return json(500, { error: data.error?.message || "No se pudo crear la reunión" });
+      const video = (data.conferenceData?.entryPoints || []).find((e) => e.entryPointType === "video");
+      return json(200, {
+        ok: true, eventId: data.id, calendarId: calId,
+        joinLink: data.hangoutLink || (video && video.uri) || "",
+        meetPending: !!(body.addMeet && !data.hangoutLink && !video),
+        htmlLink: data.htmlLink || "",
+        invited: uniq.length,
+      });
     }
 
     if (!calendarId || !eventId) return json(400, { error: "Falta identificar la reunión" });
