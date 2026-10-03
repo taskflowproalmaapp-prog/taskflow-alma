@@ -12,11 +12,21 @@ function store(name) {
   return getStore(name);
 }
 
+// Una sesión vence tras SESSION_DAYS días (por defecto 90) sin usarse —
+// misma regla que en auth.js (allí se renueva cada vez que se abre la app).
+// Las sesiones anteriores a esta regla no tienen "lastSeenAt" y siguen vigentes.
+const SESSION_MS = (parseInt(process.env.SESSION_DAYS || "90", 10) || 90) * 24 * 3600 * 1000;
+function sessionExpired(rec) {
+  const last = Date.parse((rec && rec.lastSeenAt) || "");
+  return !!last && Date.now() - last > SESSION_MS;
+}
+
 async function getUsernameFromSession(sessionToken) {
   if (!sessionToken) return null;
   const sessions = store("sessions");
   const rec = await sessions.get(sessionToken, { type: "json" });
-  return rec ? rec.username : null;
+  if (!rec || sessionExpired(rec)) return null;
+  return rec.username || null;
 }
 
 // Devuelve un access_token válido para esa persona (lo renueva solo si ya
