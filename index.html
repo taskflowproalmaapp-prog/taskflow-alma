@@ -758,6 +758,10 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .rh-dot.work{background:#5B9BD5;} .rh-dot.study{background:#ED3F7C;} .rh-dot.routine{background:#3FA47A;}
 .rh-savebar{position:sticky;bottom:0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:12px 0;margin-top:4px;border-top:1px solid var(--border);z-index:5;}
 @media (max-width:900px){ .rh-week{grid-template-columns:repeat(7,minmax(92px,1fr));overflow-x:auto;} .rh-weekcard{overflow-x:auto;} }
+
+.login-legal{font-size:12px;color:var(--text-muted);text-align:center;margin-top:16px;line-height:1.5;}
+.login-legal a{color:var(--accent-2);font-weight:600;}
+.fb-note a{color:var(--accent-2);font-weight:600;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2187,6 +2191,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       <div class="login-error" id="registerError"></div>
       <button type="submit" class="btn btn-primary" id="registerSubmitBtn" style="width:100%;margin-top:6px;">Crear cuenta</button>
     </form>
+    <div class="login-legal">Al usar TaskFlow Pro aceptas nuestra <a href="/privacy.html" target="_blank" rel="noopener">Política de privacidad</a>.</div>
   </div>
 </div>
 
@@ -3136,6 +3141,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <div style="display:flex;gap:8px;margin-top:10px;">
           <input type="text" id="cf_newArea" placeholder="Nueva área..." style="flex:1;">
           <button class="btn btn-ghost btn-sm" id="cf_addAreaBtn">Agregar</button>
+        </div>
+      </div>
+
+            <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">🔒 Privacidad y tus datos</div>
+        <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px;line-height:1.5;">Tus datos se guardan en un espacio privado de tu cuenta y solo se usan para que la app funcione para ti. El administrador ve cuánto se usa cada función, pero no tus tareas, notas ni documentos.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a class="btn btn-ghost btn-sm" href="/privacy.html" target="_blank" rel="noopener">📄 Ver política de privacidad</a>
+          <a class="btn btn-ghost btn-sm" href="mailto:taskflowpro.alma.app@gmail.com?subject=Solicitud%20sobre%20mis%20datos%20en%20TaskFlow%20Pro&body=Hola%2C%20quiero%20(marca%20lo%20que%20corresponda)%3A%0A-%20Recibir%20una%20copia%20de%20mis%20datos%0A-%20Eliminar%20mi%20cuenta%20y%20todos%20mis%20datos%0A%0AMi%20usuario%20es%3A%20">✉️ Pedir copia o eliminación de mis datos</a>
         </div>
       </div>
 
@@ -14407,7 +14421,7 @@ function renderMejorar(){
         <div class="fb-inputbar"><textarea id="fbInput" rows="1" placeholder="Escribe aquí…" ${fbChat.busy?"disabled":""}></textarea><button class="btn btn-primary" id="fbGo" ${fbChat.busy?"disabled":""} aria-label="Enviar mensaje">➤</button></div>`}
       </div>
       <div class="fb-side">
-        <div class="fb-note">🔒 <b>Tu privacidad:</b> ${ADMIN_DISPLAY_NAME} ve cuánto se usa cada función para mejorar la app, pero <b>no ve tus tareas ni tus documentos</b>. Lo que escribas aquí sí le llega, con tu nombre de usuario.</div>
+        <div class="fb-note">🔒 <b>Tu privacidad:</b> ${ADMIN_DISPLAY_NAME} ve cuánto se usa cada función para mejorar la app, pero <b>no ve tus tareas ni tus documentos</b>. Lo que escribas aquí sí le llega, con tu nombre de usuario. <a href="/privacy.html" target="_blank" rel="noopener">Ver política completa</a></div>
         <div class="fb-mine"><div class="fb-mine-title">Tus sugerencias</div>
           ${fbMine && fbMine.length ? fbMine.map(i=>`<div class="fb-mine-row"><div><b>${esc(i.titulo)}</b><small>${FB_TIPO[i.tipo]||""} · ${esc(new Date(i.createdAt).toLocaleDateString("es-CL",{day:"numeric",month:"short"}))}</small></div><span class="fb-st st-${String(i.status).replace(/\s/g,"-")}">${FB_ESTADO[i.status]||i.status}</span></div>`).join("") : `<div class="tl-muted">Aún no has enviado ninguna. ¡La primera cuenta mucho!</div>`}
         </div>
