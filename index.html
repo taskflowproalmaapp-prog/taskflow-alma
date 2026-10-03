@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="theme-color" content="#FF6B45">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="TaskFlow">
 <style>
@@ -549,6 +550,80 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .route-focus-start{display:inline-block;margin-top:8px;border:0;border-radius:8px;padding:5px 10px;background:linear-gradient(125deg,#FF6B45,#ED3F7C);color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer;}
 @media (max-width:700px){
 }
+
+.fx-box{background:var(--surface-alt);border-radius:14px;padding:12px;}
+.fx-line{display:grid;grid-template-columns:1fr 150px;gap:8px;align-items:center;}
+.fx-amt{font-size:18px;font-weight:700;}
+.fx-sel{font-size:12.5px;padding:10px 8px;}
+.fx-mid{display:flex;justify-content:center;margin:6px 0;}
+.fx-swap{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:#8157EF;font-size:18px;font-weight:700;cursor:pointer;}
+.fx-swap:hover{border-color:#8157EF;}
+.fx-result{font-family:var(--font-display);font-size:22px;font-weight:800;padding:8px 4px;word-break:break-all;font-variant-numeric:tabular-nums;}
+.fx-unit{margin-top:8px;}
+.ind-pick{border:0;text-align:left;font:inherit;color:var(--text);cursor:pointer;}
+.ind-pick:hover{outline:1px solid #8157EF;}
+
+/* ---- Alma Brainstorm ---- */
+.bs-rec-btn{display:inline-flex;align-items:center;gap:6px;background:#8157EF;color:#fff;border:0;font-weight:700;}
+.bs-rec-btn:hover{background:#7146e6;}
+.bs-empty{text-align:center;max-width:460px;margin:40px auto;padding:30px;background:var(--surface);border:1px solid var(--border);border-radius:20px;}
+.bs-empty-ico{font-size:44px;}
+.bs-empty-title{font-family:var(--font-display);font-weight:800;font-size:20px;margin:8px 0;}
+.bs-empty p{color:var(--text-muted);font-size:14px;margin:0 0 16px;}
+.bs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.bs-card{display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;font:inherit;color:var(--text);transition:transform .15s, box-shadow .15s;}
+.bs-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);}
+.bs-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;}
+.bs-chip{background:color-mix(in srgb,#8157EF 12%,var(--surface));color:#8157EF;border-radius:999px;padding:3px 9px;font-weight:700;font-size:11.5px;}
+.bs-card-title{font-family:var(--font-display);font-weight:800;font-size:16px;line-height:1.3;}
+.bs-card-sum{font-size:13px;color:var(--text-muted);line-height:1.45;}
+.bs-card-foot{display:flex;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--text-muted);}
+.bs-tag{background:var(--surface-alt);border-radius:6px;padding:2px 7px;}
+.bs-doc{max-width:860px;}
+.bs-doc-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.bs-doc-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.bs-doc-head{background:linear-gradient(125deg,color-mix(in srgb,#FF6B45 10%,var(--surface)),color-mix(in srgb,#8157EF 12%,var(--surface)));border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:12px;}
+.bs-doc-title{font-family:var(--font-display);font-weight:800;font-size:24px;margin:6px 0 0;outline:none;border-radius:6px;}
+.bs-doc-title:focus{background:var(--surface);box-shadow:0 0 0 2px #8157EF;}
+.bs-sec{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px;}
+.bs-sec h3{font-family:var(--font-display);font-size:14px;font-weight:800;margin:0 0 8px;}
+.bs-sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
+.bs-sec-head h3{margin:0;}
+.bs-p{margin:0;font-size:14px;line-height:1.6;}
+.bs-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.bs-two .bs-sec{margin-bottom:12px;}
+.bs-list{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;}
+.bs-list li{margin:3px 0;}
+.bs-act{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.bs-act:last-child{border-bottom:0;}
+.bs-act-main{min-width:0;font-size:13.5px;}
+.bs-act-main small{display:block;color:var(--text-muted);font-size:12px;margin-top:3px;}
+.bs-act-done{border:0;background:color-mix(in srgb,var(--success) 14%,var(--surface));color:var(--success);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.bs-trans summary{cursor:pointer;list-style:none;}
+.bs-trans-body{margin-top:10px;font-size:13px;line-height:1.6;color:var(--text);max-height:420px;overflow-y:auto;white-space:normal;}
+.bs-warn{color:#B8860B;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.bs-modal{min-width:min(420px,84vw);}
+.bs-modal-ico{font-size:34px;text-align:center;}
+.bs-modal-title{font-family:var(--font-display);font-weight:800;font-size:19px;text-align:center;margin:4px 0 14px;}
+.bs-consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:14px;cursor:pointer;}
+.bs-consent input{margin-top:2px;width:16px;height:16px;flex:none;}
+.bs-note{font-size:12px;color:var(--text-muted);background:var(--surface-alt);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.45;}
+.bs-rec-head{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;}
+.bs-dot{width:10px;height:10px;border-radius:50%;background:#E5484D;animation:bsPulse 1.2s infinite;}
+.bs-dot.paused{background:#B8860B;animation:none;} .bs-dot.stopped{background:var(--text-muted);animation:none;}
+@keyframes bsPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.bs-clock{font-family:var(--font-display);font-size:48px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 2px;}
+.bs-wave{justify-content:center;margin:0 auto 6px;}
+.bs-wave:not(.on) span{animation:none;}
+.bs-segs{display:flex;gap:6px;flex-wrap:wrap;}
+.bs-seg{background:var(--surface-alt);border-radius:8px;padding:4px 8px;font-size:12px;}
+.bs-seg.err{background:color-mix(in srgb,#E5484D 14%,var(--surface));}
+.bs-live{max-height:180px;overflow-y:auto;background:var(--surface-alt);border-radius:12px;padding:12px;font-size:13px;line-height:1.55;}
+.bs-dl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.bs-dl-opt{display:flex;flex-direction:column;gap:3px;align-items:flex-start;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:12px;padding:12px;font:inherit;cursor:pointer;text-align:left;}
+.bs-dl-opt:hover{border-color:#8157EF;}
+.bs-dl-opt small{color:var(--text-muted);font-size:11.5px;}
+@media (max-width:700px){ .bs-two{grid-template-columns:1fr;} .bs-dl{grid-template-columns:1fr;} .bs-doc-title{font-size:20px;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2013,6 +2088,10 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
         <span>Memoria de Alma</span>
       </li>
+      <li class="nav-item" data-view="brainstorm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0M12 17v4.5M8.5 21.5h7"/><path d="M20 2.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor" stroke="none"/></svg>
+        <span>Alma Brainstorm</span>
+      </li>
     </ul>
 
     <div class="nav-group-label">Planificación</div>
@@ -2269,6 +2348,19 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
     </section>
 
     <!-- ---------- NOTAS DEL DÍA (sticky note / libreta) ---------- -->
+    <section class="view hidden" id="view-brainstorm">
+      <div class="view-header">
+        <div>
+          <h1>Alma Brainstorm</h1>
+          <p>Graba una reunión o conversación y Alma ordena las ideas, decisiones, responsables y próximos pasos.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" id="bsPasteBtn" title="Pegar notas o una transcripción">📝 Pegar texto</button>
+          <button class="btn btn-alma-voice bs-rec-btn" id="bsRecordBtn" title="Grabar una conversación">🎙️ Grabar</button>
+        </div>
+      </div>
+      <div id="bsContainer"></div>
+    </section>
     <section class="view hidden" id="view-notas">
       <div class="view-header">
         <div>
@@ -2921,7 +3013,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
   <div class="tools-tabs" role="tablist">
     <button type="button" role="tab" class="tools-tab" data-tool="calc">🧮<span>Calculadora</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="focus">⏱️<span>Foco</span></button>
-    <button type="button" role="tab" class="tools-tab" data-tool="ind">💲<span>UF y dólar</span></button>
+    <button type="button" role="tab" class="tools-tab" data-tool="ind">💱<span>Monedas</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="days">📆<span>Días</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="hol">🇨🇱<span>Feriados</span></button>
     <button type="button" role="tab" class="tools-tab" data-tool="split">🧾<span>Dividir cuenta</span></button>
@@ -3844,6 +3936,7 @@ function normalizeAndAdoptDB(parsed){
   if(!Array.isArray(DB.activityLog)) DB.activityLog = [];
   if(!Array.isArray(DB.trash)) DB.trash = [];
   if(!Array.isArray(DB.birthdays)) DB.birthdays = [];
+  if(!Array.isArray(DB.brainstorms)) DB.brainstorms = [];
   if(!DB.stickyNote || typeof DB.stickyNote!=="object") DB.stickyNote = { date:"", lines:[] };
   if(!Array.isArray(DB.stickyHistory)) DB.stickyHistory = [];
   if(!DB.config.stickyCutoffHour) DB.config.stickyCutoffHour = "00:00";
@@ -4282,7 +4375,7 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 /* ---------------------------------------------------------------------- *
  * Navegación entre vistas
  * ---------------------------------------------------------------------- */
-const VIEWS = ["dashboard","projects","notas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
+const VIEWS = ["dashboard","projects","notas","brainstorm","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
 function showView(view){
   selectedTaskIds.clear();
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
@@ -12081,7 +12174,7 @@ function render(){
 
   const activeView = VIEWS.find(v=>{ const el=document.getElementById("view-"+v); return el && !el.classList.contains("hidden"); }) || "dashboard";
   const renderers = {
-    dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, mytasks: renderTaskList, kanban: renderKanban,
+    dashboard: renderDashboard, projects: renderProjects, notas: renderNotas, brainstorm: renderBrainstorm, mytasks: renderTaskList, kanban: renderKanban,
     agendar: renderPorAgendar, calendar: renderCalendar, gantt: renderGantt, matrix: renderMatrix, responsables: renderResponsables,
     reportes: renderReportes, notificaciones: renderNotificaciones, cumpleanos: renderBirthdays, usuarios: renderUsuariosView, configuracion: renderConfiguracion,
   };
@@ -12834,7 +12927,7 @@ function renderTools(){
   const body = document.getElementById("toolsBody");
   if(toolsCurrent==="calc") renderToolCalc(body);
   else if(toolsCurrent==="focus") renderToolFocus(body);
-  else if(toolsCurrent==="ind") renderToolInd(body);
+  else if(toolsCurrent==="ind"){ ensureFx(); renderToolInd(body); }
   else if(toolsCurrent==="hol") renderToolHol(body);
   else if(toolsCurrent==="split") renderToolSplit(body);
   else renderToolDays(body);
@@ -13039,32 +13132,129 @@ function renderIndCard(){
   c.innerHTML = `<span class="ind-badge" aria-hidden="true">UF</span><span class="wx-card-main"><span class="wx-card-temp">${fmtCLP(d.uf.valor,2)}</span><span class="wx-card-desc">${d.dolar?`Dólar ${fmtCLP(d.dolar.valor,0)}`:"Valor de hoy"} · Convertir</span></span><span class="wx-card-chev" aria-hidden="true">›</span>`;
   c.setAttribute("aria-label", `UF hoy ${fmtCLP(d.uf.valor,2)}. Abrir conversor`);
 }
-let indConvAmount = "1", indConvFrom = "uf";
-function indRate(code){ if(code==="clp") return 1; const d = indState.data; return d && d[code] ? d[code].valor : null; }
+let indConvAmount = "1", indConvFrom = "UF";
+/* ---------- Monedas del mundo (ExchangeRate-API; respaldo: currency-api en jsDelivr) ---------- */
+// Todo se calcula en pesos chilenos por unidad. UF y UTM salen de mindicador.cl;
+// el dólar y el euro también (valor oficial chileno), para que calcen con la
+// tarjeta de Inicio. El resto de monedas se cruza vía dólar con ExchangeRate-API.
+let fxState = { rates:null, date:"", source:"", loading:false, error:"" };
+const FX_REFRESH_MS = 12*60*60*1000;
+async function ensureFx(force){
+  if(fxState.loading) return;
+  if(!force && fxState.rates && Date.now()-(fxState.fetchedAt||0) < FX_REFRESH_MS) return;
+  fxState.loading = true;
+  const norm = obj => { const out = {}; Object.keys(obj||{}).forEach(k=>{ const v = Number(obj[k]); if(/^[a-z]{3}$/i.test(k) && v>0) out[k.toUpperCase()] = v; }); return out; };
+  try{
+    let rates = null, date = "", source = "";
+    try{
+      const r = await fetch("https://open.er-api.com/v6/latest/USD");
+      const j = await r.json();
+      if(j && j.result==="success" && j.rates){ rates = norm(j.rates); date = j.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString().slice(0,10) : ""; source = "ExchangeRate-API"; }
+    }catch(e){ /* sigue con el respaldo */ }
+    if(!rates || !rates.CLP){
+      const r = await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json");
+      const j = await r.json();
+      if(j && j.usd){ rates = norm(j.usd); date = j.date || ""; source = "currency-api"; }
+    }
+    if(!rates || !rates.CLP) throw new Error("sin tasas");
+    rates.USD = 1;
+    fxState = { rates, date, source, fetchedAt: Date.now(), loading:false, error:"" };
+    DB.config.lastFx = { rates, date, source, savedAt: Date.now() }; saveDB();
+  }catch(e){
+    const last = DB.config.lastFx;
+    fxState = last && last.rates ? { rates:last.rates, date:last.date, source:last.source, fetchedAt:Date.now(), loading:false, error:"stale" }
+                                 : { rates:null, date:"", source:"", loading:false, error:"No pude cargar las monedas del mundo ahora." };
+  }
+  if(toolsIsOpen() && toolsCurrent==="ind") renderToolInd(document.getElementById("toolsBody"));
+}
+// Pesos chilenos por 1 unidad de "code" (null si no hay dato)
+function clpPer(code){
+  const d = indState.data || {}, fx = fxState.rates;
+  if(code==="CLP") return 1;
+  if(code==="UF") return d.uf ? d.uf.valor : null;
+  if(code==="UTM") return d.utm ? d.utm.valor : null;
+  if(code==="USD") return d.dolar ? d.dolar.valor : (fx ? fx.CLP : null);
+  if(code==="EUR" && d.euro) return d.euro.valor;
+  if(!fx || !fx[code]) return null;
+  const usdClp = d.dolar ? d.dolar.valor : fx.CLP;
+  return usdClp / fx[code];
+}
+let _fxNames = null;
+function fxName(code){
+  if(code==="UF") return "Unidad de Fomento"; if(code==="UTM") return "Unidad Tributaria Mensual"; if(code==="CLP") return "Peso chileno";
+  try{ if(!_fxNames) _fxNames = new Intl.DisplayNames(["es"],{type:"currency"}); const n = _fxNames.of(code); return n ? n.charAt(0).toUpperCase()+n.slice(1) : code; }catch(e){ return code; }
+}
+function fxFlag(code){
+  if(code==="UF"||code==="UTM"||code==="CLP") return "🇨🇱";
+  if(code==="EUR") return "🇪🇺";
+  if(/^X/.test(code) || code.length!==3) return "💱";
+  const cc = code.slice(0,2).toUpperCase();
+  return String.fromCodePoint(...[...cc].map(c=>0x1F1E6 + c.charCodeAt(0) - 65));
+}
+function fxParse(str){ // formato chileno: "800.000" · "1.234,5" · "0,5" · también "1234.5"
+  let t = String(str||"").trim().replace(/\s|\$/g,"");
+  if(!t) return NaN;
+  if(t.includes(",")) t = t.replace(/\./g,"").replace(",", ".");
+  else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g,"");
+  return parseFloat(t);
+}
+function fxFormat(v, code){
+  if(v===null || !isFinite(v)) return "—";
+  const abs = Math.abs(v);
+  const dec = code==="CLP" ? (abs<10?2:0) : (code==="UF"||code==="UTM") ? (abs<1?4:2) : (abs<1?4:2);
+  // montos muy chicos (ej. 1 peso en UF): mostrar 4 cifras significativas en vez de "0,00"
+  const n = (abs>0 && abs<0.01) ? Number(v).toLocaleString("es-CL",{maximumSignificantDigits:4})
+          : Number(v).toLocaleString("es-CL",{minimumFractionDigits: code==="CLP"&&abs>=10?0:Math.min(dec,2), maximumFractionDigits: dec});
+  return code==="CLP" ? "$"+n : n+" "+code;
+}
+const FX_CHILE = ["CLP","UF","UTM"];
+const FX_FAV = ["USD","EUR","ARS","PEN","BRL","MXN","COP","BOB","UYU","GBP","CNY","JPY","CAD","AUD","CHF"];
+let indConvTo = "CLP";
+function fxOptions(selected){
+  const fx = fxState.rates || {};
+  const avail = c => clpPer(c)!==null;
+  const opt = c => `<option value="${c}" ${c===selected?"selected":""}>${fxFlag(c)} ${c} · ${esc(fxName(c))}</option>`;
+  const all = Object.keys(fx).filter(c=>!FX_CHILE.includes(c) && !FX_FAV.includes(c) && avail(c)).sort((a,b)=>fxName(a).localeCompare(fxName(b),"es"));
+  return `<optgroup label="Chile">${FX_CHILE.filter(avail).map(opt).join("")}</optgroup>
+    <optgroup label="Más usadas">${FX_FAV.filter(avail).map(opt).join("")}</optgroup>
+    ${all.length?`<optgroup label="Todas las monedas">${all.map(opt).join("")}</optgroup>`:""}`;
+}
 function renderToolInd(body){
   const d = indState.data;
-  if(!d){ body.innerHTML = `<div class="tl-muted">${indState.loading?"Cargando indicadores…":esc(indState.error||"Cargando indicadores…")}</div>`; ensureIndicators(); return; }
-  const stale = indState.error==="stale";
-  const opts = [["uf","UF"],["dolar","Dólares (US$)"],["euro","Euros (€)"],["utm","UTM"],["clp","Pesos ($)"]].filter(([k])=>k==="clp"||d[k]);
-  const amt = parseFloat(String(indConvAmount).replace(/\./g,"").replace(",", "."));
-  const rate = indRate(indConvFrom);
-  const clp = (!isNaN(amt) && rate) ? amt*rate : null;
-  const results = clp===null ? "" : opts.filter(([k])=>k!==indConvFrom).map(([k,l])=>{
-    const v = k==="clp" ? clp : clp/indRate(k);
-    const dec = k==="clp" ? 0 : (k==="uf"||k==="utm" ? 4 : 2);
-    return `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>${l}</span><b style="font-size:15px;display:inline;">${k==="clp"?fmtCLP(v,0):Number(v).toLocaleString("es-CL",{maximumFractionDigits:dec})}</b></div>`;
-  }).join("");
+  if(!d && !fxState.rates){ body.innerHTML = `<div class="tl-muted">${(indState.loading||fxState.loading)?"Cargando valores…":esc(indState.error||fxState.error||"Cargando valores…")}</div>`; ensureIndicators(); ensureFx(); return; }
+  if(!fxState.rates && !fxState.loading && !fxState.error) ensureFx();
+  const fromOk = clpPer(indConvFrom)!==null ? indConvFrom : "CLP";
+  const toOk = clpPer(indConvTo)!==null ? indConvTo : (fromOk==="CLP" ? (clpPer("UF")!==null?"UF":"USD") : "CLP");
+  indConvFrom = fromOk; indConvTo = toOk;
+  const amt = fxParse(indConvAmount);
+  const result = (!isNaN(amt) && clpPer(fromOk) && clpPer(toOk)) ? amt*clpPer(fromOk)/clpPer(toOk) : null;
+  const unitRate = (clpPer(fromOk) && clpPer(toOk)) ? clpPer(fromOk)/clpPer(toOk) : null;
+  const stale = indState.error==="stale" || fxState.error==="stale";
   body.innerHTML = `
-    <div class="tl-sec">Valores ${stale?"(último guardado)":"de hoy"}</div>
-    <div class="ind-grid">${IND_KEYS.filter(([k])=>d[k]).map(([k,l])=>`<div class="ind-box"><span class="tl-muted">${l}</span><b>${fmtCLP(d[k].valor, k==="uf"||k==="dolar"||k==="euro"?2:0)}</b><span class="tl-muted">${k==="utm" ? (d[k].fecha ? new Date(d[k].fecha+"T12:00:00").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "") : indDateLabel(d[k].fecha)}</span></div>`).join("")}</div>
-    ${stale?`<div class="tl-muted" style="margin-top:8px;">⚠️ No pude actualizar ahora; muestro los últimos valores guardados.</div>`:""}
+    ${d?`<div class="tl-sec">Valores ${indState.error==="stale"?"(último guardado)":"de hoy"}</div>
+    <div class="ind-grid">${IND_KEYS.filter(([k])=>d[k]).map(([k,l])=>`<button type="button" class="ind-box ind-pick" data-pick="${({uf:"UF",dolar:"USD",euro:"EUR",utm:"UTM"})[k]}"><span class="tl-muted">${l}</span><b>${fmtCLP(d[k].valor, k==="utm"?0:2)}</b><span class="tl-muted">${k==="utm" ? (d[k].fecha ? new Date(d[k].fecha+"T12:00:00").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "") : indDateLabel(d[k].fecha)}</span></button>`).join("")}</div>`:""}
     <div class="tl-sec">Conversor</div>
-    <div class="ind-conv"><input class="tl-input" id="indAmt" inputmode="decimal" value="${esc(indConvAmount)}" aria-label="Monto"><select class="tl-select" id="indFrom" aria-label="Moneda">${opts.map(([k,l])=>`<option value="${k}" ${k===indConvFrom?"selected":""}>${k==="clp"?"$":k==="dolar"?"US$":k==="euro"?"€":l}</option>`).join("")}</select></div>
-    <div class="ind-out">${results || `<span class="tl-muted">Escribe un monto.</span>`}</div>
-    <div class="tl-muted" style="margin-top:12px;">Fuente: mindicador.cl (datos del Banco Central y SII).</div>`;
+    <div class="fx-box">
+      <div class="fx-line"><input class="tl-input fx-amt" id="indAmt" inputmode="decimal" value="${esc(indConvAmount)}" aria-label="Monto" placeholder="Monto"><select class="tl-select fx-sel" id="indFrom" aria-label="De">${fxOptions(fromOk)}</select></div>
+      <div class="fx-mid"><button type="button" class="fx-swap" id="fxSwap" aria-label="Invertir">⇅</button></div>
+      <div class="fx-line"><div class="fx-result" aria-live="polite">${result===null?"—":esc(fxFormat(result,toOk))}</div><select class="tl-select fx-sel" id="indTo" aria-label="A">${fxOptions(toOk)}</select></div>
+      ${unitRate!==null?`<div class="tl-muted fx-unit">1 ${fromOk} = ${esc(fxFormat(unitRate,toOk))} · 1 ${toOk} = ${esc(fxFormat(1/unitRate,fromOk))}</div>`:""}
+    </div>
+    <div class="tl-chips" style="margin-top:10px;">${["CLP","UF","USD","EUR","UTM"].filter(c=>clpPer(c)!==null).map(c=>`<button type="button" class="tl-chip ${c===toOk?"on":""}" data-to="${c}">a ${c==="CLP"?"pesos":c}</button>`).join("")}</div>
+    ${stale?`<div class="tl-muted" style="margin-top:8px;">⚠️ No pude actualizar ahora; uso los últimos valores guardados.</div>`:""}
+    ${fxState.loading?`<div class="tl-muted" style="margin-top:8px;">Cargando monedas del mundo…</div>`:""}
+    <div class="tl-muted" style="margin-top:12px;line-height:1.5;">UF, UTM, dólar y euro: mindicador.cl (Banco Central y SII).<br>${fxState.rates?`Otras monedas: ${fxState.source==="currency-api" ? `<a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener">currency-api</a>` : `<a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates By Exchange Rate API</a>`}${fxState.date?` · ${indDateLabel(fxState.date)}`:""}. Valores referenciales.`:"Otras monedas: no disponibles ahora."}</div>`;
   const amtEl = body.querySelector("#indAmt");
   amtEl.addEventListener("input", ()=>{ indConvAmount = amtEl.value; const pos = amtEl.selectionStart; renderToolInd(body); const n = body.querySelector("#indAmt"); n.focus(); try{ n.setSelectionRange(pos,pos); }catch(e){} });
   body.querySelector("#indFrom").addEventListener("change", e=>{ indConvFrom = e.target.value; renderToolInd(body); });
+  body.querySelector("#indTo").addEventListener("change", e=>{ indConvTo = e.target.value; renderToolInd(body); });
+  body.querySelector("#fxSwap").addEventListener("click", ()=>{
+    // al invertir, el resultado pasa a ser el nuevo monto
+    if(result!==null) indConvAmount = Number(result).toLocaleString("es-CL",{maximumFractionDigits: toOk==="CLP" ? 2 : 8}); // sin redondear de más, para volver al monto exacto
+    const f = indConvFrom; indConvFrom = indConvTo; indConvTo = f; renderToolInd(body);
+  });
+  body.querySelectorAll("[data-to]").forEach(b=>b.addEventListener("click", ()=>{ indConvTo = b.dataset.to; if(indConvTo===indConvFrom) indConvFrom = indConvTo==="CLP" ? "UF" : "CLP"; renderToolInd(body); }));
+  body.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click", ()=>{ indConvFrom = b.dataset.pick; indConvTo = "CLP"; indConvAmount = "1"; renderToolInd(body); }));
 }
 
 /* ---------- Contador de días ---------- */
@@ -13219,6 +13409,411 @@ function renderToolSplit(body){
   const card = document.getElementById("dashIndCard");
   if(card) card.addEventListener("click", ()=>openTools("ind"));
   if(focusState()){ focusEnsureTick(); focusUpdateBadge(); }
+})();
+/* ====================================================================== *
+ * ALMA BRAINSTORM — grabar una conversación y convertirla en documento.
+ * Cómo graba: en trozos de BS_SEGMENT_SEC segundos (cada trozo < 1 MB),
+ * porque Netlify acepta máx. ~4,5 MB y 60 s por llamada. Cada trozo se
+ * transcribe con Gemini MIENTRAS sigues grabando. El audio NO se guarda:
+ * solo queda el texto. Al terminar, Alma arma el documento.
+ * ====================================================================== */
+let BS_SEGMENT_SEC = 180;           // 3 minutos por trozo
+const BS_MAX_MINUTES = 90;          // tope por grabación
+let bsOpenId = null;                // documento abierto (null = lista)
+let bsRec = null;                   // estado de la grabación en curso
+
+function bsDocs(){ return (DB.brainstorms||[]).slice().sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))); }
+function bsFmtDur(sec){ sec = Math.round(sec||0); const m = Math.floor(sec/60), s2 = sec%60; return m ? `${m} min${s2?` ${s2} s`:""}` : `${s2} s`; }
+function bsFmtClock(sec){ sec = Math.floor(sec||0); return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`; }
+function bsFmtDate(iso){ const d = new Date(iso); return d.toLocaleDateString("es-CL",{weekday:"short", day:"numeric", month:"short"}).replace(/\./g,"") + " · " + minutesTo12h(d.getHours()*60+d.getMinutes()); }
+
+/* ---------- Lista y detalle ---------- */
+function renderBrainstorm(){
+  const wrap = document.getElementById("bsContainer"); if(!wrap) return;
+  const doc = bsOpenId ? (DB.brainstorms||[]).find(d=>d.id===bsOpenId) : null;
+  if(doc){ renderBrainstormDoc(wrap, doc); return; }
+  bsOpenId = null;
+  const docs = bsDocs();
+  if(!docs.length){
+    wrap.innerHTML = `<div class="bs-empty">
+      <div class="bs-empty-ico">🎙️</div>
+      <div class="bs-empty-title">Tu primera lluvia de ideas</div>
+      <p>Graba una reunión, una conversación o tus propias ideas en voz alta. Alma las ordena en un documento con resumen, decisiones y tareas con responsable.</p>
+      <button class="btn btn-primary" id="bsEmptyRec">🎙️ Empezar a grabar</button>
+    </div>`;
+    document.getElementById("bsEmptyRec").addEventListener("click", openBrainstormRecorder);
+    return;
+  }
+  wrap.innerHTML = `<div class="bs-grid">${docs.map(d=>{
+    const nTasks = (d.actions||[]).length, nDone = (d.actions||[]).filter(a=>a.taskId).length;
+    return `<button type="button" class="bs-card" data-bs="${d.id}">
+      <div class="bs-card-top"><span class="bs-chip">${d.source==="texto"?"📝 Texto":"🎙️ "+bsFmtDur(d.durationSec)}</span><span class="tl-muted">${esc(bsFmtDate(d.createdAt))}</span></div>
+      <div class="bs-card-title">${esc(d.title||"Sin título")}</div>
+      <div class="bs-card-sum">${d.status==="procesando"?"⏳ Alma está armando el documento…":d.status==="error"?"⚠️ No se pudo procesar. Ábrelo para reintentar.":esc(String(d.summary||"").slice(0,170))}${String(d.summary||"").length>170?"…":""}</div>
+      <div class="bs-card-foot">${nTasks?`<span>✅ ${nDone}/${nTasks} tareas creadas</span>`:""}${(d.tags||[]).slice(0,3).map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>
+    </button>`; }).join("")}</div>`;
+  wrap.querySelectorAll("[data-bs]").forEach(c=>c.addEventListener("click", ()=>{ bsOpenId = c.dataset.bs; renderBrainstorm(); window.scrollTo({top:0}); }));
+}
+function bsList(arr){ return (arr&&arr.length) ? `<ul class="bs-list">${arr.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : `<div class="tl-muted">—</div>`; }
+function renderBrainstormDoc(wrap, d){
+  const people = d.speakers && d.speakers.length ? d.speakers.join(", ") : "";
+  const actions = d.actions||[];
+  wrap.innerHTML = `
+    <div class="bs-doc">
+      <div class="bs-doc-bar">
+        <button class="btn btn-ghost btn-sm" id="bsBack">‹ Volver</button>
+        <div class="bs-doc-actions">
+          <button class="btn btn-ghost btn-sm" id="bsCopy">📋 Copiar</button>
+          <button class="btn btn-ghost btn-sm" id="bsDownload">⬇️ Descargar</button>
+          <button class="btn btn-primary btn-sm" id="bsEmail">✉️ Enviar por correo</button>
+          <button class="btn btn-ghost btn-sm" id="bsDelete" title="Borrar documento">🗑️</button>
+        </div>
+      </div>
+      <div class="bs-doc-head">
+        <div class="tl-muted">${esc(bsFmtDate(d.createdAt))} · ${d.source==="texto"?"desde texto":"grabación de "+bsFmtDur(d.durationSec)}${people?` · ${esc(people)}`:""}</div>
+        <h2 class="bs-doc-title" contenteditable="true" spellcheck="false" id="bsTitle" title="Toca para editar el título">${esc(d.title||"Sin título")}</h2>
+        ${(d.tags||[]).length?`<div class="bs-card-foot" style="margin-top:6px;">${d.tags.map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>`:""}
+      </div>
+      ${d.status==="procesando"?`<div class="bs-sec"><div class="tl-muted">⏳ Alma está armando el documento…</div></div>`:""}
+      ${d.status==="error"?`<div class="bs-sec bs-warn">⚠️ ${esc(d.error||"No se pudo procesar.")} <button class="btn btn-primary btn-sm" id="bsRetry">Reintentar</button></div>`:""}
+      ${d.status==="listo"?`
+      <div class="bs-sec"><h3>Resumen</h3><p class="bs-p">${esc(d.summary||"")}</p></div>
+      <div class="bs-two">
+        <div class="bs-sec"><h3>💡 Ideas clave</h3>${bsList(d.ideas)}</div>
+        <div class="bs-sec"><h3>✔️ Decisiones</h3>${bsList(d.decisions)}</div>
+      </div>
+      <div class="bs-sec">
+        <div class="bs-sec-head"><h3>📋 Tareas y responsables</h3>${actions.some(a=>!a.taskId)?`<button class="btn btn-primary btn-sm" id="bsCreateAll">＋ Crear todas</button>`:""}</div>
+        ${actions.length?actions.map((a,i)=>`<div class="bs-act">
+          <div class="bs-act-main"><b>${esc(a.title)}</b><small>👤 ${esc(a.owner||"Sin responsable")}${a.due?` · ⏰ ${esc(almaFriendlyDate(a.due))}`:""}</small></div>
+          ${a.taskId?`<button class="bs-act-done" data-open-task="${a.taskId}">✓ Creada · ver</button>`:`<button class="btn btn-ghost btn-sm" data-make="${i}">＋ Crear tarea</button>`}
+        </div>`).join(""):`<div class="tl-muted">No se detectaron tareas concretas.</div>`}
+      </div>
+      <div class="bs-sec"><h3>➡️ Próximos pasos</h3>${bsList(d.nextSteps)}</div>`:""}
+      <details class="bs-sec bs-trans" ${d.status!=="listo"?"open":""}>
+        <summary><h3 style="display:inline;">🗒️ Transcripción</h3> <span class="tl-muted">${(d.transcript||"").split(/\s+/).filter(Boolean).length} palabras</span></summary>
+        <div class="bs-trans-body">${esc(d.transcript||"").replace(/\n/g,"<br>")}</div>
+      </details>
+    </div>`;
+  wrap.querySelector("#bsBack").addEventListener("click", ()=>{ bsOpenId = null; renderBrainstorm(); });
+  const titleEl = wrap.querySelector("#bsTitle");
+  titleEl.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); titleEl.blur(); } });
+  titleEl.addEventListener("blur", ()=>{ const t = titleEl.textContent.trim().slice(0,120); if(t && t!==d.title){ d.title = t; saveDB(); } });
+  wrap.querySelector("#bsCopy").addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(bsDocToText(d, true)); toast("Documento copiado.","success"); }catch(e){ toast("No pude copiar.","error"); } });
+  wrap.querySelector("#bsDownload").addEventListener("click", ()=>bsOpenDownload(d));
+  wrap.querySelector("#bsEmail").addEventListener("click", ()=>bsOpenEmail(d));
+  wrap.querySelector("#bsDelete").addEventListener("click", ()=>{
+    if(!confirm(`¿Borrar "${d.title}"? Las tareas que ya creaste se mantienen.`)) return;
+    DB.brainstorms = DB.brainstorms.filter(x=>x.id!==d.id); saveDB(); bsOpenId = null; renderBrainstorm(); toast("Documento borrado.","info");
+  });
+  const retry = wrap.querySelector("#bsRetry"); if(retry) retry.addEventListener("click", ()=>bsProcessDoc(d.id));
+  wrap.querySelectorAll("[data-make]").forEach(b=>b.addEventListener("click", ()=>{ bsCreateTask(d, +b.dataset.make); renderBrainstorm(); }));
+  const all = wrap.querySelector("#bsCreateAll");
+  if(all) all.addEventListener("click", ()=>{ let n=0; (d.actions||[]).forEach((a,i)=>{ if(!a.taskId){ bsCreateTask(d,i,true); n++; } }); recomputeAll(); saveDB(); render(); toast(`✨ Creé ${n} tarea${n===1?"":"s"} desde "${d.title}".`,"success"); });
+  wrap.querySelectorAll("[data-open-task]").forEach(b=>b.addEventListener("click", ()=>openTaskModal(b.dataset.openTask)));
+}
+// Crea una tarea real desde una acción del documento (queda en "Por agendar" salvo que traiga fecha)
+function bsCreateTask(d, i, silent){
+  const a = d.actions[i]; if(!a || a.taskId) return;
+  const me = (DB.config.userName||"").trim().toLowerCase();
+  const ownerName = (a.owner||"").trim();
+  const isMe = !ownerName || /^(yo|mí|mi|tú|tu)$/i.test(ownerName) || (me && ownerName.toLowerCase()===me) || (me && me.split(" ")[0]===ownerName.toLowerCase());
+  const t = buildTaskFromParsedVoiceItem(a.title, { titulo:a.title, descripcion:`Desde Alma Brainstorm: "${d.title}".`, kind:"tarea", tipo_tarea:a.tipo||"laboral", fecha_vencimiento:a.due||null, prioridad:a.priority||"media", etiquetas:["brainstorm"] });
+  if(!isMe){ t.owner = ensureResponsableByName(ownerName); t.ownerName = ownerName; }
+  DB.tasks.push(t); a.taskId = t.id;
+  if(!silent){ recomputeAll(); saveDB(); render(); toast(`✨ Creé "${t.title}"${isMe?"":` para ${ownerName}`}.`,"success"); }
+}
+
+/* ---------- Grabar ---------- */
+function bsPickMime(){
+  const opts = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"];
+  if(!window.MediaRecorder) return null;
+  return opts.find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } }) || "";
+}
+function openBrainstormRecorder(){
+  if(bsRec){ bsRenderRecorder(); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || bsPickMime()===null){
+    openGenericModal("Grabar", `<p>Este navegador no permite grabar audio. Prueba con Chrome, Edge o Safari actualizados, o usa <b>📝 Pegar texto</b>.</p>`); return;
+  }
+  openGenericModal("", `
+    <div class="bs-modal">
+      <div class="bs-modal-ico">🎙️</div>
+      <div class="bs-modal-title">Nueva grabación</div>
+      <label class="tl-muted" for="bsRecTitle">¿De qué se trata? (opcional)</label>
+      <input class="tl-input" id="bsRecTitle" placeholder="Ej: Reunión de planificación con el equipo" style="margin-top:6px;">
+      <label class="bs-consent"><input type="checkbox" id="bsConsent"> <span>Les avisé a las personas que voy a grabar y están de acuerdo.</span></label>
+      <div class="bs-note">🔒 El audio se envía a la IA (Gemini) para transcribirlo y <b>no se guarda</b>: solo queda el texto, en tu cuenta privada.</div>
+      <button class="btn btn-primary" id="bsStart" disabled style="width:100%;justify-content:center;margin-top:12px;">● Empezar a grabar</button>
+    </div>`);
+  document.getElementById("genericModalTitle").style.display = "none";
+  const c = document.getElementById("bsConsent"), go = document.getElementById("bsStart");
+  c.addEventListener("change", ()=>{ go.disabled = !c.checked; });
+  go.addEventListener("click", ()=>bsStartRecording(document.getElementById("bsRecTitle").value.trim()));
+}
+async function bsStartRecording(title){
+  let stream;
+  try{ stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); }
+  catch(e){ toast("No tengo permiso para usar el micrófono. Revísalo en la configuración del navegador.","error"); return; }
+  const mime = bsPickMime();
+  bsRec = { title, stream, mime, startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
+            segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, queue: Promise.resolve() };
+  bsStartSegment();
+  bsRec.tick = setInterval(()=>{ bsUpdateClock(); if(bsElapsed() >= BS_MAX_MINUTES*60000) bsStopRecording(); }, 500);
+  bsRenderRecorder();
+}
+function bsElapsed(){ return bsRec ? bsRec.elapsedMs + (bsRec.paused ? 0 : Date.now()-bsRec.runStart) : 0; }
+function bsStartSegment(){
+  const r = bsRec; if(!r) return;
+  const chunks = [];
+  const rec = new MediaRecorder(r.stream, r.mime ? { mimeType:r.mime, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 });
+  const seg = { n: ++r.segIndex, startSec: Math.floor(bsElapsed()/1000), status:"grabando", text:"" };
+  r.segments.push(seg);
+  rec.ondataavailable = e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = ()=>{
+    const blob = new Blob(chunks, { type: rec.mimeType || r.mime || "audio/webm" });
+    seg.status = "en cola"; seg.blob = blob; bsRenderRecorder();
+    r.queue = r.queue.then(()=>bsTranscribeSegment(seg));
+    if(!r.stopping) bsStartSegment();
+  };
+  rec.start(1000);
+  r.recorder = rec;
+  clearTimeout(r.segTimer);
+  r.segTimer = setTimeout(()=>{ if(rec.state!=="inactive" && !r.paused) rec.stop(); }, BS_SEGMENT_SEC*1000);
+}
+async function bsTranscribeSegment(seg){
+  seg.status = "transcribiendo"; bsRenderRecorder();
+  if(!seg.blob || seg.blob.size < 2000){ seg.status="listo"; seg.text=""; bsRenderRecorder(); return; }
+  const prompt = `Transcribe en español este audio. Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
+Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
+Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si no hay voz entendible, responde exactamente: (sin voz)
+Responde solo con la transcripción, en texto plano.`;
+  for(let attempt=1; attempt<=2; attempt++){
+    try{
+      const b64 = await fileToBase64(seg.blob);
+      const out = await askAI([{ type:"text", text: prompt }, { type:"audio", source:{ data:b64, media_type: seg.blob.type || "audio/webm" } }]);
+      seg.text = /^\(sin voz\)$/i.test(out.trim()) ? "" : out.trim();
+      seg.status = "listo"; delete seg.blob; bsRenderRecorder(); return;
+    }catch(e){ if(attempt===2){ seg.status = "error"; seg.error = String(e.message||e); bsRenderRecorder(); } }
+  }
+}
+function bsPauseResume(){
+  const r = bsRec; if(!r || !r.recorder) return;
+  if(r.paused){ r.paused = false; r.runStart = Date.now(); try{ r.recorder.resume(); }catch(e){}
+    const left = Math.max(1000, BS_SEGMENT_SEC*1000 - (bsElapsed()/1000 - r.segments[r.segments.length-1].startSec)*1000);
+    clearTimeout(r.segTimer); r.segTimer = setTimeout(()=>{ if(r.recorder.state!=="inactive" && !r.paused) r.recorder.stop(); }, left);
+  } else { r.elapsedMs += Date.now()-r.runStart; r.paused = true; try{ r.recorder.pause(); }catch(e){} clearTimeout(r.segTimer); }
+  bsRenderRecorder();
+}
+async function bsStopRecording(){
+  const r = bsRec; if(!r || r.stopping) return;
+  r.stopping = true; clearTimeout(r.segTimer); clearInterval(r.tick);
+  if(!r.paused) r.elapsedMs += Date.now()-r.runStart;
+  r.paused = false;
+  await new Promise(res=>{ if(r.recorder && r.recorder.state!=="inactive"){ const prev = r.recorder.onstop; r.recorder.onstop = (ev)=>{ prev(ev); res(); }; r.recorder.stop(); } else res(); });
+  r.stream.getTracks().forEach(t=>t.stop());
+  { const b = document.getElementById("bsRecordBtn"); if(b) b.textContent = "⏳ Procesando…"; }
+  bsRenderRecorder();
+  await r.queue;                          // espera que terminen todas las transcripciones
+  // reintento final de trozos con error
+  for(const seg of r.segments.filter(x=>x.status==="error" && x.blob)) await bsTranscribeSegment(seg);
+  const failed = r.segments.filter(x=>x.status==="error").length;
+  const transcript = r.segments.map(x=>x.text).filter(Boolean).join("\n");
+  const doc = { id: uid("bs"), title: r.title || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
+                source:"grabacion", transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
+                missingParts: failed };
+  DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
+  bsRec = null; closeGenericModal(); bsUpdateClock();
+  bsOpenId = doc.id; showView("brainstorm");
+  if(!transcript.trim()){ doc.status = "error"; doc.error = "No se escuchó voz en la grabación."; saveDB(); renderBrainstorm(); return; }
+  if(failed) toast(`⚠️ ${failed} trozo${failed===1?"":"s"} no se pudo transcribir; el documento queda sin esa parte.`,"info");
+  bsProcessDoc(doc.id);
+}
+function bsCancelRecording(){
+  const r = bsRec; if(!r) return;
+  if(!confirm("¿Descartar esta grabación? No se guardará nada.")) return;
+  r.stopping = true; clearTimeout(r.segTimer); clearInterval(r.tick);
+  try{ r.recorder.onstop = null; r.recorder.stop(); }catch(e){}
+  r.stream.getTracks().forEach(t=>t.stop()); bsRec = null; closeGenericModal(); bsUpdateClock();
+}
+function bsUpdateClock(){
+  const el = document.getElementById("bsClock"); if(el) el.textContent = bsFmtClock(bsElapsed()/1000);
+  // el botón "Grabar" muestra que hay una grabación en curso (por si cerraron la ventana)
+  const b = document.getElementById("bsRecordBtn");
+  if(b) b.textContent = bsRec ? `🔴 Grabando ${bsFmtClock(bsElapsed()/1000)}` : "🎙️ Grabar";
+}
+function bsRenderRecorder(){
+  const r = bsRec; if(!r) return;
+  const body = document.getElementById("genericModalBody");
+  const backdrop = document.getElementById("genericModalBackdrop");
+  if(backdrop.classList.contains("hidden")){ openGenericModal("", ""); }
+  document.getElementById("genericModalTitle").style.display = "none";
+  const stIcon = { "grabando":"🔴", "en cola":"⏳", "transcribiendo":"✍️", "listo":"✅", "error":"⚠️" };
+  const live = r.segments.filter(x=>x.text).map(x=>x.text).join("\n");
+  body.innerHTML = `
+    <div class="bs-modal">
+      <div class="bs-rec-head"><span class="bs-dot ${r.paused?"paused":""} ${r.stopping?"stopped":""}"></span>${r.stopping?"Terminando…":r.paused?"En pausa":"Grabando"}${r.title?` · ${esc(r.title)}`:""}</div>
+      <div class="bs-clock" id="bsClock">${bsFmtClock(bsElapsed()/1000)}</div>
+      <div class="af-wave bs-wave ${r.paused||r.stopping?"":"on"}"><span></span><span></span><span></span><span></span><span></span></div>
+      ${r.stopping?`<div class="bs-note" style="text-align:center;">✍️ Terminando de transcribir… luego Alma arma el documento.</div>`:`
+      <div class="tl-row"><button class="btn btn-ghost" id="bsCancel">✕ Descartar</button><button class="btn btn-ghost" id="bsPause">${r.paused?"▶ Seguir":"⏸ Pausar"}</button><button class="btn btn-primary" id="bsStop">■ Terminar</button></div>`}
+      <div class="tl-sec">Trozos de ${Math.round(BS_SEGMENT_SEC/60)||1} min</div>
+      <div class="bs-segs">${r.segments.map(x=>`<span class="bs-seg ${x.status==="error"?"err":""}" title="${esc(x.status)}">${stIcon[x.status]||"•"} ${x.n}</span>`).join("")}</div>
+      <div class="tl-sec">Transcripción en vivo</div>
+      <div class="bs-live" id="bsLive">${live?esc(live).replace(/\n/g,"<br>"):`<span class="tl-muted">El texto aparece aquí a medida que se transcribe cada trozo (cada ${Math.round(BS_SEGMENT_SEC/60)||1} min).</span>`}</div>
+      <div class="tl-muted" style="margin-top:8px;">Tope: ${BS_MAX_MINUTES} minutos por grabación. No cierres esta pestaña mientras grabas.</div>
+    </div>`;
+  const live2 = document.getElementById("bsLive"); if(live2) live2.scrollTop = live2.scrollHeight;
+  const st = document.getElementById("bsStop"); if(st) st.addEventListener("click", bsStopRecording);
+  const pa = document.getElementById("bsPause"); if(pa) pa.addEventListener("click", bsPauseResume);
+  const ca = document.getElementById("bsCancel"); if(ca) ca.addEventListener("click", bsCancelRecording);
+}
+
+/* ---------- Pegar texto ---------- */
+function openBrainstormPaste(){
+  openGenericModal("", `
+    <div class="bs-modal">
+      <div class="bs-modal-title">📝 Desde texto</div>
+      <p class="tl-muted">Pega tus notas, una transcripción (Meet, Teams, Zoom) o ideas sueltas. Alma las ordena igual que una grabación.</p>
+      <input class="tl-input" id="bsPasteTitle" placeholder="Título (opcional)" style="margin-bottom:8px;">
+      <textarea class="tl-input" id="bsPasteText" rows="9" placeholder="Pega aquí el texto…"></textarea>
+      <button class="btn btn-primary" id="bsPasteGo" style="width:100%;justify-content:center;margin-top:10px;">✨ Ordenar con Alma</button>
+    </div>`);
+  document.getElementById("genericModalTitle").style.display = "none";
+  document.getElementById("bsPasteGo").addEventListener("click", ()=>{
+    const text = document.getElementById("bsPasteText").value.trim();
+    if(text.length < 40){ toast("Pega un poco más de texto para que Alma pueda ordenarlo.","info"); return; }
+    const doc = { id: uid("bs"), title: document.getElementById("bsPasteTitle").value.trim(), createdAt: new Date().toISOString(), durationSec:0,
+                  source:"texto", transcript: text.slice(0, 120000), status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[] };
+    DB.brainstorms.push(doc); saveDB(); closeGenericModal(); bsOpenId = doc.id; showView("brainstorm"); bsProcessDoc(doc.id);
+  });
+}
+
+/* ---------- Alma arma el documento ---------- */
+async function bsProcessDoc(id){
+  const d = (DB.brainstorms||[]).find(x=>x.id===id); if(!d) return;
+  d.status = "procesando"; d.error = ""; saveDB(); if(bsOpenId===id) renderBrainstorm();
+  const people = (DB.responsables||[]).map(r=>r.name).filter(Boolean).join(", ") || "(ninguna registrada)";
+  const projects = (DB.projects||[]).filter(p=>!p.archived).map(p=>p.name).join(", ") || "(ninguno)";
+  const me = DB.config.userName || "el usuario";
+  const prompt = `Eres Alma, asistente de la app TaskFlow Pro. Ordena esta conversación (o notas) en un documento de trabajo claro, en español de Chile neutro.
+Quien graba es ${me}. Hoy es ${TODAY()}.
+Personas que el usuario tiene registradas (úsalas si coinciden): ${people}. Sus proyectos: ${projects}.
+${d.title?`El usuario la tituló: "${d.title}".`:""}
+
+TEXTO:
+"""${d.transcript}"""
+
+Responde SOLO un JSON válido, sin texto extra ni backticks, con esta forma exacta:
+{"titulo":"...","resumen":"...","ideas":["..."],"decisiones":["..."],"tareas":[{"titulo":"...","responsable":"...","fecha":"YYYY-MM-DD","prioridad":"alta|media|baja","tipo":"laboral|personal"}],"proximos_pasos":["..."],"participantes":["..."],"etiquetas":["..."]}
+Reglas:
+- "titulo": corto (máx 60 caracteres). Si el usuario ya puso uno, respétalo.
+- "resumen": 3 a 6 frases con lo esencial.
+- "ideas": las ideas principales que surgieron (máx 8). "decisiones": SOLO lo que quedó decidido de verdad (puede ir vacío).
+- "tareas": compromisos concretos. "titulo" corto que empiece con verbo. "responsable": nombre de quien se comprometió; si fue quien graba usa "${me}"; si no está claro, "". "fecha": solo si se mencionó un plazo, si no null.
+- "proximos_pasos": qué viene después (máx 5). "participantes": nombres que aparecen. "etiquetas": 0 a 3, minúsculas.
+- No inventes nada que no esté en el texto.`;
+  try{
+    const raw = await askAI(prompt);
+    const j = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
+    const okD = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : "";
+    d.title = d.title || String(j.titulo||"Lluvia de ideas").slice(0,120);
+    d.summary = String(j.resumen||"");
+    d.ideas = (j.ideas||[]).map(String).slice(0,12);
+    d.decisions = (j.decisiones||[]).map(String).slice(0,12);
+    d.nextSteps = (j.proximos_pasos||[]).map(String).slice(0,8);
+    d.speakers = (j.participantes||[]).map(String).slice(0,12);
+    d.tags = (j.etiquetas||[]).map(x=>String(x).toLowerCase()).slice(0,3);
+    d.actions = (j.tareas||[]).filter(t=>t && t.titulo).slice(0,20).map(t=>({ title:String(t.titulo).slice(0,120), owner:String(t.responsable||""), due:okD(t.fecha), priority:["alta","media","baja"].includes(t.prioridad)?t.prioridad:"media", tipo: t.tipo==="personal"?"personal":"laboral", taskId:null }));
+    d.status = "listo";
+  }catch(e){ d.status = "error"; d.error = "Alma no pudo armar el documento ahora (" + (e.message||"error") + ")."; }
+  saveDB(); if(bsOpenId===id || document.getElementById("view-brainstorm").classList.contains("hidden")===false) renderBrainstorm();
+  if(d.status==="listo") toast(`✨ Listo: "${d.title}".`,"success");
+}
+
+/* ---------- Compartir: texto, descargar, correo ---------- */
+function bsDocToText(d, withTranscript){
+  const L = [];
+  L.push(d.title||"Lluvia de ideas"); L.push(bsFmtDate(d.createdAt)); L.push("");
+  if(d.summary){ L.push("RESUMEN"); L.push(d.summary); L.push(""); }
+  if((d.ideas||[]).length){ L.push("IDEAS CLAVE"); d.ideas.forEach(x=>L.push("• "+x)); L.push(""); }
+  if((d.decisions||[]).length){ L.push("DECISIONES"); d.decisions.forEach(x=>L.push("• "+x)); L.push(""); }
+  if((d.actions||[]).length){ L.push("TAREAS Y RESPONSABLES"); d.actions.forEach(a=>L.push(`• ${a.title} — ${a.owner||"sin responsable"}${a.due?` (plazo ${a.due})`:""}`)); L.push(""); }
+  if((d.nextSteps||[]).length){ L.push("PRÓXIMOS PASOS"); d.nextSteps.forEach(x=>L.push("• "+x)); L.push(""); }
+  if(withTranscript && d.transcript){ L.push("TRANSCRIPCIÓN"); L.push(d.transcript); }
+  return L.join("\n");
+}
+function bsDocToHTML(d, withTranscript){
+  const sec = (t, arr)=> (arr&&arr.length) ? `<h2>${t}</h2><ul>${arr.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : "";
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(d.title||"Documento")}</title>
+<style>body{font-family:Arial,Helvetica,sans-serif;color:#2b1b2e;max-width:720px;margin:32px auto;padding:0 20px;line-height:1.5}h1{font-size:24px;margin:0 0 4px}.m{color:#8a7a8c;font-size:13px;margin-bottom:18px}h2{font-size:15px;color:#ED3F7C;margin:22px 0 6px;text-transform:uppercase;letter-spacing:.5px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:6px 4px;text-align:left;font-size:14px}.t{white-space:pre-wrap;font-size:13px;color:#555}</style></head><body>
+<h1>${esc(d.title||"Lluvia de ideas")}</h1><div class="m">${esc(bsFmtDate(d.createdAt))}${d.source==="texto"?"":" · "+esc(bsFmtDur(d.durationSec))} · TaskFlow Pro · Alma Brainstorm</div>
+${d.summary?`<h2>Resumen</h2><p>${esc(d.summary)}</p>`:""}${sec("Ideas clave",d.ideas)}${sec("Decisiones",d.decisions)}
+${(d.actions||[]).length?`<h2>Tareas y responsables</h2><table><tr><th>Tarea</th><th>Responsable</th><th>Plazo</th></tr>${d.actions.map(a=>`<tr><td>${esc(a.title)}</td><td>${esc(a.owner||"—")}</td><td>${esc(a.due||"—")}</td></tr>`).join("")}</table>`:""}
+${sec("Próximos pasos",d.nextSteps)}${withTranscript&&d.transcript?`<h2>Transcripción</h2><div class="t">${esc(d.transcript)}</div>`:""}
+</body></html>`;
+}
+function bsSlug(t){ return String(t||"documento").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,50) || "documento"; }
+function bsDownloadBlob(content, type, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([content],{type})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+function bsOpenDownload(d){
+  openGenericModal("", `<div class="bs-modal"><div class="bs-modal-title">⬇️ Descargar</div>
+    <label class="bs-consent" style="margin-top:0;"><input type="checkbox" id="bsDlTrans"> <span>Incluir la transcripción completa</span></label>
+    <div class="bs-dl">
+      <button class="bs-dl-opt" data-fmt="pdf"><b>PDF</b><small>Para enviar o imprimir</small></button>
+      <button class="bs-dl-opt" data-fmt="word"><b>Word</b><small>Para seguir editándolo</small></button>
+      <button class="bs-dl-opt" data-fmt="txt"><b>Texto</b><small>Simple, para pegar donde sea</small></button>
+    </div></div>`);
+  document.getElementById("genericModalTitle").style.display = "none";
+  document.querySelectorAll("[data-fmt]").forEach(b=>b.addEventListener("click", ()=>{
+    const tr = document.getElementById("bsDlTrans").checked, name = bsSlug(d.title);
+    if(b.dataset.fmt==="txt") bsDownloadBlob(bsDocToText(d,tr), "text/plain;charset=utf-8", name+".txt");
+    else if(b.dataset.fmt==="word") bsDownloadBlob("\ufeff"+bsDocToHTML(d,tr), "application/msword", name+".doc");
+    else { const w = window.open("", "_blank"); if(!w){ toast("Tu navegador bloqueó la ventana. Permite ventanas emergentes para descargar en PDF.","error"); return; }
+           w.document.write(bsDocToHTML(d,tr).replace("</body>","<script>setTimeout(()=>window.print(),300)<\/script></body>")); w.document.close(); }
+    closeGenericModal();
+  }));
+}
+function bsOpenEmail(d){
+  const me = DB.config.userEmail || "";
+  openGenericModal("", `<div class="bs-modal"><div class="bs-modal-title">✉️ Enviar por correo</div>
+    <label class="tl-muted" for="bsTo">Para (hasta 5 correos, separados por coma)</label>
+    <input class="tl-input" id="bsTo" type="text" inputmode="email" placeholder="nombre@correo.cl, otra@correo.cl" value="${esc(me)}" style="margin:6px 0 10px;">
+    <label class="tl-muted" for="bsSubj">Asunto</label>
+    <input class="tl-input" id="bsSubj" value="${esc("Resumen: "+(d.title||"Lluvia de ideas"))}" style="margin-top:6px;">
+    <label class="bs-consent"><input type="checkbox" id="bsMailTrans"> <span>Incluir la transcripción completa</span></label>
+    <button class="btn btn-primary" id="bsSend" style="width:100%;justify-content:center;margin-top:10px;">Enviar desde TaskFlow Pro</button>
+    <button class="btn btn-ghost" id="bsMailto" style="width:100%;justify-content:center;margin-top:8px;">Abrir en mi app de correo</button>
+    <div class="bs-note">Se envía desde el correo de TaskFlow Pro, y las respuestas te llegan a ti${me?` (${esc(me)})`:""}.</div></div>`);
+  document.getElementById("genericModalTitle").style.display = "none";
+  const parseTo = ()=> document.getElementById("bsTo").value.split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);
+  document.getElementById("bsMailto").addEventListener("click", ()=>{
+    const body = bsDocToText(d, false).slice(0, 1800);
+    location.href = `mailto:${encodeURIComponent(parseTo().join(","))}?subject=${encodeURIComponent(document.getElementById("bsSubj").value)}&body=${encodeURIComponent(body)}`;
+  });
+  document.getElementById("bsSend").addEventListener("click", async ()=>{
+    const to = parseTo();
+    const bad = to.filter(x=>!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(x));
+    if(!to.length || bad.length){ toast(bad.length?`Revisa este correo: ${bad[0]}`:"Escribe al menos un correo.","error"); return; }
+    if(to.length>5){ toast("Máximo 5 correos por envío.","error"); return; }
+    const btn = document.getElementById("bsSend"); btn.disabled = true; btn.textContent = "Enviando…";
+    try{
+      const res = await fetch("/.netlify/functions/send-doc", { method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ token:getAuthToken(), to, subject: document.getElementById("bsSubj").value.slice(0,150),
+          doc:{ title:d.title, date:bsFmtDate(d.createdAt), summary:d.summary, ideas:d.ideas, decisions:d.decisions,
+                actions:(d.actions||[]).map(a=>({title:a.title, owner:a.owner, due:a.due})), nextSteps:d.nextSteps,
+                transcript: document.getElementById("bsMailTrans").checked ? d.transcript : "" } }) });
+      const j = await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(j.error || ("HTTP "+res.status));
+      closeGenericModal(); toast(`✉️ Enviado a ${to.join(", ")}.`,"success");
+      d.sentLog = (d.sentLog||[]).concat({ to, at:new Date().toISOString() }); saveDB();
+    }catch(e){ btn.disabled = false; btn.textContent = "Enviar desde TaskFlow Pro"; toast("No se pudo enviar: "+e.message,"error"); }
+  });
+}
+(function initBrainstorm(){
+  const r = document.getElementById("bsRecordBtn"), p2 = document.getElementById("bsPasteBtn");
+  if(r) r.addEventListener("click", openBrainstormRecorder);
+  if(p2) p2.addEventListener("click", openBrainstormPaste);
+  // si cierran el modal mientras graban, la grabación sigue: se puede volver con "Grabar"
+  window.addEventListener("beforeunload", e=>{ if(bsRec){ e.preventDefault(); e.returnValue = ""; } });
 })();
 /* Menú "⋯" del encabezado de Inicio: reúne las acciones que antes vivían en
    la barra secundaria (ahora oculta, como en el diseño aprobado). No duplica
