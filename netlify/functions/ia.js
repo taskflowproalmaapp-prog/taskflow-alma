@@ -11,6 +11,7 @@
 //   - Límite diario por persona (IA_DAILY_LIMIT, por defecto 400 llamadas)
 //     para que una cuenta no pueda agotar la cuota de todos.
 //
+//  Opcional: json: true (respuesta solo JSON) y temperature (0–1, precisión).
 //  Acepta texto (prompt) y, opcionalmente, UN archivo:
 //   - media: { data: base64, mediaType }  → imagen o audio (para Brainstorm)
 //   - image: { data, mediaType }          → formato antiguo, sigue funcionando
@@ -91,6 +92,16 @@ exports.handler = async function (event) {
     parts.push({ inline_data: { mime_type: mediaType.split(";")[0], data: media.data } });
   }
 
+  // Opcional (nuevo): "json: true" pide a Gemini responder SOLO JSON válido, y
+  // "temperature" (0 a 1) baja la creatividad para tareas que exigen precisión
+  // (ej. Alma Idiomas). Si no se envían, todo funciona como antes.
+  let generationConfig = null;
+  if (body.json === true || typeof body.temperature === "number") {
+    generationConfig = {};
+    if (body.json === true) generationConfig.responseMimeType = "application/json";
+    if (typeof body.temperature === "number" && body.temperature >= 0 && body.temperature <= 1) generationConfig.temperature = body.temperature;
+  }
+
   const modelo = "gemini-3.5-flash-lite";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
 
@@ -98,7 +109,7 @@ exports.handler = async function (event) {
     const respuesta = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts }] }),
+      body: JSON.stringify(Object.assign({ contents: [{ parts }] }, generationConfig ? { generationConfig } : {})),
     });
     const datos = await respuesta.json().catch(() => ({}));
 
