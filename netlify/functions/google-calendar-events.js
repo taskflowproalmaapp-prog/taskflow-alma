@@ -1,7 +1,8 @@
 // ────────────────────────────────────────────────────────────────
 //  FUNCIÓN "google-calendar-events" — Trae los eventos de Google
 //  Calendar de una persona, para un día (o rango) específico, de
-//  todos sus calendarios (o solo los que indique).
+//  todos sus calendarios (o solo los que indique). Incluye invitados y
+//  descripción (agenda) para que Alma Brainstorm sepa quién participa.
 // ────────────────────────────────────────────────────────────────
 
 const { getUsernameFromSession, getValidGoogleAccessToken } = require("./google-helpers");
@@ -20,6 +21,29 @@ function extractJoinLink(ev) {
   const text = `${ev.location || ""} ${ev.description || ""}`;
   const match = text.match(/https?:\/\/[^\s<>"]+/);
   return match ? match[0] : null;
+}
+
+// Invitados de la reunión (sin salas ni recursos). Hasta 60 por evento.
+function attendeesOf(ev) {
+  return (ev.attendees || [])
+    .filter((a) => a && !a.resource && !/resource\.calendar\.google\.com$/i.test(a.email || ""))
+    .slice(0, 60)
+    .map((a) => ({
+      email: a.email || "",
+      name: a.displayName || "",
+      response: a.responseStatus || "needsAction", // accepted | declined | tentative | needsAction
+      organizer: !!a.organizer,
+      self: !!a.self,
+      optional: !!a.optional,
+    }));
+}
+// Descripción (agenda) en texto simple, sin HTML, máx. 2.000 caracteres
+function cleanDescription(html) {
+  if (!html) return "";
+  return String(html)
+    .replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li)>/gi, "\n").replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n").trim().slice(0, 2000);
 }
 
 exports.handler = async function (event) {
@@ -74,6 +98,10 @@ exports.handler = async function (event) {
           location: ev.location || "",
           joinLink: extractJoinLink(ev),
           htmlLink: ev.htmlLink || null,
+          // Para Alma Brainstorm: quiénes están invitados y la agenda de la invitación
+          attendees: attendeesOf(ev),
+          organizer: ev.organizer ? { email: ev.organizer.email || "", name: ev.organizer.displayName || "", self: !!ev.organizer.self } : null,
+          description: cleanDescription(ev.description),
         });
       });
     }
