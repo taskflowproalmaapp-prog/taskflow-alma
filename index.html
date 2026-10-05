@@ -981,6 +981,17 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 
 .bs-prog{height:6px;background:var(--surface-alt);border-radius:6px;overflow:hidden;margin:8px auto 6px;max-width:260px;}
 .bs-prog span{display:block;height:100%;background:linear-gradient(90deg,#FF6B45,#ED3F7C,#8157EF);transition:width .3s;}
+
+.bs-parts{display:flex;flex-direction:column;gap:6px;}
+.bs-part{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;gap:6px;align-items:center;background:var(--surface-alt);border-radius:10px;padding:5px 6px 5px 10px;}
+.bs-part-n{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bs-part-role{padding:6px 8px;font-size:12.5px;}
+.bs-part-add{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:6px;}
+.bs-part-add .tl-input{padding:7px 9px;font-size:13px;}
+.bs-wiw-row{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.bs-wiw-row small{display:block;font-size:12px;margin-top:2px;font-style:italic;}
+.bs-wiw-other{grid-column:2;padding:6px 8px;font-size:13px;}
+@media (max-width:600px){ .bs-part{grid-template-columns:1fr auto;} .bs-part-role{grid-column:1/-1;} .bs-part-add{grid-template-columns:1fr;} .bs-wiw-row{grid-template-columns:1fr;} .bs-wiw-other{grid-column:1;} }
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -4097,13 +4108,15 @@ function isoUtcToLocalParts(isoStr){
 let googleEventsCache = { date: null, events: [] };
 let googleEventsRangeCache = { start: null, end: null, byDate: {} };
 function buildGoogleEventItem(ev, workIds){
-  if(ev.allDay) return { id: ev.id, title: ev.title, allDay:true, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId };
+  const extra = { attendees: Array.isArray(ev.attendees) ? ev.attendees : [], organizer: ev.organizer || null, description: ev.description || "" };
+  if(ev.allDay) return Object.assign({ id: ev.id, title: ev.title, allDay:true, joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId }, extra);
   const s = isoUtcToLocalParts(ev.start), e = isoUtcToLocalParts(ev.end);
   if(!s || !e) return null;
   return {
     id: ev.id, title: ev.title, date: s.date, startTime: s.time, endTime: e.time,
     joinLink: ev.joinLink, htmlLink: ev.htmlLink, calendarId: ev.calendarId,
     isWork: workIds ? workIds.includes(ev.calendarId) : null,
+    attendees: extra.attendees, organizer: extra.organizer, description: extra.description,
   };
 }
 // Trae los eventos de Google Calendar para un RANGO de días (ej. toda la semana
@@ -4491,6 +4504,25 @@ function syncMerge(base, local, remote, stats, key){
   if(!SYNC_DERIVED.has(key)) stats.conflicts++;
   return local;
 }
+// Copia "source" sobre "target" conservando los MISMOS objetos (listas con id se
+// actualizan elemento por elemento). Así nadie queda apuntando a datos viejos.
+function syncApplyInPlace(target, source){
+  Object.keys(target).forEach(k=>{ if(!(k in source)) delete target[k]; });
+  Object.keys(source).forEach(k=>{
+    const tv = target[k], sv = source[k];
+    const idish = a => Array.isArray(a) && (a.length===0 || isIdList(a));
+    if(Array.isArray(sv)){
+      if(Array.isArray(tv) && idish(sv) && idish(tv)){
+        const byId = new Map(tv.map(x=>[String(x.id), x]));
+        const out = sv.map(item=>{ const ex = byId.get(String(item.id)); if(ex && typeof ex==="object" && !Array.isArray(ex)){ syncApplyInPlace(ex, item); return ex; } return item; });
+        tv.length = 0; out.forEach(x=>tv.push(x));
+      } else target[k] = sv;
+    } else if(sv && typeof sv==="object"){
+      if(tv && typeof tv==="object" && !Array.isArray(tv)) syncApplyInPlace(tv, sv); else target[k] = sv;
+    } else target[k] = sv;
+  });
+  return target;
+}
 // Envía al servidor. Devuelve una promesa que se resuelve cuando el servidor confirmó.
 function syncNow(){
   if(!getAuthToken() || !syncKeys()) return Promise.resolve(false);
@@ -4516,11 +4548,14 @@ function syncNow(){
         // otro dispositivo guardó entremedio: se combinan los cambios y se reintenta
         const remote = body.data;
         const stats = { conflicts:0, fromRemote:0 };
-        const merged = remote ? syncMerge(syncBase, JSON.parse(sent), remote, stats) : JSON.parse(sent);
+        const merged = remote ? syncMerge(syncBase, JSON.parse(sent), JSON.parse(JSON.stringify(remote)), stats) : JSON.parse(sent);
         // lo que el usuario cambió mientras tanto (DB actual vs lo enviado) se aplica encima
         const mergedNow = syncEq(DB, JSON.parse(sent)) ? merged : syncMerge(JSON.parse(sent), DB, merged, { conflicts:0, fromRemote:0 });
-        normalizeAndAdoptDB(mergedNow);
-        syncRev = body.rev; syncBase = remote; syncWriteBase();
+        // Se actualizan los MISMOS datos en su lugar (no se reemplazan por una copia):
+        // así, cualquier función que esté esperando a la IA (ej. armar un documento de
+        // Brainstorm) sigue escribiendo en la tarea/documento correcto.
+        syncApplyInPlace(DB, JSON.parse(JSON.stringify(mergedNow)));
+        syncRev = body.rev; syncBase = JSON.parse(JSON.stringify(remote)); syncWriteBase();
         const k = syncKeys(); try{ localStorage.setItem(k.db, JSON.stringify(DB)); }catch(e){}
         syncWriteMeta();
         try{ recomputeAll(); render(); }catch(e){}
@@ -12394,11 +12429,18 @@ async function callGeminiFunction(content, opts){
   }
   // La función "ia" ahora exige la sesión (igual que "data"), así nadie de
   // afuera puede usar la clave de Gemini.
-  const response = await fetch("/.netlify/functions/ia", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(Object.assign({ prompt: prompt.trim(), media, token: getAuthToken() }, (opts && opts.json) ? { json:true } : {}, (opts && typeof opts.temperature==="number") ? { temperature: opts.temperature } : {})),
-  });
+  const ctrl = new AbortController(); const killer = setTimeout(()=>ctrl.abort(), 100000);   // máx. 100 s: nunca queda girando para siempre
+  let response;
+  try{
+    response = await fetch("/.netlify/functions/ia", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ prompt: prompt.trim(), media, token: getAuthToken() }, (opts && opts.json) ? { json:true } : {}, (opts && typeof opts.temperature==="number") ? { temperature: opts.temperature } : {})),
+    });
+  }catch(e){
+    if(e && e.name==="AbortError") throw new Error("la IA tardó demasiado en responder; reintenta");
+    throw e;
+  }finally{ clearTimeout(killer); }
   if(!response.ok){
     let msg = "HTTP "+response.status;
     try{ const j = await response.json(); if(j && j.error) msg = j.error; }catch(e){}
@@ -14205,7 +14247,7 @@ function renderBrainstorm(){
     return `<button type="button" class="bs-card" data-bs="${d.id}">
       <div class="bs-card-top"><span class="bs-chip">${d.source==="texto"?"📝 Texto":"🎙️ "+bsFmtDur(d.durationSec)}</span><span class="tl-muted">${esc(bsFmtDate(d.createdAt))}</span></div>
       <div class="bs-card-title">${esc(d.title||"Sin título")}</div>
-      <div class="bs-card-sum">${d.status==="procesando"?"⏳ Alma está armando el documento…":d.status==="error"?"⚠️ No se pudo procesar. Ábrelo para reintentar.":esc(String(d.summary||"").slice(0,170))}${String(d.summary||"").length>170?"…":""}</div>
+      <div class="bs-card-sum">${d.status==="procesando"?(bsProcessing.has(d.id)?"⏳ Alma está armando el documento…":"⚠️ Se interrumpió el armado. Ábrelo para terminarlo."):d.status==="error"?"⚠️ No se pudo procesar. Ábrelo para reintentar.":esc(String(d.summary||"").slice(0,170))}${String(d.summary||"").length>170?"…":""}</div>
       <div class="bs-card-foot">${nTasks?`<span>✅ ${nDone}/${nTasks} tareas creadas</span>`:""}${(d.tags||[]).slice(0,3).map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>
     </button>`; }).join("")}</div>`;
   wrap.querySelectorAll("[data-bs]").forEach(c=>c.addEventListener("click", ()=>{ bsOpenId = c.dataset.bs; renderBrainstorm(); window.scrollTo({top:0}); }));
@@ -14241,7 +14283,7 @@ function bsBindMeetings(wrap){
 }
 function bsList(arr){ return (arr&&arr.length) ? `<ul class="bs-list">${arr.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : `<div class="tl-muted">—</div>`; }
 function renderBrainstormDoc(wrap, d){
-  const people = d.speakers && d.speakers.length ? d.speakers.join(", ") : "";
+  const people = (d.participants && d.participants.length) ? d.participants.map(x=>x.name).join(", ") : (d.speakers && d.speakers.length ? d.speakers.join(", ") : "");
   const actions = d.actions||[];
   wrap.innerHTML = `
     <div class="bs-doc">
@@ -14259,7 +14301,8 @@ function renderBrainstormDoc(wrap, d){
         <h2 class="bs-doc-title" contenteditable="true" spellcheck="false" id="bsTitle" title="Toca para editar el título">${esc(d.title||"Sin título")}</h2>
         ${(d.tags||[]).length?`<div class="bs-card-foot" style="margin-top:6px;">${d.tags.map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>`:""}
       </div>
-      ${d.status==="procesando"?`<div class="bs-sec"><div class="tl-muted">⏳ Alma está armando el documento…</div></div>`:""}
+      ${d.status==="procesando" && bsProcessing.has(d.id)?`<div class="bs-sec"><div class="tl-muted">⏳ Alma está armando el documento… (con reuniones largas puede tomar hasta un minuto)</div></div>`:""}
+      ${d.status==="procesando" && !bsProcessing.has(d.id)?`<div class="bs-sec bs-warn">⚠️ El armado del documento se interrumpió (por ejemplo, si se cerró la app). Tu transcripción está guardada. <button class="btn btn-primary btn-sm" id="bsRetry">✨ Armar documento</button></div>`:""}
       ${d.status==="error"?`<div class="bs-sec bs-warn">⚠️ ${esc(d.error||"No se pudo procesar.")} <button class="btn btn-primary btn-sm" id="bsRetry">Reintentar</button></div>`:""}
       ${d.status==="listo"?`
       <div class="bs-sec"><h3>Resumen</h3><p class="bs-p">${esc(d.summary||"")}</p></div>
@@ -14275,6 +14318,7 @@ function renderBrainstormDoc(wrap, d){
         </div>`).join(""):`<div class="tl-muted">No se detectaron tareas concretas.</div>`}
       </div>
       <div class="bs-sec"><h3>➡️ Próximos pasos</h3>${bsList(d.nextSteps)}</div>`:""}
+      ${bsWhoIsWhoHTML(d)}
       <details class="bs-sec bs-trans" ${d.status!=="listo"?"open":""}>
         <summary><h3 style="display:inline;">🗒️ Transcripción</h3> <span class="tl-muted">${(d.transcript||"").split(/\s+/).filter(Boolean).length} palabras</span></summary>
         <div class="bs-trans-body">${esc(d.transcript||"").replace(/\n/g,"<br>")}</div>
@@ -14292,6 +14336,7 @@ function renderBrainstormDoc(wrap, d){
     DB.brainstorms = DB.brainstorms.filter(x=>x.id!==d.id); saveDB(); bsOpenId = null; renderBrainstorm(); toast("Documento borrado.","info");
   });
   const retry = wrap.querySelector("#bsRetry"); if(retry) retry.addEventListener("click", ()=>bsProcessDoc(d.id));
+  bsBindWhoIsWho(wrap, d);
   wrap.querySelectorAll("[data-make]").forEach(b=>b.addEventListener("click", ()=>{ bsCreateTask(d, +b.dataset.make); renderBrainstorm(); }));
   const all = wrap.querySelector("#bsCreateAll");
   if(all) all.addEventListener("click", ()=>{ let n=0; (d.actions||[]).forEach((a,i)=>{ if(!a.taskId){ bsCreateTask(d,i,true); n++; } }); recomputeAll(); saveDB(); render(); toast(`✨ Creé ${n} tarea${n===1?"":"s"} desde "${d.title}".`,"success"); });
@@ -14323,6 +14368,35 @@ function bsCanTabAudio(){
 }
 const BS_CHAT_NOTICE = "Hola 👋 Voy a tomar notas de esta reunión con Alma (IA) para no perder acuerdos ni tareas. Si alguien prefiere que no, me avisa y lo apago.";
 let bsPickMode = "online";
+/* ---------- Participantes de la reunión (para reconocer quién habla) ---------- */
+let bsParts = [];
+function bsPrettyFromEmail(email){ const local = String(email||"").split("@")[0].replace(/[._-]+/g," ").trim(); return local.replace(/\b\w/g, c=>c.toUpperCase()); }
+// Precarga desde la invitación de Google Calendar: invitados que no rechazaron,
+// completados con nombre y cargo de tus Personas (mismo correo).
+function bsPartsFromEvent(ev){
+  const out = [];
+  const me = (DB.config.userName||"").trim() || "Yo";
+  out.push({ name: me, role: "quien graba", self:true });
+  (ev && Array.isArray(ev.attendees) ? ev.attendees : []).forEach(a=>{
+    if(!a || a.self || a.response==="declined") return;
+    const per = (DB.responsables||[]).find(r=>r.email && a.email && r.email.toLowerCase()===a.email.toLowerCase());
+    const name = (per && per.name) || a.name || bsPrettyFromEmail(a.email);
+    if(!name || out.some(x=>x.name.toLowerCase()===name.toLowerCase())) return;
+    out.push({ name, role: (per && per.role) || "", email: a.email || "", tentative: a.response==="tentative" || a.response==="needsAction" });
+  });
+  return out;
+}
+function bsPartsHTML(){
+  const pers = (DB.responsables||[]).filter(r=>r.name && !bsParts.some(x=>x.name.toLowerCase()===r.name.toLowerCase())).slice(0,8);
+  return `<div class="tl-sec" style="margin-top:12px;">¿Quiénes participan? <span class="tl-muted" style="text-transform:none;letter-spacing:0;font-weight:400;">(opcional · ayuda a Alma a reconocer quién habla)</span></div>
+    <div class="bs-parts">${bsParts.map((x,i)=>`<div class="bs-part"><span class="bs-part-n">${x.self?"🎙️ ":""}${esc(x.name)}${x.tentative?` <small class="tl-muted">(sin confirmar)</small>`:""}</span>
+      <input class="tl-input bs-part-role" data-prole="${i}" value="${esc(x.role||"")}" placeholder="Cargo (opcional)" maxlength="60">
+      ${x.self?"":`<button type="button" class="small-x" data-prm="${i}" aria-label="Quitar">✕</button>`}</div>`).join("")}</div>
+    <div class="bs-part-add"><input class="tl-input" id="bsPartName" placeholder="Nombre" maxlength="60"><input class="tl-input" id="bsPartRole" placeholder="Cargo (opcional)" maxlength="60"><button type="button" class="btn btn-ghost btn-sm" id="bsPartAdd">＋ Agregar</button></div>
+    ${pers.length?`<div class="tl-chips" style="margin-top:6px;">${pers.map(r=>`<button type="button" class="tl-chip" data-padd="${esc(r.name)}" data-prol="${esc(r.role||"")}">＋ ${esc(r.name)}</button>`).join("")}</div>`:""}`;
+}
+// Texto para la IA: "Alexandra (gerente comercial), Julio Cuevas (gerente de operaciones), Miguel (quien graba)"
+function bsPartsText(list){ return (list||[]).filter(x=>x && x.name).map(x=>x.name + (x.role?` (${x.role})`:"")).join(", "); }
 function openBrainstormRecorder(opts){
   opts = opts || {};
   if(bsRec){ bsRenderRecorder(); return; }
@@ -14330,6 +14404,7 @@ function openBrainstormRecorder(opts){
     openGenericModal("Grabar", `<p>Este navegador no permite grabar audio. Prueba con Chrome, Edge o Safari actualizados, o usa <b>📝 Pegar texto</b>.</p>`); return;
   }
   const ev = opts.event || null;
+  bsParts = bsPartsFromEvent(ev);
   const canTab = bsCanTabAudio();
   bsPickMode = canTab && (ev ? !!ev.joinLink : true) ? "online" : "mic";
   const draw = ()=>{
@@ -14352,6 +14427,7 @@ function openBrainstormRecorder(opts){
         La app usa solo el audio, no guarda lo que se ve en tu pantalla. Usa audífonos si puedes.</div>`:""}
       <label class="tl-muted" for="bsRecTitle" style="display:block;margin-top:12px;">Título</label>
       <input class="tl-input" id="bsRecTitle" placeholder="Ej: Reunión de planificación con el equipo" value="${esc(ev?ev.title||"":"")}" style="margin-top:6px;">
+      ${bsPartsHTML()}
       <label class="bs-consent"><input type="checkbox" id="bsConsent"> <span>Les avisé a las personas que voy a grabar y están de acuerdo.</span></label>
       ${bsPickMode==="online"?`<button type="button" class="bs-copy-notice" id="bsCopyNotice">📋 Copiar aviso para el chat de la reunión</button>`:""}
       <div class="bs-note">🔒 El audio se envía a la IA (Gemini) para transcribirlo y <b>no se guarda</b>: solo queda el texto, en tu cuenta privada.</div>
@@ -14360,10 +14436,17 @@ function openBrainstormRecorder(opts){
     document.getElementById("genericModalTitle").style.display = "none";
     const c = document.getElementById("bsConsent"), go = document.getElementById("bsStart");
     c.addEventListener("change", ()=>{ go.disabled = !c.checked; });
-    document.querySelectorAll(".bs-mode").forEach(b=>b.addEventListener("click", ()=>{ if(b.disabled) return; const t = document.getElementById("bsRecTitle").value; bsPickMode = b.dataset.mode; draw(); document.getElementById("bsRecTitle").value = t; }));
+    const redraw = ()=>{ const t = document.getElementById("bsRecTitle").value, ok = document.getElementById("bsConsent").checked; draw(); document.getElementById("bsRecTitle").value = t; if(ok){ document.getElementById("bsConsent").checked = true; document.getElementById("bsStart").disabled = false; } };
+    document.querySelectorAll(".bs-mode").forEach(b=>b.addEventListener("click", ()=>{ if(b.disabled) return; bsPickMode = b.dataset.mode; redraw(); }));
+    document.querySelectorAll("[data-prole]").forEach(inp=>inp.addEventListener("input", ()=>{ const x = bsParts[+inp.dataset.prole]; if(x) x.role = inp.value.trim(); }));
+    document.querySelectorAll("[data-prm]").forEach(b=>b.addEventListener("click", ()=>{ bsParts.splice(+b.dataset.prm,1); redraw(); }));
+    document.querySelectorAll("[data-padd]").forEach(b=>b.addEventListener("click", ()=>{ bsParts.push({ name:b.dataset.padd, role:b.dataset.prol||"" }); redraw(); }));
+    const addP = ()=>{ const n = document.getElementById("bsPartName").value.trim(); if(!n) return; if(!bsParts.some(x=>x.name.toLowerCase()===n.toLowerCase())) bsParts.push({ name:n, role:document.getElementById("bsPartRole").value.trim() }); redraw(); document.getElementById("bsPartName").focus(); };
+    document.getElementById("bsPartAdd").addEventListener("click", addP);
+    ["bsPartName","bsPartRole"].forEach(id=>document.getElementById(id).addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); addP(); } }));
     const cn = document.getElementById("bsCopyNotice");
     if(cn) cn.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(BS_CHAT_NOTICE); cn.textContent = "✓ Aviso copiado: pégalo en el chat de la reunión"; }catch(e){ toast("No pude copiar.","error"); } });
-    go.addEventListener("click", ()=>bsStartRecording(document.getElementById("bsRecTitle").value.trim(), { mode: bsPickMode, event: ev }));
+    go.addEventListener("click", ()=>bsStartRecording(document.getElementById("bsRecTitle").value.trim(), { mode: bsPickMode, event: ev, participants: bsParts.map(x=>({ name:x.name, role:x.role||"", self:!!x.self })) }));
   };
   draw();
 }
@@ -14400,7 +14483,7 @@ async function bsStartRecording(title, opts){
   }
   const mime = bsPickMime();
   trackUse(tabAudio ? "bs.grabar_online" : "bs.grabar");
-  bsRec = { title, mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
+  bsRec = { title, participants: opts.participants || [], mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
             startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
             segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, active:0, decision:null };
   // Si se corta el audio de la reunión (cerraste Meet o terminó), lo más probable
@@ -14514,7 +14597,7 @@ async function bsTranscribeSegment(seg){
   const prev = bsRec ? bsRec.segments.find(x=>x.n===seg.n-1 && x.text) : null;
   const tail = prev ? prev.text.slice(-300) : "";
   const prompt = `Transcribe este audio EN EL IDIOMA EN QUE SE HABLA (no traduzcas). Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
-${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\\n" : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
+${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}${bsRec && bsRec.participants && bsRec.participants.length ? `Participantes de esta reunión: ${bsPartsText(bsRec.participants)}. Usa SUS NOMBRES cuando por contexto quede claro quién habla (se presenta, lo nombran, le hacen una pregunta y responde, o habla de su área). Si no estás seguro, usa "Persona 1", "Persona 2"… No adivines.\n` : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
 Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si una parte no se entiende, escribe [inaudible] en vez de adivinar. Si no hay voz entendible, responde exactamente: (sin voz)
 Responde solo con la transcripción, en texto plano.`;
   for(let attempt=1; attempt<=2; attempt++){
@@ -14568,6 +14651,7 @@ async function bsStopRecording(){
   }
   const doc = { id: uid("bs"), title: r.title || (r.event && r.event.title) || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
                 source:"grabacion", mode: r.mode, eventId: r.event ? r.event.id : null, eventTitle: r.event ? r.event.title : "",
+                participants: r.participants || [], agenda: (r.event && r.event.description) || "",
                 transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
                 missingParts: failed };
   DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
@@ -14647,15 +14731,63 @@ function openBrainstormPaste(){
 }
 
 /* ---------- Alma arma el documento ---------- */
+/* ---------- "¿Quién es quién?": nombrar las voces no identificadas ---------- */
+function bsUnknownLabels(t){ return [...new Set((String(t||"").match(/^Persona \d+(?=\s*:)/gm)||[]))].sort((a,b)=>parseInt(a.slice(8))-parseInt(b.slice(8))); }
+function bsWhoIsWhoHTML(d){
+  const labels = bsUnknownLabels(d.transcript);
+  if(!labels.length && !d.transcriptOriginal) return "";
+  const names = [...new Set([...(d.participants||[]).map(x=>x.name), ...(d.speakers||[]), ...(DB.responsables||[]).map(r=>r.name)].filter(n=>n && !/^Persona \d+$/.test(n)))];
+  const sample = l => { const m = String(d.transcript).split("\n").find(x=>x.startsWith(l+":")); return m ? m.slice(l.length+1).trim().slice(0,90) : ""; };
+  return `<div class="bs-sec bs-wiw">
+    <h3>🗣️ ¿Quién es quién?</h3>
+    ${labels.length ? `<p class="tl-muted" style="margin:0 0 10px;font-size:13px;">Alma no pudo identificar ${labels.length===1?"una voz":labels.length+" voces"}. Si sabes quién es, elígelo: se cambia en toda la transcripción y el documento se vuelve a armar.</p>
+    ${labels.map(l=>`<div class="bs-wiw-row"><div><b>${esc(l)}</b><small class="tl-muted">${esc(sample(l))}${sample(l).length>=90?"…":""}</small></div>
+      <select class="tl-select bs-wiw-sel" data-wiw="${esc(l)}"><option value="">— No sé —</option>${names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}<option value="__otro__">Otro nombre…</option></select>
+      <input class="tl-input bs-wiw-other hidden" data-wiwo="${esc(l)}" placeholder="Nombre" maxlength="60"></div>`).join("")}
+    <button class="btn btn-primary btn-sm" id="bsWiwApply" style="margin-top:8px;">✨ Aplicar y volver a armar el documento</button>` : `<p class="tl-muted" style="margin:0;font-size:13px;">Todas las voces tienen nombre.</p>`}
+    ${d.transcriptOriginal ? `<button class="btn-link-plain" id="bsWiwUndo" style="margin-top:8px;">↺ Deshacer los nombres y volver a la transcripción original</button>` : ""}
+  </div>`;
+}
+function bsBindWhoIsWho(wrap, d){
+  wrap.querySelectorAll("[data-wiw]").forEach(sel=>sel.addEventListener("change", ()=>{
+    const o = wrap.querySelector(`[data-wiwo="${sel.dataset.wiw}"]`); if(o) o.classList.toggle("hidden", sel.value!=="__otro__");
+  }));
+  const ap = wrap.querySelector("#bsWiwApply");
+  if(ap) ap.addEventListener("click", ()=>{
+    const map = {};
+    wrap.querySelectorAll("[data-wiw]").forEach(sel=>{
+      let v = sel.value==="__otro__" ? (wrap.querySelector(`[data-wiwo="${sel.dataset.wiw}"]`).value||"").trim() : sel.value;
+      if(v) map[sel.dataset.wiw] = v.replace(/[:\n]/g," ").slice(0,60);
+    });
+    if(!Object.keys(map).length){ toast("Elige al menos un nombre.","info"); return; }
+    if(!d.transcriptOriginal) d.transcriptOriginal = d.transcript;   // para poder deshacer
+    let t = d.transcript;
+    Object.entries(map).forEach(([label, name])=>{ t = t.replace(new RegExp("^" + label + "(?=\\s*:)", "gm"), name); });
+    d.transcript = t;
+    trackUse("bs.quien_es_quien");
+    saveDB(); bsProcessDoc(d.id);
+  });
+  const un = wrap.querySelector("#bsWiwUndo");
+  if(un) un.addEventListener("click", ()=>{
+    if(!confirm("¿Volver a la transcripción original (con 'Persona 1', 'Persona 2'…) y rearmar el documento?")) return;
+    d.transcript = d.transcriptOriginal; delete d.transcriptOriginal; saveDB(); bsProcessDoc(d.id);
+  });
+}
+const bsProcessing = new Set();   // documentos que se están armando AHORA en esta sesión
 async function bsProcessDoc(id){
-  const d = (DB.brainstorms||[]).find(x=>x.id===id); if(!d) return;
-  d.status = "procesando"; d.error = ""; saveDB(); if(bsOpenId===id) renderBrainstorm();
+  if(bsProcessing.has(id)) return;   // evita armarlo dos veces a la vez
+  const d0 = (DB.brainstorms||[]).find(x=>x.id===id); if(!d0) return;
+  bsProcessing.add(id);
+  d0.status = "procesando"; d0.error = ""; saveDB(); if(bsOpenId===id) renderBrainstorm();
+  const d = d0;
   const people = (DB.responsables||[]).map(r=>r.name).filter(Boolean).join(", ") || "(ninguna registrada)";
   const projects = (DB.projects||[]).filter(p=>!p.archived).map(p=>p.name).join(", ") || "(ninguno)";
   const me = DB.config.userName || "el usuario";
   const prompt = `Eres Alma, asistente de la app TaskFlow Pro. Ordena esta conversación (o notas) en un documento de trabajo claro, en español de Chile neutro.
 ${d.missingParts ? `IMPORTANTE: a esta transcripción le faltan ${d.missingParts} minuto(s) que no se pudieron transcribir (el usuario decidió continuar). Trabaja con lo que hay, no inventes lo que falta, y menciónalo en una frase en el resumen.` : ""}
 La transcripción puede estar en otro idioma: el documento va en español, pero conserva nombres, cifras y términos tal cual.
+${(d.participants||[]).length ? `Participantes (con su cargo): ${bsPartsText(d.participants)}. Úsalos para asignar responsables con el nombre correcto. "Persona N" son voces no identificadas: no las asignes a un participante por suposición.` : ""}
+${d.agenda ? `Agenda de la invitación (es lo PLANEADO; puede no reflejar lo que realmente se habló, no la uses como si hubiera ocurrido): «${String(d.agenda).slice(0,1500)}»` : ""}
 Quien graba es ${me}. Hoy es ${TODAY()}.
 Personas que el usuario tiene registradas (úsalas si coinciden): ${people}. Sus proyectos: ${projects}.
 ${d.title?`El usuario la tituló: "${d.title}".`:""}
@@ -14673,7 +14805,7 @@ Reglas:
 - "proximos_pasos": qué viene después (máx 5). "participantes": nombres que aparecen. "etiquetas": 0 a 3, minúsculas.
 - No inventes nada que no esté en el texto.`;
   try{
-    const raw = await askAI(prompt);
+    const raw = await askAI(prompt, { json:true, temperature:0.3 });
     const j = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
     const okD = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : "";
     d.title = d.title || String(j.titulo||"Lluvia de ideas").slice(0,120);
@@ -14686,6 +14818,10 @@ Reglas:
     d.actions = (j.tareas||[]).filter(t=>t && t.titulo).slice(0,20).map(t=>({ title:String(t.titulo).slice(0,120), owner:String(t.responsable||""), due:okD(t.fecha), priority:["alta","media","baja"].includes(t.prioridad)?t.prioridad:"media", tipo: t.tipo==="personal"?"personal":"laboral", taskId:null }));
     d.status = "listo";
   }catch(e){ d.status = "error"; d.error = "Alma no pudo armar el documento ahora (" + (e.message||"error") + ")."; }
+  bsProcessing.delete(id);
+  // por seguridad: si el documento en tus datos ya no es el mismo objeto, se le copian los resultados
+  const live = (DB.brainstorms||[]).find(x=>x.id===id);
+  if(live && live!==d) Object.assign(live, d);
   saveDB(); if(bsOpenId===id || document.getElementById("view-brainstorm").classList.contains("hidden")===false) renderBrainstorm();
   if(d.status==="listo") toast(`✨ Listo: "${d.title}".`,"success");
 }
@@ -14925,7 +15061,7 @@ const USE_LABELS = {
   "view.projects":"Proyectos y temas","view.kanban":"Kanban","view.calendar":"Calendario","view.gantt":"Cronograma","view.matrix":"Matriz",
   "view.responsables":"Personas","view.reportes":"Reportes","view.notificaciones":"Notificaciones","view.cumpleanos":"Cumpleaños","view.configuracion":"Configuración","view.mejorar":"Ayúdanos a mejorar",
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
-  "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo",
+  "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo","bs.quien_es_quien":"Voces nombradas (¿Quién es quién?)",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
   "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
 };
@@ -17600,10 +17736,10 @@ function bootFromServer(got){
     let merged;
     const stats = { conflicts:0, fromRemote:0 };
     if(!remote) merged = local.db;
-    else if(local.base) merged = syncMerge(local.base, local.db, remote, stats);
-    else merged = syncMerge({ tasks:[], projects:[], responsables:[] }, local.db, remote, stats); // sin base: se suman ambos lados
-    syncBase = remote;
-    adoptRemoteOrLocalAndBoot(merged);
+    else if(local.base) merged = syncMerge(local.base, local.db, JSON.parse(JSON.stringify(remote)), stats);
+    else merged = syncMerge({ tasks:[], projects:[], responsables:[] }, local.db, JSON.parse(JSON.stringify(remote)), stats); // sin base: se suman ambos lados
+    syncBase = JSON.parse(JSON.stringify(remote));            // referencia independiente
+    adoptRemoteOrLocalAndBoot(JSON.parse(JSON.stringify(merged)));
     syncPending = true; syncWriteBase(); saveDB();
     toast("🔄 Recuperé cambios que no se habían alcanzado a guardar y los estoy guardando ahora.","info");
     return;
