@@ -60,7 +60,10 @@ function buildHtml(doc, senderName) {
     </div>
     <div style="background:#fff;border-radius:16px;padding:20px 24px;margin-top:12px;font-size:14px;line-height:1.55;">
       ${doc.summary ? `<h2 style="font-size:14px;color:#ED3F7C;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;">Resumen</h2><p style="margin:0;">${esc(doc.summary)}</p>` : ""}
-      ${sec("Ideas clave", doc.ideas)}${sec("Decisiones", doc.decisions)}${actions}${sec("Próximos pasos", doc.nextSteps)}
+      ${doc.context ? `<h2 style="font-size:14px;color:#ED3F7C;text-transform:uppercase;letter-spacing:.5px;margin:22px 0 6px;">Contexto</h2><p style="margin:0;">${esc(doc.context)}</p>` : ""}
+      ${doc.topics.length ? `<h2 style="font-size:14px;color:#ED3F7C;text-transform:uppercase;letter-spacing:.5px;margin:22px 0 6px;">Temas tratados</h2>${doc.topics.map((t) => `<div style="margin:10px 0;"><b>${esc(t.title)}</b>${t.detail ? `<p style="margin:4px 0;">${esc(t.detail)}</p>` : ""}${t.points.length ? `<ul style="margin:0;padding-left:18px;">${t.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</div>`).join("")}` : ""}
+      ${doc.figures.length ? `<h2 style="font-size:14px;color:#ED3F7C;text-transform:uppercase;letter-spacing:.5px;margin:22px 0 6px;">Cifras y datos clave</h2><table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:14px;"><tr><th align="left" style="padding:6px 4px;border-bottom:2px solid #f0e6ea;">Dato</th><th align="left" style="padding:6px 4px;border-bottom:2px solid #f0e6ea;">Valor</th><th align="left" style="padding:6px 4px;border-bottom:2px solid #f0e6ea;">A qué corresponde</th></tr>${doc.figures.map((f) => `<tr><td style="padding:6px 4px;border-bottom:1px solid #f3eef0;">${esc(f.dato)}</td><td style="padding:6px 4px;border-bottom:1px solid #f3eef0;"><b>${esc(f.valor)}</b></td><td style="padding:6px 4px;border-bottom:1px solid #f3eef0;">${esc(f.contexto)}${f.quien ? ` — ${esc(f.quien)}` : ""}</td></tr>`).join("")}</table>` : ""}
+      ${sec("Ideas clave", doc.ideas)}${sec("Decisiones", doc.decisions)}${actions}${sec("Puntos abiertos", doc.openPoints)}${sec("Riesgos", doc.risks)}${sec("Próximos pasos", doc.nextSteps)}
       ${doc.transcript ? `<h2 style="font-size:14px;color:#ED3F7C;text-transform:uppercase;letter-spacing:.5px;margin:22px 0 6px;">Transcripción</h2><div style="white-space:pre-wrap;font-size:13px;color:#555;">${esc(doc.transcript)}</div>` : ""}
     </div>
     <div style="font-size:11px;color:#9a8a9c;text-align:center;margin-top:14px;">Documento generado con IA a partir de una conversación. Revisa los datos importantes antes de actuar.</div>
@@ -104,12 +107,15 @@ exports.handler = async function (event) {
   // 4) Contenido (recortado y escapado: nunca se acepta HTML de afuera)
   const d = body.doc || {};
   const doc = {
-    title: clip(d.title, 120), date: clip(d.date, 60), summary: clip(d.summary, 3000),
+    title: clip(d.title, 120), date: clip(d.date, 80), summary: clip(d.summary, 5000), context: clip(d.context, 1500),
+    topics: (Array.isArray(d.topics) ? d.topics : []).slice(0, 20).map((t) => ({ title: clip(t && t.title, 140), detail: clip(t && t.detail, 1500), points: list(t && t.points, 10, 300) })),
+    figures: (Array.isArray(d.figures) ? d.figures : []).slice(0, 40).map((f) => ({ dato: clip(f && f.dato, 140), valor: clip(f && f.valor, 80), contexto: clip(f && f.contexto, 300), quien: clip(f && f.quien, 80) })),
+    openPoints: list(d.openPoints, 15, 400), risks: list(d.risks, 10, 400),
     ideas: list(d.ideas, 15, 400), decisions: list(d.decisions, 15, 400), nextSteps: list(d.nextSteps, 10, 400),
     actions: (Array.isArray(d.actions) ? d.actions : []).slice(0, 25).map((a) => ({ title: clip(a && a.title, 200), owner: clip(a && a.owner, 80), due: clip(a && a.due, 20) })),
     transcript: clip(d.transcript, 150000),
   };
-  if (!doc.summary && !doc.ideas.length && !doc.actions.length) return json(400, { error: "El documento está vacío" });
+  if (!doc.summary && !doc.ideas.length && !doc.actions.length && !doc.topics.length) return json(400, { error: "El documento está vacío" });
   const subject = clip(body.subject || ("Resumen: " + (doc.title || "Lluvia de ideas")), 150).replace(/[\r\n]+/g, " ");
 
   // 5) Quién envía (para el "responder a") — desde sus propios datos
