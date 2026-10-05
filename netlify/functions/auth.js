@@ -253,6 +253,9 @@ exports.handler = async function (event) {
       await cleanup("login_attempts", (k) => k === targetUser);
       // su conexión con Google Calendar (acceso a su calendario) también se borra
       await cleanup("google_calendar_tokens", (k) => k === targetUser);
+      // sus archivos adjuntos y su índice
+      await cleanup("attachments", (k) => k.startsWith(targetUser + "/"));
+      await cleanup("attachments_index", (k) => k === targetUser);
       try {
         const fb = store("feedback");
         const l = await fb.list({ prefix: "fb:" });
