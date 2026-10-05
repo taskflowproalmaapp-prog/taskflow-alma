@@ -960,6 +960,24 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 
 .id-decrev .id-fact.bad{background:color-mix(in srgb,#E5484D 7%,var(--surface));border-radius:8px;padding:7px 8px;}
 .id-bad{color:#C2410C!important;font-weight:700;}
+
+/* ---- Guardado y conexión ---- */
+.sync-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;font-weight:600;cursor:default;white-space:nowrap;transition:opacity .4s;}
+.sync-chip.sync-ok{color:var(--success);}
+.sync-chip.sync-faded{opacity:.55;}
+.sync-chip.sync-busy .sync-ico{display:inline-block;animation:idSpin 1s linear infinite;}
+.sync-chip.sync-warn{color:#8a6508;background:color-mix(in srgb,#B8860B 12%,var(--surface));border-color:color-mix(in srgb,#B8860B 35%,var(--surface));cursor:pointer;}
+.sync-chip.sync-err{color:#C2410C;background:color-mix(in srgb,#E5484D 10%,var(--surface));border-color:color-mix(in srgb,#E5484D 35%,var(--surface));cursor:pointer;}
+.offline-bar{display:flex;gap:8px;align-items:flex-start;background:color-mix(in srgb,#B8860B 14%,var(--surface));color:var(--text);font-size:12.5px;line-height:1.45;padding:8px 16px;border-bottom:1px solid color-mix(in srgb,#B8860B 35%,var(--surface));}
+.offline-gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:2000;padding:20px;}
+.offline-gate-card{max-width:360px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;}
+.offline-gate-card h2{font-family:var(--font-display);margin:8px 0;}
+.offline-gate-card p{color:var(--text-muted);font-size:14px;margin:0 0 16px;}
+@media (max-width:820px){ .sync-chip .sync-txt{display:none;} .sync-chip{padding:5px 8px;} .sync-chip.sync-err .sync-txt,.sync-chip.sync-warn .sync-txt{display:none;} }
+
+.att-hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+.att-st{font-size:11.5px;color:var(--text-muted);margin-left:4px;}
+.att-err{color:#C2410C;font-weight:700;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2545,12 +2563,14 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       <div class="brand"><div class="brand-mark">TF</div><span class="brand-name">TaskFlow Pro</span></div>
     </div>
 
+    <div class="offline-bar hidden" id="offlineBar" role="status">📡 <span><b>Sin conexión.</b> La app necesita internet para Alma, traducciones y el calendario. Lo que cambies queda en este dispositivo y se guarda solo al volver la conexión.</span></div>
     <div class="topbar">
       <div class="search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input type="text" id="globalSearch" placeholder="Buscar tareas, proyectos, responsables...">
       </div>
       <div class="topbar-actions">
+        <button type="button" class="sync-chip hidden" id="syncChip" aria-live="polite"></button>
         <div id="topbarClock" class="topbar-clock" title="Hora y fecha actual"></div>
         <button class="icon-btn" id="notifBellBtn" title="Notificaciones" style="position:relative;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
@@ -3808,13 +3828,12 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
 <script>
 /* ==========================================================================
    TASKFLOW PRO — App logic (Etapa 1)
-   Todo el estado se persiste en localStorage bajo la clave TASKFLOW_DB_KEY.
+   Todo el estado se guarda en el servidor (data.js) y una copia por cuenta en este dispositivo (ver "GUARDADO Y SINCRONIZACIÓN").
    Estructura: { projects, tasks, responsables, config }
    ========================================================================== */
 (function(){
 "use strict";
 
-const DB_KEY = "taskflow_pro_db_v1";
 const AUTH_TOKEN_KEY = "tfp_auth_token";
 const AUTH_USER_KEY = "tfp_auth_username";
 function getAuthToken(){ return localStorage.getItem(AUTH_TOKEN_KEY) || ""; }
@@ -4371,23 +4390,7 @@ function normalizeAndAdoptDB(parsed){
   applyCustomLabels();
   recomputeAll();
 }
-// Respaldo local SOLAMENTE (sin servidor) — se usa como caché de emergencia si
-// no hay sesión, no hay conexión, o algo falla al hablar con el backend.
-function loadDB(){
-  try{
-    const raw = localStorage.getItem(DB_KEY);
-    if(raw){
-      normalizeAndAdoptDB(JSON.parse(raw));
-      return;
-    }
-  }catch(e){
-    console.warn("No se pudo leer localStorage (datos corruptos o inexistentes).", e);
-    toast("No se pudieron leer tus datos guardados — se inició con la app vacía.","info");
-  }
-  DB = emptyData();
-  applyCustomLabels();
-  saveDB();
-}
+
 function applyCustomLabels(){
   const cl = DB.config.customLabels || {priorities:{},taskStatuses:{},projectStatuses:{}};
   PRIORITIES.forEach(p=>{ if(cl.priorities && cl.priorities[p.id]) p.label = cl.priorities[p.id]; });
@@ -4399,23 +4402,187 @@ function applyCustomLabels(){
 // una petición de red por cada tecla — si guardas varias cosas seguidas, se
 // agrupan en un solo envío).
 let _remoteSaveTimer = null;
+/* ====================================================================== *
+ * GUARDADO Y SINCRONIZACIÓN (protección de datos)
+ * - Copia local SEPARADA POR CUENTA (antes era una sola para todos).
+ * - El servidor lleva un número de versión: si otro dispositivo guardó
+ *   entremedio, no se pisa; se COMBINAN los cambios (3 vías, por elemento y
+ *   por campo) y se reintenta.
+ * - Si un guardado falla, se avisa y se reintenta; nunca dice "guardado" si
+ *   el servidor no lo confirmó.
+ * ====================================================================== */
+const LEGACY_DB_KEY = "taskflow_pro_db_v1";
+const SYNC_DERIVED = new Set(["completedTasks","overdueTasks","pendingTasks","totalTasks","progress"]);
+let syncRev = 0, syncBase = null, syncPending = false, syncInFlight = null, syncAgain = false, syncRetryTimer = null, syncState = "idle", syncFails = 0;
+function syncUser(){ return localStorage.getItem(AUTH_USER_KEY) || ""; }
+function syncKeys(){ const u = syncUser(); return u ? { db:`taskflow_pro_db_v2:${u}`, base:`taskflow_pro_base_v2:${u}`, meta:`taskflow_pro_sync_v2:${u}` } : null; }
+function syncWriteMeta(){ const k = syncKeys(); if(!k) return; try{ localStorage.setItem(k.meta, JSON.stringify({ rev: syncRev, pending: syncPending })); }catch(e){} }
+function syncWriteBase(){ const k = syncKeys(); if(!k) return; try{ localStorage.setItem(k.base, JSON.stringify(syncBase)); }catch(e){ /* sin espacio: la base queda solo en memoria */ } }
+function syncReadLocal(){
+  const k = syncKeys(); if(!k) return { db:null, base:null, meta:{} };
+  const rd = key=>{ try{ const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }catch(e){ return null; } };
+  return { db: rd(k.db), base: rd(k.base), meta: rd(k.meta) || {} };
+}
+function syncClearLocal(){ const k = syncKeys(); if(k){ [k.db,k.base,k.meta].forEach(x=>{ try{ localStorage.removeItem(x); }catch(e){} }); } try{ localStorage.removeItem(LEGACY_DB_KEY); }catch(e){} }
 function saveDB(){
-  try{
-    localStorage.setItem(DB_KEY, JSON.stringify(DB));
-  }catch(e){
-    toast("No se pudo guardar en el almacenamiento local.","error");
+  const k = syncKeys();
+  if(k){
+    try{ localStorage.setItem(k.db, JSON.stringify(DB)); }
+    catch(e){ toast("No se pudo guardar en este dispositivo (sin espacio). Tus cambios dependen de la conexión.","error"); }
   }
+  syncPending = true; syncWriteMeta();
   scheduleRemoteSave();
 }
 function scheduleRemoteSave(){
   if(!getAuthToken()) return; // sin sesión, no hay a quién guardarle en el servidor
+  setSyncState(navigator.onLine ? "pending" : "offline");
   clearTimeout(_remoteSaveTimer);
-  _remoteSaveTimer = setTimeout(()=>{
-    apiData("save", { data: DB }).catch(e=>{
-      console.warn("No se pudo sincronizar con el servidor (se guardó localmente igual):", e.message);
-    });
-  }, 1200);
+  _remoteSaveTimer = setTimeout(()=>{ syncNow().catch(()=>{}); }, 1200);
 }
+// Comparación estable (mismo contenido aunque las claves vengan en otro orden)
+function stableStr(v){
+  if(Array.isArray(v)) return "[" + v.map(stableStr).join(",") + "]";
+  if(v && typeof v==="object") return "{" + Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+stableStr(v[k])).join(",") + "}";
+  return JSON.stringify(v===undefined ? null : v);
+}
+const syncEq = (a,b)=> stableStr(a)===stableStr(b);
+const isIdList = arr => Array.isArray(arr) && arr.length>0 && arr.every(x=>x && typeof x==="object" && !Array.isArray(x) && (typeof x.id==="string" || typeof x.id==="number"));
+// Combina en 3 vías: base (última versión confirmada por el servidor), local (este
+// dispositivo) y remote (lo que hay ahora en el servidor).
+//  - Si solo cambió un lado, gana ese cambio.
+//  - Listas con "id" (tareas, proyectos, notas…) se combinan elemento por elemento:
+//    altas de ambos lados se suman; una eliminación se respeta salvo que el otro lado
+//    haya editado ese elemento (entonces se conserva y se cuenta como conflicto).
+//  - Si ambos cambiaron el MISMO campo de forma distinta, se conserva lo de este
+//    dispositivo (la acción más reciente del usuario aquí) y se cuenta el conflicto.
+function syncMerge(base, local, remote, stats, key){
+  stats = stats || { conflicts:0, fromRemote:0 };
+  if(syncEq(local, remote)) return local;
+  if(syncEq(local, base)){ stats.fromRemote++; return remote; }
+  if(syncEq(remote, base)) return local;
+  const lists = [base, local, remote].filter(Array.isArray);
+  if(lists.length && lists.some(isIdList) && lists.every(a=>a.length===0 || isIdList(a))){
+    const toMap = a => { const m = new Map(); (Array.isArray(a)?a:[]).forEach(x=>m.set(String(x.id), x)); return m; };
+    const B = toMap(base), L = toMap(local), R = toMap(remote), out = [], seen = new Set();
+    const order = [...(Array.isArray(remote)?remote:[]), ...(Array.isArray(local)?local:[])].map(x=>String(x.id));
+    order.forEach(id=>{
+      if(seen.has(id)) return; seen.add(id);
+      const b = B.get(id), l = L.get(id), r = R.get(id);
+      if(!b){ if(l && r) out.push(syncMerge({}, l, r, stats)); else if(l) out.push(l); else { out.push(r); stats.fromRemote++; } return; }
+      if(!l && !r) return;
+      if(!l){ if(syncEq(r,b)) return; out.push(r); stats.conflicts++; return; }        // borrado aquí, editado allá
+      if(!r){ if(syncEq(l,b)) { stats.fromRemote++; return; } out.push(l); stats.conflicts++; return; } // borrado allá, editado aquí
+      out.push(syncMerge(b, l, r, stats));
+    });
+    return out;
+  }
+  const isObj = v => v && typeof v==="object" && !Array.isArray(v);
+  if(isObj(local) && isObj(remote)){
+    const b = isObj(base) ? base : {}, out = {};
+    new Set([...Object.keys(local), ...Object.keys(remote)]).forEach(k=>{
+      const v = syncMerge(b[k], local[k], remote[k], stats, k);
+      if(v !== undefined) out[k] = v;
+    });
+    return out;
+  }
+  if(!SYNC_DERIVED.has(key)) stats.conflicts++;
+  return local;
+}
+// Envía al servidor. Devuelve una promesa que se resuelve cuando el servidor confirmó.
+function syncNow(){
+  if(!getAuthToken() || !syncKeys()) return Promise.resolve(false);
+  if(syncInFlight){ syncAgain = true; return syncInFlight; }
+  if(!navigator.onLine){ setSyncState("offline"); return Promise.reject(new Error("Sin conexión")); }
+  clearTimeout(syncRetryTimer);
+  setSyncState("saving");
+  syncInFlight = (async ()=>{
+    for(let attempt=0; attempt<3; attempt++){
+      const sent = JSON.stringify(DB);
+      let res, body;
+      try{
+        res = await fetch("/.netlify/functions/data", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ action:"save", token:getAuthToken(), data: JSON.parse(sent), baseRev: syncRev }) });
+        body = await res.json().catch(()=>({}));
+      }catch(e){ throw new Error("network"); }
+      if(res.ok){
+        syncRev = body.rev; syncBase = JSON.parse(sent); syncWriteBase();
+        syncPending = JSON.stringify(DB) !== sent;   // ¿cambió algo mientras se enviaba?
+        syncWriteMeta(); syncFails = 0;
+        return true;
+      }
+      if(res.status===409){
+        // otro dispositivo guardó entremedio: se combinan los cambios y se reintenta
+        const remote = body.data;
+        const stats = { conflicts:0, fromRemote:0 };
+        const merged = remote ? syncMerge(syncBase, JSON.parse(sent), remote, stats) : JSON.parse(sent);
+        // lo que el usuario cambió mientras tanto (DB actual vs lo enviado) se aplica encima
+        const mergedNow = syncEq(DB, JSON.parse(sent)) ? merged : syncMerge(JSON.parse(sent), DB, merged, { conflicts:0, fromRemote:0 });
+        normalizeAndAdoptDB(mergedNow);
+        syncRev = body.rev; syncBase = remote; syncWriteBase();
+        const k = syncKeys(); try{ localStorage.setItem(k.db, JSON.stringify(DB)); }catch(e){}
+        syncWriteMeta();
+        try{ recomputeAll(); render(); }catch(e){}
+        if(stats.fromRemote || stats.conflicts) toast(`🔄 Se combinaron cambios hechos en otro dispositivo${stats.conflicts?` (en ${stats.conflicts} caso${stats.conflicts>1?"s":""} se mantuvo lo de este dispositivo)`:""}.`, "info");
+        continue;
+      }
+      if(res.status===401){ const e = new Error("session"); e.session = true; throw e; }
+      throw new Error(body.error || ("HTTP "+res.status));
+    }
+    throw new Error("No se pudo combinar después de varios intentos");
+  })().then(ok=>{
+    syncInFlight = null;
+    if(syncAgain || syncPending){ syncAgain = false; if(syncPending) return syncNow(); }
+    setSyncState("saved");
+    return ok;
+  }, err=>{
+    syncInFlight = null; syncAgain = false; syncFails++;
+    if(err.session) setSyncState("session");
+    else { setSyncState(navigator.onLine ? "error" : "offline"); clearTimeout(syncRetryTimer); syncRetryTimer = setTimeout(()=>{ if(syncPending) syncNow().catch(()=>{}); }, Math.min(60000, 15000*syncFails)); }
+    throw err;
+  });
+  return syncInFlight;
+}
+// Indicador de guardado (arriba). Nunca dice "Guardado" sin confirmación del servidor.
+let _syncFadeTimer = null;
+function setSyncState(st){
+  const prev = syncState;
+  syncState = st;
+  // aviso una sola vez al entrar en un estado de problema (en el celular el indicador es solo un ícono)
+  if(st!==prev){
+    if(st==="error") toast("No se pudo guardar en el servidor. Tus cambios siguen en este dispositivo; reintentaremos solos.","error");
+    if(st==="session") toast("Tu sesión se cerró. Tus cambios siguen aquí: vuelve a entrar con la misma cuenta para guardarlos.","error");
+  }
+  const chip = document.getElementById("syncChip"); if(!chip) return;
+  const M = {
+    pending:["↻","Guardando…","sync-busy","Guardando tus cambios en el servidor"],
+    saving: ["↻","Guardando…","sync-busy","Guardando tus cambios en el servidor"],
+    saved:  ["✓","Guardado","sync-ok","Todo guardado en el servidor"],
+    offline:["⚠","Sin conexión","sync-warn","Sin conexión: tus cambios quedaron en este dispositivo y se guardarán al volver internet"],
+    error:  ["⚠","No se guardó · Reintentar","sync-err","No se pudo guardar en el servidor. Tus cambios siguen aquí; toca para reintentar"],
+    session:["⚠","Inicia sesión para guardar","sync-err","Tu sesión se cerró. Tus cambios siguen en este dispositivo: vuelve a entrar con la misma cuenta para guardarlos"],
+  }[st];
+  clearTimeout(_syncFadeTimer);
+  if(!M){ chip.classList.add("hidden"); return; }
+  chip.className = "sync-chip " + M[2];
+  chip.innerHTML = `<span class="sync-ico" aria-hidden="true">${M[0]}</span><span class="sync-txt">${M[1]}</span>`;
+  chip.title = M[3]; chip.setAttribute("aria-label", M[3]);
+  if(st==="saved") _syncFadeTimer = setTimeout(()=>chip.classList.add("sync-faded"), 2500);
+}
+(function initSyncUI(){
+  const chip = document.getElementById("syncChip");
+  if(chip) chip.addEventListener("click", ()=>{
+    if(syncState==="error" || syncState==="offline"){ syncNow().then(()=>toast("✓ Cambios guardados.","success")).catch(()=>{}); }
+    else if(syncState==="session"){ localStorage.removeItem(AUTH_TOKEN_KEY); location.reload(); }
+  });
+  const bar = document.getElementById("offlineBar");
+  const onNet = ()=>{
+    if(bar) bar.classList.toggle("hidden", navigator.onLine);
+    if(navigator.onLine){ if(syncPending && getAuthToken()) syncNow().catch(()=>{}); }
+    else if(getAuthToken()) setSyncState("offline");
+  };
+  window.addEventListener("online", onNet); window.addEventListener("offline", onNet);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible" && syncPending && navigator.onLine && getAuthToken()) syncNow().catch(()=>{}); });
+  if(!navigator.onLine && bar) bar.classList.remove("hidden");
+})();
 
 /* ---------------------------------------------------------------------- *
  * Datos de prueba (5 proyectos, 20 tareas, 5 responsables)
@@ -5626,8 +5793,11 @@ function renderDashRing(){
   const a = computeDayAchievement();
   if(a.total===0){
     ring.style.setProperty("--pct","0%");
-    pctEl.textContent = "🌤️";
-    subEl.textContent = "Día despejado";
+    // Sin tareas para hoy: se dice con números, igual que "1 de 14 tareas".
+    // (Antes mostraba 🌤️ "Día despejado", que junto a la tarjeta del clima
+    // parecía un segundo pronóstico.)
+    pctEl.textContent = "0";
+    subEl.textContent = "tareas para hoy";
     if(progLabel){ progLabel.textContent = "Nada planificado hoy"; progFill.style.width = "0%"; }
     return;
   }
@@ -10636,9 +10806,10 @@ function openTaskModal(tid, opts){
     <div id="tf_checklist">${(t.checklist||[]).map(renderChecklistRow).join("")}</div>
     <button type="button" class="add-line-btn" id="tf_addChecklist">${iconPlusSmall()} Agregar ítem</button>
 
-    <div class="section-divider">Archivos adjuntos <span style="font-weight:400;text-transform:none;color:var(--text-faint);">(máx. 5 archivos, 400 KB c/u)</span></div>
+    <div class="section-divider">Archivos adjuntos <span style="font-weight:400;text-transform:none;color:var(--text-faint);">(opcional · hasta 10 archivos de 4 MB)</span></div>
     <div id="tf_files">${(t.files||[]).map(renderFileRow).join("")}</div>
-    <label class="add-line-btn" style="cursor:pointer;">${iconPlusSmall()} Adjuntar archivo<input type="file" id="tf_addFile" class="hidden" multiple></label>
+    <label class="add-line-btn" style="cursor:pointer;">${iconPlusSmall()} Adjuntar archivo (opcional)<input type="file" id="tf_addFile" class="hidden" multiple accept="image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"></label>
+    <div class="att-hint">Fotos, PDF, Word, Excel o texto · hasta 4 MB cada uno (las fotos se reducen solas) · privados, solo tú los ves.</div>
 
     <div class="section-divider">📝 Actualización de avance <span style="font-weight:400;text-transform:none;color:var(--text-faint);">${(t.updates&&t.updates.length)?('· última: '+relativeTime(t.updates[0].at)):''}</span></div>
     <div class="email-dropzone" id="tf_updateDropzone" tabindex="0" style="text-align:left;padding:14px;">
@@ -10682,17 +10853,11 @@ function openTaskModal(tid, opts){
   renderCurrentTaskFiles();
   document.getElementById("tf_addFile").addEventListener("change", async (e)=>{
     const files = Array.from(e.target.files||[]);
-    const MAX_SIZE = 400*1024, MAX_COUNT = 5;
-    for(const file of files){
-      if(currentTaskFiles.length >= MAX_COUNT){ toast(`Máximo ${MAX_COUNT} archivos por tarea.`,"error"); break; }
-      if(file.size > MAX_SIZE){ toast(`"${file.name}" pesa demasiado (máx. 400 KB por archivo).`,"error"); continue; }
-      try{
-        const dataUrl = await fileToDataUrl(file);
-        currentTaskFiles.push({ id:uid("f"), name:file.name, size:file.size, type:file.type||"application/octet-stream", dataUrl });
-      }catch(err){ toast(`No se pudo leer "${file.name}".`,"error"); }
-    }
-    renderCurrentTaskFiles();
     e.target.value = "";
+    for(const file of files){
+      if(currentTaskFiles.length >= ATT_MAX_COUNT){ toast(`Máximo ${ATT_MAX_COUNT} archivos por tarea.`,"error"); break; }
+      await attAddToCurrentTask(file);
+    }
   });
 
   currentTaskUpdates = (t.updates||[]).slice();
@@ -10917,14 +11082,6 @@ function renderChecklistRow(c){
 function bindChecklistRow(row){ row.querySelector("[data-cremove]").addEventListener("click", ()=>row.remove()); }
 let currentTaskFiles = [];
 let currentTaskUpdates = [];
-function fileToDataUrl(file){
-  return new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = ()=>resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 function humanFileSize(bytes){
   if(bytes==null) return "";
   if(bytes < 1024) return bytes+" B";
@@ -10932,24 +11089,136 @@ function humanFileSize(bytes){
   return (bytes/(1024*1024)).toFixed(1)+" MB";
 }
 function renderFileRow(f){
-  return `<div class="file-item" data-fid="${f.id}">
-    <span>📎</span>
+  const ico = /^image\//.test(f.type) ? "🖼️" : /pdf/.test(f.type) ? "📄" : /sheet|excel|csv/.test(f.type) ? "📊" : /word|document/.test(f.type) ? "📝" : /presentation|powerpoint/.test(f.type) ? "📽️" : "📎";
+  const status = f.uploading ? `<span class="att-st">Subiendo…</span>` : f.error ? `<span class="att-st att-err">No se subió</span>` : "";
+  const canOpen = !f.uploading && !f.error && (f.dataUrl || f.stored==="cloud");
+  return `<div class="file-item" data-fid="${esc(f.id)}">
+    <span>${ico}</span>
     <span class="file-name">${esc(f.name)}</span>
-    <span class="file-size">${humanFileSize(f.size)}</span>
-    ${f.dataUrl?`<a href="${f.dataUrl}" download="${esc(f.name)}" class="mini-btn" title="Descargar">${iconArchive()}</a>`:""}
+    <span class="file-size">${humanFileSize(f.size)}</span>${status}
+    ${canOpen && (/^image\//.test(f.type) || /pdf/.test(f.type)) ? `<button type="button" class="mini-btn" data-fopen title="Ver">👁️</button>` : ""}
+    ${canOpen ? `<button type="button" class="mini-btn" data-fdown title="Descargar">${iconArchive()}</button>` : ""}
+    ${f.error ? `<button type="button" class="mini-btn" data-fretry title="Reintentar">↻</button>` : ""}
     <button type="button" class="small-x" data-fremove title="Quitar">${iconCloseSmall()}</button>
   </div>`;
 }
 function renderCurrentTaskFiles(){
   const wrap = document.getElementById("tf_files");
+  if(!wrap) return;
   wrap.innerHTML = currentTaskFiles.map(renderFileRow).join("") || `<div class="t-sub" style="padding:4px 0;">Sin archivos adjuntos.</div>`;
-  wrap.querySelectorAll("[data-fremove]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const row = btn.closest("[data-fid]");
-      currentTaskFiles = currentTaskFiles.filter(f=>f.id!==row.dataset.fid);
-      renderCurrentTaskFiles();
-    });
-  });
+  const byRow = el => currentTaskFiles.find(f=>f.id===el.closest("[data-fid]").dataset.fid);
+  wrap.querySelectorAll("[data-fremove]").forEach(btn=>btn.addEventListener("click", ()=>{
+    const f = byRow(btn); if(f && f.uploading) return;
+    currentTaskFiles = currentTaskFiles.filter(x=>x!==f);   // el archivo se borra del servidor solo cuando ninguna tarea lo usa
+    renderCurrentTaskFiles();
+  }));
+  wrap.querySelectorAll("[data-fopen]").forEach(btn=>btn.addEventListener("click", ()=>attOpen(byRow(btn), false)));
+  wrap.querySelectorAll("[data-fdown]").forEach(btn=>btn.addEventListener("click", ()=>attOpen(byRow(btn), true)));
+  wrap.querySelectorAll("[data-fretry]").forEach(btn=>btn.addEventListener("click", ()=>{ const f = byRow(btn); if(f && f._file){ currentTaskFiles = currentTaskFiles.filter(x=>x!==f); attAddToCurrentTask(f._file); } }));
+}
+/* ---------- Adjuntos guardados APARTE de tus datos (función "files") ---------- */
+const ATT_MAX_BYTES = 4*1024*1024, ATT_MAX_COUNT = 10;
+const ATT_TYPES = /^(image\/(png|jpeg|jpg|webp|gif|heic|heif)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|application\/vnd\.ms-excel|application\/vnd\.ms-powerpoint|text\/plain|text\/csv)$/i;
+const attCache = new Map();   // archivos ya descargados en esta sesión (no se guardan)
+function attTypeOf(file){
+  let t = (file.type||"").toLowerCase();
+  if(!t || t==="application/octet-stream"){
+    const ext = (file.name||"").toLowerCase().split(".").pop();
+    t = { pdf:"application/pdf", jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", webp:"image/webp", heic:"image/heic", doc:"application/msword", docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls:"application/vnd.ms-excel", xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ppt:"application/vnd.ms-powerpoint", pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation", txt:"text/plain", csv:"text/csv" }[ext] || t;
+  }
+  return t;
+}
+async function apiFiles(action, payload){
+  const res = await fetch("/.netlify/functions/files", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(Object.assign({ action, token:getAuthToken() }, payload||{})) });
+  const j = await res.json().catch(()=>({}));
+  if(!res.ok){ const e = new Error(j.error || ("HTTP "+res.status)); e.status = res.status; throw e; }
+  return j;
+}
+// Fotos grandes → máx. 2000 px en JPEG (una foto de celular de 5 MB queda en ~1 MB)
+async function attShrinkImage(file){
+  if(!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || file.size <= 1.2*1024*1024) return file;
+  try{
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 2000/Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width*k); c.height = Math.round(bmp.height*k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r=>c.toBlob(r, "image/jpeg", 0.85));
+    return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.(png|webp)$/i,".jpg"), { type:"image/jpeg" }) : file;
+  }catch(e){ return file; }
+}
+async function attAddToCurrentTask(file){
+  const type = attTypeOf(file);
+  if(!ATT_TYPES.test(type)){ toast(`"${file.name}" no se puede adjuntar. Usa fotos, PDF, Word, Excel, PowerPoint o texto.`,"error"); return; }
+  if(!navigator.onLine){ toast("Para adjuntar archivos necesitas conexión a internet.","error"); return; }
+  const ready = await attShrinkImage(file);
+  if(ready.size > ATT_MAX_BYTES){ toast(`"${file.name}" pesa ${humanFileSize(ready.size)}; el máximo es 4 MB.`,"error"); return; }
+  const item = { id: uid("f"), name: ready.name || file.name, size: ready.size, type, stored:"cloud", uploading:true, _file:file };
+  currentTaskFiles.push(item); renderCurrentTaskFiles();
+  try{
+    const b64 = await fileToBase64(ready);
+    const r = await apiFiles("upload", { fileId:item.id, name:item.name, type, data:b64 });
+    delete item.uploading; delete item._file; item.size = r.file.size; item.uploadedAt = r.file.uploadedAt;
+    attCache.set(item.id, new Blob([ready], { type }));
+    trackUse("archivos.subido");
+  }catch(e){
+    item.uploading = false; item.error = true;
+    toast(`No se pudo subir "${file.name}": ${e.message}`,"error");
+  }
+  renderCurrentTaskFiles();
+}
+// Ver (imagen/PDF en otra pestaña) o descargar. Solo con tu sesión.
+async function attOpen(f, download){
+  if(!f) return;
+  const win = (!download) ? window.open("", "_blank") : null;   // se abre YA (si no, el navegador lo bloquea)
+  try{
+    let blob = attCache.get(f.id);
+    if(!blob && f.dataUrl){ blob = await (await fetch(f.dataUrl)).blob(); }
+    if(!blob){
+      const r = await apiFiles("download", { fileId:f.id });
+      const bin = atob(r.data), arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+      // solo imágenes y PDF se muestran en el navegador; lo demás siempre se descarga
+      const safeType = /^image\/(png|jpeg|jpg|webp|gif)$|^application\/pdf$/i.test(r.type) ? r.type : "application/octet-stream";
+      blob = new Blob([arr], { type: download ? r.type : safeType });
+      attCache.set(f.id, blob);
+    }
+    const url = URL.createObjectURL(blob);
+    if(win && !download){ win.location.href = url; }
+    else { const a = document.createElement("a"); a.href = url; a.download = f.name || "archivo"; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  }catch(e){
+    if(win) win.close();
+    toast(e.status===404 ? "Ese archivo ya no existe." : "No se pudo abrir el archivo: "+e.message,"error");
+  }
+}
+// Todas las referencias a archivos que existen (tareas y papelera)
+function attReferencedIds(){
+  const ids = [];
+  (DB.tasks||[]).forEach(t=>(t.files||[]).forEach(f=>f && f.id && ids.push(f.id)));
+  JSON.stringify(DB.trash||[]).replace(/"id":"(f_[A-Za-z0-9_-]+)"/g, (m,id)=>{ ids.push(id); return m; });
+  return ids;
+}
+// Al abrir la app (con conexión): 1) mueve los adjuntos antiguos (guardados DENTRO
+// de tus datos) al sistema nuevo; 2) el servidor borra los archivos que ya no usa
+// ninguna tarea. Si algo falla, no se borra nada y se reintenta la próxima vez.
+async function attMaintenance(){
+  if(!getAuthToken() || !navigator.onLine) return;
+  let moved = 0;
+  const legacy = [];
+  (DB.tasks||[]).forEach(t=>(t.files||[]).forEach(f=>{ if(f && f.dataUrl) legacy.push(f); }));
+  (DB.trash||[]).forEach(tr=>{ if(tr && tr.data && Array.isArray(tr.data.files)) tr.data.files.forEach(f=>{ if(f && f.dataUrl) legacy.push(f); }); });
+  for(const f of legacy.slice(0, 40)){
+    try{
+      const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(f.dataUrl||""); if(!m || !m[2]) continue;
+      const type = (m[1]||f.type||"").toLowerCase() || attTypeOf({ name:f.name });
+      if(!ATT_TYPES.test(type)) continue;            // tipo no permitido en el sistema nuevo: se deja como estaba
+      if(!/^[A-Za-z0-9_-]{4,64}$/.test(f.id)) f.id = uid("f");
+      await apiFiles("upload", { fileId:f.id, name:f.name||"archivo", type, data:m[3] });
+      delete f.dataUrl; f.stored = "cloud"; f.type = type; moved++;
+    }catch(e){ break; }
+  }
+  if(moved){ saveDB(); toast(`📎 Moví ${moved} archivo${moved>1?"s":""} adjunto${moved>1?"s":""} a un espacio aparte: tus datos quedaron más livianos.`,"info"); }
+  try{ if(!syncPending) await apiFiles("reconcile", { keep: attReferencedIds() }); }catch(e){}
 }
 function renderCommentRow(c){
   return `<div class="comment-row" data-cmid="${c.id}">
@@ -10988,7 +11257,8 @@ document.getElementById("saveTaskBtn").addEventListener("click", ()=>{
     done: row.querySelector('[data-cfield="done"]').checked,
   })).filter(c=>c.text);
 
-  const files = currentTaskFiles.slice();
+  if(currentTaskFiles.some(f=>f.uploading)){ toast("Espera a que termine de subir el archivo.","info"); return; }
+  const files = currentTaskFiles.filter(f=>!f.error).map(f=>{ const c = Object.assign({}, f); delete c._file; delete c.uploading; delete c.error; return c; });
 
   const comments = Array.from(document.getElementById("tf_comments").querySelectorAll("[data-cmid]")).map(row=>({
     id: row.dataset.cmid,
@@ -14599,7 +14869,7 @@ const USE_LABELS = {
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
   "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
-  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones",
+  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones",
 };
 const useLabel = k => USE_LABELS[k] || k;
 
@@ -15955,7 +16225,7 @@ function renderConfiguracion(){
       if(!DB.config.userEmail){ toast("Primero pon tu correo en \"Mi perfil\" (arriba) y guarda la página.","error"); return; }
       testBtn.disabled = true; testBtn.textContent = "Enviando…";
       try{
-        await apiData("save", { data: DB }); // sincroniza YA, sin esperar el debounce, para que la prueba use tus datos más recientes
+        syncPending = true; await syncNow(); // sincroniza YA, sin esperar el debounce, para que la prueba use tus datos más recientes
         const res = await fetch("/.netlify/functions/send-weekly-report-test", {
           method: "POST",
           headers: {"Content-Type":"application/json"},
@@ -17219,12 +17489,7 @@ function hideLoginScreen(){
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("appShell").classList.remove("hidden");
 }
-function readLocalCacheOrNull(){
-  try{
-    const raw = localStorage.getItem(DB_KEY);
-    return raw ? JSON.parse(raw) : null;
-  }catch(e){ return null; }
-}
+function readLocalCacheOrNull(){ return syncReadLocal().db; }
 function adoptRemoteOrLocalAndBoot(remoteData){
   try{
     if(remoteData) normalizeAndAdoptDB(remoteData);
@@ -17233,8 +17498,52 @@ function adoptRemoteOrLocalAndBoot(remoteData){
     console.error("Datos remotos inválidos, se usa app vacía", e);
     DB = emptyData(); applyCustomLabels();
   }
-  saveDB(); // deja copia local (y agenda sincronizar de vuelta al servidor)
   bootApp();
+}
+// Arranque con datos del servidor ({ data, rev }). Si en este dispositivo había
+// cambios que no alcanzaron a guardarse, NO se pierden: se combinan primero.
+function bootFromServer(got){
+  const remote = got && got.data || null;
+  const local = syncReadLocal();
+  try{ localStorage.removeItem(LEGACY_DB_KEY); }catch(e){}   // copia antigua (no separada por cuenta)
+  syncRev = (got && typeof got.rev==="number") ? got.rev : 0;
+  if(local.meta.pending && local.db){
+    let merged;
+    const stats = { conflicts:0, fromRemote:0 };
+    if(!remote) merged = local.db;
+    else if(local.base) merged = syncMerge(local.base, local.db, remote, stats);
+    else merged = syncMerge({ tasks:[], projects:[], responsables:[] }, local.db, remote, stats); // sin base: se suman ambos lados
+    syncBase = remote;
+    adoptRemoteOrLocalAndBoot(merged);
+    syncPending = true; syncWriteBase(); saveDB();
+    toast("🔄 Recuperé cambios que no se habían alcanzado a guardar y los estoy guardando ahora.","info");
+    return;
+  }
+  adoptRemoteOrLocalAndBoot(remote);
+  setTimeout(()=>{ attMaintenance().catch(()=>{}); }, 4000);   // adjuntos: migrar antiguos y limpiar huérfanos
+  syncBase = JSON.parse(JSON.stringify(DB)); syncWriteBase();
+  const k = syncKeys(); if(k){ try{ localStorage.setItem(k.db, JSON.stringify(DB)); }catch(e){} }
+  syncPending = !remote; syncWriteMeta();
+  if(!remote) syncNow().catch(()=>{});   // cuenta nueva o sin datos: se crea en el servidor
+  else setSyncState("saved");
+}
+// Sin conexión al abrir: se usa la copia de ESTA cuenta en este dispositivo, si existe.
+function bootOfflineOrGate(){
+  const local = syncReadLocal();
+  if(local.db){
+    syncRev = typeof local.meta.rev==="number" ? local.meta.rev : 0;
+    syncBase = local.base; syncPending = !!local.meta.pending;
+    adoptRemoteOrLocalAndBoot(local.db);
+    setSyncState("offline");
+    return;
+  }
+  // sin copia de esta cuenta: no se inventa una app vacía que después pise el servidor
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appShell").classList.add("hidden");
+  let gate = document.getElementById("offlineGate");
+  if(!gate){ gate = document.createElement("div"); gate.id = "offlineGate"; gate.className = "offline-gate"; document.body.appendChild(gate); }
+  gate.innerHTML = `<div class="offline-gate-card"><div style="font-size:40px;">📡</div><h2>Necesitas internet</h2><p>Para abrir TaskFlow Pro en este dispositivo por primera vez necesitas conexión.</p><button class="btn btn-primary" id="offlineRetry">Reintentar</button></div>`;
+  document.getElementById("offlineRetry").addEventListener("click", ()=>location.reload());
 }
 // Intenta recuperar la sesión guardada en este dispositivo. Si el servidor no
 // responde (sin internet), sigue funcionando con la última copia local, sin
@@ -17251,7 +17560,7 @@ async function tryRestoreSession(){
     verified = !!v.valid;
   }catch(netErr){
     hideLoginScreen();
-    adoptRemoteOrLocalAndBoot(readLocalCacheOrNull());
+    bootOfflineOrGate();
     return;
   }
   if(!verified){
@@ -17264,12 +17573,10 @@ async function tryRestoreSession(){
     return;
   }
   hideLoginScreen();
-  try{
-    const got = await apiData("get", {});
-    adoptRemoteOrLocalAndBoot(got.data || readLocalCacheOrNull());
-  }catch(e2){
-    adoptRemoteOrLocalAndBoot(readLocalCacheOrNull());
-  }
+  let got;
+  try{ got = await apiData("get", {}); }
+  catch(e2){ bootOfflineOrGate(); return; }
+  bootFromServer(got);
 }
 function setupAuthUI(){
   document.querySelectorAll("[data-pw-toggle]").forEach(btn=>{
@@ -17322,7 +17629,7 @@ function setupAuthUI(){
       localStorage.setItem(AUTH_USER_KEY, r.username);
       hideLoginScreen();
       const got = await apiData("get", {});
-      adoptRemoteOrLocalAndBoot(got.data);
+      bootFromServer(got);
     }catch(err){
       errEl.textContent = err.message;
     }finally{
@@ -17346,7 +17653,7 @@ function setupAuthUI(){
       localStorage.setItem(AUTH_TOKEN_KEY, r.token);
       localStorage.setItem(AUTH_USER_KEY, r.username);
       hideLoginScreen();
-      adoptRemoteOrLocalAndBoot(null); // cuenta nueva: empieza vacía
+      bootFromServer({ data:null, rev:0 }); // cuenta nueva: empieza vacía y se crea en el servidor
     }catch(err){
       errEl.textContent = err.message;
     }finally{
@@ -17401,9 +17708,17 @@ function setupAuthUI(){
   if(resetTokenInUrl) showOnly(formReset);
 }
 // Cierra la sesión de este dispositivo y vuelve a la pantalla de login.
-function logoutUser(){
+async function logoutUser(){
+  // Si hay cambios sin guardar, se intenta guardarlos antes de cerrar sesión.
+  if(syncPending && getAuthToken()){
+    try{ await Promise.race([ syncNow(), new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), 8000)) ]); }
+    catch(e){
+      if(!confirm("Tienes cambios que no se pudieron guardar en el servidor (¿sin conexión?).\n\nSi cierras sesión ahora, esos cambios se pierden. ¿Cerrar sesión igual?")) return;
+    }
+  }
   const token = getAuthToken();
   apiAuth("logout", { token }).catch(()=>{});
+  syncClearLocal();                     // la copia de esta cuenta no queda en el dispositivo
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
   location.reload();
