@@ -992,6 +992,33 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .bs-wiw-row small{display:block;font-size:12px;margin-top:2px;font-style:italic;}
 .bs-wiw-other{grid-column:2;padding:6px 8px;font-size:13px;}
 @media (max-width:600px){ .bs-part{grid-template-columns:1fr auto;} .bs-part-role{grid-column:1/-1;} .bs-part-add{grid-template-columns:1fr;} .bs-wiw-row{grid-template-columns:1fr;} .bs-wiw-other{grid-column:1;} }
+
+.bs-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.bs-level{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:12px;padding:10px;font:inherit;font-size:13px;cursor:pointer;}
+.bs-level small{color:var(--text-muted);font-size:11px;line-height:1.35;}
+.bs-level.on{border-color:#8157EF;box-shadow:0 0 0 1px #8157EF;background:color-mix(in srgb,#8157EF 7%,var(--surface));}
+.bs-verbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.bs-vertabs{display:flex;gap:4px;background:var(--surface-alt);border-radius:12px;padding:4px;}
+.bs-vertab{border:0;background:transparent;color:var(--text-muted);font:inherit;font-size:13px;font-weight:700;padding:7px 12px;border-radius:9px;cursor:pointer;}
+.bs-vertab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.bs-veractions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.bs-gen{width:auto;padding:6px 8px;font-size:12.5px;}
+.bs-topic{padding:10px 0;border-bottom:1px solid var(--border);}
+.bs-topic:last-child{border-bottom:0;}
+.bs-topic-t{font-weight:800;font-size:14px;margin-bottom:4px;}
+.bs-mem-sug{background:color-mix(in srgb,#8157EF 5%,var(--surface));}
+@media (max-width:700px){ .bs-levels{grid-template-columns:1fr;} }
+
+.bs-memcard summary{cursor:pointer;font-size:14px;}
+.bs-memcard summary .tl-muted{font-size:12px;font-weight:400;}
+.bs-mem-body{margin-top:10px;}
+.bs-mem-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px;align-items:center;padding:4px 0;font-size:13px;}
+.bs-mem-row .tl-input{padding:6px 8px;font-size:12.5px;}
+.bs-term-in{width:auto;min-width:140px;padding:5px 8px;font-size:12.5px;}
+@media (max-width:700px){ .bs-mem-row{grid-template-columns:1fr auto;} .bs-mem-row .tl-input{grid-column:1/-1;} }
+
+.fb-mic{padding:0 12px;font-size:18px;}
+.bs-two > .bs-sec:only-child{grid-column:1/-1;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -14237,12 +14264,13 @@ function renderBrainstorm(){
       <p>Graba una reunión, una conversación o tus propias ideas en voz alta. Alma las ordena en un documento con resumen, decisiones y tareas con responsable.</p>
       <button class="btn btn-primary" id="bsEmptyRec">🎙️ Empezar a grabar</button>
     </div>`;
-    wrap.insertAdjacentHTML("afterbegin", meetingsHTML);
+    wrap.insertAdjacentHTML("afterbegin", meetingsHTML + bsMemoryCardHTML());
+    bsBindMemoryCard(wrap);
     document.getElementById("bsEmptyRec").addEventListener("click", ()=>openBrainstormRecorder());
     bsBindMeetings(wrap);
     return;
   }
-  wrap.innerHTML = meetingsHTML + `<div class="bs-grid">${docs.map(d=>{
+  wrap.innerHTML = meetingsHTML + bsMemoryCardHTML() + `<div class="bs-grid">${docs.map(d=>{
     const nTasks = (d.actions||[]).length, nDone = (d.actions||[]).filter(a=>a.taskId).length;
     return `<button type="button" class="bs-card" data-bs="${d.id}">
       <div class="bs-card-top"><span class="bs-chip">${d.source==="texto"?"📝 Texto":"🎙️ "+bsFmtDur(d.durationSec)}</span><span class="tl-muted">${esc(bsFmtDate(d.createdAt))}</span></div>
@@ -14252,6 +14280,7 @@ function renderBrainstorm(){
     </button>`; }).join("")}</div>`;
   wrap.querySelectorAll("[data-bs]").forEach(c=>c.addEventListener("click", ()=>{ bsOpenId = c.dataset.bs; renderBrainstorm(); window.scrollTo({top:0}); }));
   bsBindMeetings(wrap);
+  bsBindMemoryCard(wrap);
 }
 // Reuniones de hoy desde Google Calendar (las que no han terminado + las ya grabadas)
 let bsMeetingsFetched = false;
@@ -14304,20 +14333,29 @@ function renderBrainstormDoc(wrap, d){
       ${d.status==="procesando" && bsProcessing.has(d.id)?`<div class="bs-sec"><div class="tl-muted">⏳ Alma está armando el documento… (con reuniones largas puede tomar hasta un minuto)</div></div>`:""}
       ${d.status==="procesando" && !bsProcessing.has(d.id)?`<div class="bs-sec bs-warn">⚠️ El armado del documento se interrumpió (por ejemplo, si se cerró la app). Tu transcripción está guardada. <button class="btn btn-primary btn-sm" id="bsRetry">✨ Armar documento</button></div>`:""}
       ${d.status==="error"?`<div class="bs-sec bs-warn">⚠️ ${esc(d.error||"No se pudo procesar.")} <button class="btn btn-primary btn-sm" id="bsRetry">Reintentar</button></div>`:""}
+      ${(d.status==="listo" || (d.status==="procesando" && d.versions))?bsVersionBar(d):""}
       ${d.status==="listo"?`
-      <div class="bs-sec"><h3>Resumen</h3><p class="bs-p">${esc(d.summary||"")}</p></div>
+      ${(d.avisos||[]).length?`<div class="id-warnbox">${d.avisos.map(w=>`<div>⚠️ ${esc(w)}</div>`).join("")}</div>`:""}
+      <div class="bs-sec"><h3>${d.activeLevel==="importante"?"Resumen ejecutivo":"Resumen"}</h3><p class="bs-p">${esc(d.summary||"").replace(/\n/g,"<br>")}</p></div>
+      ${d.context?`<div class="bs-sec"><h3>🧭 Contexto</h3><p class="bs-p">${esc(d.context)}</p></div>`:""}
+      ${(d.peopleDetected||[]).length && d.activeLevel==="importante"?`<div class="bs-sec"><h3>👥 Participantes</h3><ul class="bs-list">${d.peopleDetected.map(x=>`<li><b>${esc(x.name)}</b>${(x.role||x.org)?` — ${esc([x.role,x.org].filter(Boolean).join(", "))}`:""}</li>`).join("")}</ul></div>`:""}
+      ${(d.topics||[]).length?`<div class="bs-sec"><h3>🗂️ Temas tratados</h3>${d.topics.map(t=>`<div class="bs-topic"><div class="bs-topic-t">${esc(t.title)}</div>${t.detail?`<p class="bs-p">${esc(t.detail)}</p>`:""}${(t.points||[]).length?bsList(t.points):""}</div>`).join("")}</div>`:""}
+      ${(d.figures||[]).length?`<div class="bs-sec"><h3>📊 Cifras y datos clave</h3><div class="id-tablewrap"><table class="id-otable"><thead><tr><th>Dato</th><th>Valor</th><th>A qué corresponde</th>${d.figures.some(f=>f.quien)?"<th>Quién</th>":""}</tr></thead><tbody>${d.figures.map(f=>`<tr><td>${esc(f.dato)}</td><td><b>${esc(f.valor)}</b>${(f.flag||[]).length?` <span class="id-flag" title="No aparece en la transcripción">⚠ revisar</span>`:""}</td><td>${esc(f.contexto||"")}</td>${d.figures.some(x=>x.quien)?`<td>${esc(f.quien||"")}</td>`:""}</tr>`).join("")}</tbody></table></div></div>`:""}
       <div class="bs-two">
-        <div class="bs-sec"><h3>💡 Ideas clave</h3>${bsList(d.ideas)}</div>
+        ${(d.ideas||[]).length?`<div class="bs-sec"><h3>💡 Ideas clave</h3>${bsList(d.ideas)}</div>`:""}
         <div class="bs-sec"><h3>✔️ Decisiones</h3>${bsList(d.decisions)}</div>
       </div>
       <div class="bs-sec">
         <div class="bs-sec-head"><h3>📋 Tareas y responsables</h3>${actions.some(a=>!a.taskId)?`<button class="btn btn-primary btn-sm" id="bsCreateAll">＋ Crear todas</button>`:""}</div>
         ${actions.length?actions.map((a,i)=>`<div class="bs-act">
-          <div class="bs-act-main"><b>${esc(a.title)}</b><small>👤 ${esc(a.owner||"Sin responsable")}${a.due?` · ⏰ ${esc(almaFriendlyDate(a.due))}`:""}</small></div>
+          <div class="bs-act-main"><b>${esc(a.title)}</b><small>👤 ${esc(a.owner||"Por definir")}${a.org?` · 🏢 ${esc(a.org)}`:""}${a.due?` · ⏰ ${esc(almaFriendlyDate(a.due))}`:""}</small></div>
           ${a.taskId?`<button class="bs-act-done" data-open-task="${a.taskId}">✓ Creada · ver</button>`:`<button class="btn btn-ghost btn-sm" data-make="${i}">＋ Crear tarea</button>`}
         </div>`).join(""):`<div class="tl-muted">No se detectaron tareas concretas.</div>`}
       </div>
-      <div class="bs-sec"><h3>➡️ Próximos pasos</h3>${bsList(d.nextSteps)}</div>`:""}
+      ${(d.openPoints||[]).length?`<div class="bs-sec"><h3>❓ Puntos abiertos</h3>${bsList(d.openPoints)}</div>`:""}
+      ${(d.risks||[]).length?`<div class="bs-sec"><h3>⚠️ Riesgos</h3>${bsList(d.risks)}</div>`:""}
+      <div class="bs-sec"><h3>➡️ Próximos pasos</h3>${bsList(d.nextSteps)}</div>
+      ${bsNewPeopleHTML(d)}`:""}
       ${bsWhoIsWhoHTML(d)}
       <details class="bs-sec bs-trans" ${d.status!=="listo"?"open":""}>
         <summary><h3 style="display:inline;">🗒️ Transcripción</h3> <span class="tl-muted">${(d.transcript||"").split(/\s+/).filter(Boolean).length} palabras</span></summary>
@@ -14337,6 +14375,17 @@ function renderBrainstormDoc(wrap, d){
   });
   const retry = wrap.querySelector("#bsRetry"); if(retry) retry.addEventListener("click", ()=>bsProcessDoc(d.id));
   bsBindWhoIsWho(wrap, d);
+  wrap.querySelectorAll("[data-bsver]").forEach(b=>b.addEventListener("click", ()=>{ bsShowVersion(d, b.dataset.bsver); saveDB(); renderBrainstorm(); }));
+  const gen = wrap.querySelector("#bsGenLevel");
+  if(gen) gen.addEventListener("change", ()=>{ const lv = gen.value; gen.value = ""; if(lv) bsProcessDoc(d.id, lv); });
+  const redo = wrap.querySelector("#bsRedo");
+  if(redo) redo.addEventListener("click", ()=>{ if(confirm(`¿Volver a armar la versión "${BS_LEVELS[d.activeLevel||d.level||"normal"].name}" desde la transcripción? Reemplaza esta versión (las tareas ya creadas se mantienen en tu lista).`)) bsProcessDoc(d.id, d.activeLevel || d.level || "normal"); });
+  wrap.querySelectorAll("[data-memsave]").forEach(b=>b.addEventListener("click", ()=>{
+    const x = (d.peopleDetected||[])[+b.dataset.memsave]; if(!x) return;
+    bsMemRemember([x], []); saveDB(); toast(`🧠 Alma recordará a ${x.name}${x.role?` (${x.role})`:""}.`,"success"); renderBrainstorm();
+  }));
+  const memAll = wrap.querySelector("#bsMemSaveAll");
+  if(memAll) memAll.addEventListener("click", ()=>{ const nw = (d.peopleDetected||[]).filter(x=>!bsMemFind(x.name)); bsMemRemember(nw, d.glossary||[]); saveDB(); toast(`🧠 Alma recordará a ${nw.length} persona${nw.length===1?"":"s"}.`,"success"); renderBrainstorm(); });
   wrap.querySelectorAll("[data-make]").forEach(b=>b.addEventListener("click", ()=>{ bsCreateTask(d, +b.dataset.make); renderBrainstorm(); }));
   const all = wrap.querySelector("#bsCreateAll");
   if(all) all.addEventListener("click", ()=>{ let n=0; (d.actions||[]).forEach((a,i)=>{ if(!a.taskId){ bsCreateTask(d,i,true); n++; } }); recomputeAll(); saveDB(); render(); toast(`✨ Creé ${n} tarea${n===1?"":"s"} desde "${d.title}".`,"success"); });
@@ -14348,7 +14397,7 @@ function bsCreateTask(d, i, silent){
   const me = (DB.config.userName||"").trim().toLowerCase();
   const ownerName = (a.owner||"").trim();
   const isMe = !ownerName || /^(yo|mí|mi|tú|tu)$/i.test(ownerName) || (me && ownerName.toLowerCase()===me) || (me && me.split(" ")[0]===ownerName.toLowerCase());
-  const t = buildTaskFromParsedVoiceItem(a.title, { titulo:a.title, descripcion:`Desde Alma Brainstorm: "${d.title}".`, kind:"tarea", tipo_tarea:a.tipo||"laboral", fecha_vencimiento:a.due||null, prioridad:a.priority||"media", etiquetas:["brainstorm"] });
+  const t = buildTaskFromParsedVoiceItem(a.title, { titulo:a.title, descripcion:`Desde Alma Brainstorm: "${d.title}".${a.org?` Responsable: ${a.owner||"por definir"} (${a.org}).`:""}`, kind:"tarea", tipo_tarea:a.tipo||"laboral", fecha_vencimiento:a.due||null, prioridad:a.priority||"media", etiquetas:["brainstorm"] });
   if(!isMe){ t.owner = ensureResponsableByName(ownerName); t.ownerName = ownerName; }
   DB.tasks.push(t); a.taskId = t.id;
   if(!silent){ recomputeAll(); saveDB(); render(); toast(`✨ Creé "${t.title}"${isMe?"":` para ${ownerName}`}.`,"success"); }
@@ -14380,21 +14429,49 @@ function bsPartsFromEvent(ev){
   (ev && Array.isArray(ev.attendees) ? ev.attendees : []).forEach(a=>{
     if(!a || a.self || a.response==="declined") return;
     const per = (DB.responsables||[]).find(r=>r.email && a.email && r.email.toLowerCase()===a.email.toLowerCase());
-    const name = (per && per.name) || a.name || bsPrettyFromEmail(a.email);
+    const mem = bsMem().people.find(p=>p.email && a.email && p.email.toLowerCase()===a.email.toLowerCase()) || bsMemFind(a.name) || (per && bsMemFind(per.name));
+    const name = (mem && mem.name) || (per && per.name) || a.name || bsPrettyFromEmail(a.email);
     if(!name || out.some(x=>x.name.toLowerCase()===name.toLowerCase())) return;
-    out.push({ name, role: (per && per.role) || "", email: a.email || "", tentative: a.response==="tentative" || a.response==="needsAction" });
+    out.push({ name, role: (mem && mem.role) || (per && per.role) || "", org: (mem && mem.org) || "", email: a.email || "", tentative: a.response==="tentative" || a.response==="needsAction" });
   });
   return out;
 }
 function bsPartsHTML(){
-  const pers = (DB.responsables||[]).filter(r=>r.name && !bsParts.some(x=>x.name.toLowerCase()===r.name.toLowerCase())).slice(0,8);
+  const taken = n => bsParts.some(x=>x.name.toLowerCase()===String(n).toLowerCase());
+  const memP = bsMem().people.slice().sort((a,b)=>String(b.lastSeen||"").localeCompare(String(a.lastSeen||""))).filter(p=>!taken(p.name)).slice(0,8);
+  const pers = (DB.responsables||[]).filter(r=>r.name && !taken(r.name) && !memP.some(p=>p.name.toLowerCase()===r.name.toLowerCase())).slice(0, Math.max(0, 8-memP.length));
   return `<div class="tl-sec" style="margin-top:12px;">¿Quiénes participan? <span class="tl-muted" style="text-transform:none;letter-spacing:0;font-weight:400;">(opcional · ayuda a Alma a reconocer quién habla)</span></div>
-    <div class="bs-parts">${bsParts.map((x,i)=>`<div class="bs-part"><span class="bs-part-n">${x.self?"🎙️ ":""}${esc(x.name)}${x.tentative?` <small class="tl-muted">(sin confirmar)</small>`:""}</span>
+    <div class="bs-parts">${bsParts.map((x,i)=>`<div class="bs-part"><span class="bs-part-n">${x.self?"🎙️ ":""}${esc(x.name)}${x.org?` <small class="tl-muted">· ${esc(x.org)}</small>`:""}${x.tentative?` <small class="tl-muted">(sin confirmar)</small>`:""}</span>
       <input class="tl-input bs-part-role" data-prole="${i}" value="${esc(x.role||"")}" placeholder="Cargo (opcional)" maxlength="60">
       ${x.self?"":`<button type="button" class="small-x" data-prm="${i}" aria-label="Quitar">✕</button>`}</div>`).join("")}</div>
-    <div class="bs-part-add"><input class="tl-input" id="bsPartName" placeholder="Nombre" maxlength="60"><input class="tl-input" id="bsPartRole" placeholder="Cargo (opcional)" maxlength="60"><button type="button" class="btn btn-ghost btn-sm" id="bsPartAdd">＋ Agregar</button></div>
-    ${pers.length?`<div class="tl-chips" style="margin-top:6px;">${pers.map(r=>`<button type="button" class="tl-chip" data-padd="${esc(r.name)}" data-prol="${esc(r.role||"")}">＋ ${esc(r.name)}</button>`).join("")}</div>`:""}`;
+    <div class="bs-part-add"><input class="tl-input" id="bsPartName" placeholder="Nombre" maxlength="60" list="bsMemNames" autocomplete="off"><input class="tl-input" id="bsPartRole" placeholder="Cargo (opcional)" maxlength="60"><button type="button" class="btn btn-ghost btn-sm" id="bsPartAdd">＋ Agregar</button></div>
+    <datalist id="bsMemNames">${bsMem().people.map(p=>`<option value="${esc(p.name)}">${esc([p.role,p.org].filter(Boolean).join(" · "))}</option>`).join("")}</datalist>
+    ${(memP.length||pers.length)?`<div class="tl-chips" style="margin-top:6px;">${memP.map(p=>`<button type="button" class="tl-chip" data-padd="${esc(p.name)}" data-prol="${esc(p.role||"")}" data-porg="${esc(p.org||"")}" title="${esc([p.role,p.org].filter(Boolean).join(" · "))}">＋ ${esc(p.name)}${p.role?` <small>· ${esc(p.role)}</small>`:""}</button>`).join("")}${pers.map(r=>`<button type="button" class="tl-chip" data-padd="${esc(r.name)}" data-prol="${esc(r.role||"")}" data-porg="">＋ ${esc(r.name)}</button>`).join("")}</div>`:""}`;
 }
+// Nivel de la reunión y glosario (en la ventana de grabar y en "Pegar texto")
+let bsLevel = "normal", bsGlossary = "";
+function bsLevelHTML(){
+  return `<div class="tl-sec" style="margin-top:12px;">Nivel de la reunión <span class="tl-muted" style="text-transform:none;letter-spacing:0;font-weight:400;">(define qué tan completo es el informe)</span></div>
+    <div class="bs-levels">${Object.entries(BS_LEVELS).map(([k,l])=>`<button type="button" class="bs-level ${bsLevel===k?"on":""}" data-blevel="${k}"><b>${l.ico} ${l.name}</b><small>${l.desc}</small></button>`).join("")}</div>`;
+}
+function bsGlossaryHTML(){
+  const cur = bsGlossary.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const sug = bsMem().terms.filter(t=>!cur.includes(t.toLowerCase())).slice(-10);
+  return `<label class="tl-muted" for="bsGloss" style="display:block;margin-top:12px;">Empresas, sistemas o términos que se van a nombrar <span style="font-weight:400;">(opcional · Alma los escribe bien)</span></label>
+    <input class="tl-input" id="bsGloss" placeholder="Ej: Sokobox, Infor, Odoo, WMS" value="${esc(bsGlossary)}" style="margin-top:6px;">
+    ${sug.length?`<div class="tl-chips" style="margin-top:6px;">${sug.map(t=>`<button type="button" class="tl-chip" data-gadd="${esc(t)}">＋ ${esc(t)}</button>`).join("")}</div>`:""}`;
+}
+function bsBindLevelGloss(redraw){
+  document.querySelectorAll("[data-blevel]").forEach(b=>b.addEventListener("click", ()=>{ bsLevel = b.dataset.blevel; redraw(); }));
+  const g = document.getElementById("bsGloss"); if(g) g.addEventListener("input", ()=>{ bsGlossary = g.value; });
+  document.querySelectorAll("[data-gadd]").forEach(b=>b.addEventListener("click", ()=>{
+    const g = document.getElementById("bsGloss"); const cur = g ? g.value : bsGlossary;
+    bsGlossary = [cur.trim().replace(/,$/,""), b.dataset.gadd].filter(Boolean).join(", ");
+    if(g) g.value = bsGlossary;   // el campo se actualiza antes de redibujar (si no, se perdía)
+    redraw();
+  }));
+}
+function bsGlossList(){ return [...new Set(bsGlossary.split(",").map(x=>x.trim()).filter(Boolean))].slice(0,40); }
 // Texto para la IA: "Alexandra (gerente comercial), Julio Cuevas (gerente de operaciones), Miguel (quien graba)"
 function bsPartsText(list){ return (list||[]).filter(x=>x && x.name).map(x=>x.name + (x.role?` (${x.role})`:"")).join(", "); }
 function openBrainstormRecorder(opts){
@@ -14404,7 +14481,7 @@ function openBrainstormRecorder(opts){
     openGenericModal("Grabar", `<p>Este navegador no permite grabar audio. Prueba con Chrome, Edge o Safari actualizados, o usa <b>📝 Pegar texto</b>.</p>`); return;
   }
   const ev = opts.event || null;
-  bsParts = bsPartsFromEvent(ev);
+  bsParts = bsPartsFromEvent(ev); bsLevel = "normal"; bsGlossary = "";
   const canTab = bsCanTabAudio();
   bsPickMode = canTab && (ev ? !!ev.joinLink : true) ? "online" : "mic";
   const draw = ()=>{
@@ -14427,7 +14504,9 @@ function openBrainstormRecorder(opts){
         La app usa solo el audio, no guarda lo que se ve en tu pantalla. Usa audífonos si puedes.</div>`:""}
       <label class="tl-muted" for="bsRecTitle" style="display:block;margin-top:12px;">Título</label>
       <input class="tl-input" id="bsRecTitle" placeholder="Ej: Reunión de planificación con el equipo" value="${esc(ev?ev.title||"":"")}" style="margin-top:6px;">
+      ${bsLevelHTML()}
       ${bsPartsHTML()}
+      ${bsGlossaryHTML()}
       <label class="bs-consent"><input type="checkbox" id="bsConsent"> <span>Les avisé a las personas que voy a grabar y están de acuerdo.</span></label>
       ${bsPickMode==="online"?`<button type="button" class="bs-copy-notice" id="bsCopyNotice">📋 Copiar aviso para el chat de la reunión</button>`:""}
       <div class="bs-note">🔒 El audio se envía a la IA (Gemini) para transcribirlo y <b>no se guarda</b>: solo queda el texto, en tu cuenta privada.</div>
@@ -14436,17 +14515,26 @@ function openBrainstormRecorder(opts){
     document.getElementById("genericModalTitle").style.display = "none";
     const c = document.getElementById("bsConsent"), go = document.getElementById("bsStart");
     c.addEventListener("change", ()=>{ go.disabled = !c.checked; });
-    const redraw = ()=>{ const t = document.getElementById("bsRecTitle").value, ok = document.getElementById("bsConsent").checked; draw(); document.getElementById("bsRecTitle").value = t; if(ok){ document.getElementById("bsConsent").checked = true; document.getElementById("bsStart").disabled = false; } };
+    const redraw = ()=>{ const t = document.getElementById("bsRecTitle").value, ok = document.getElementById("bsConsent").checked, g = document.getElementById("bsGloss"); if(g) bsGlossary = g.value; draw(); document.getElementById("bsRecTitle").value = t; if(ok){ document.getElementById("bsConsent").checked = true; document.getElementById("bsStart").disabled = false; } };
     document.querySelectorAll(".bs-mode").forEach(b=>b.addEventListener("click", ()=>{ if(b.disabled) return; bsPickMode = b.dataset.mode; redraw(); }));
     document.querySelectorAll("[data-prole]").forEach(inp=>inp.addEventListener("input", ()=>{ const x = bsParts[+inp.dataset.prole]; if(x) x.role = inp.value.trim(); }));
     document.querySelectorAll("[data-prm]").forEach(b=>b.addEventListener("click", ()=>{ bsParts.splice(+b.dataset.prm,1); redraw(); }));
-    document.querySelectorAll("[data-padd]").forEach(b=>b.addEventListener("click", ()=>{ bsParts.push({ name:b.dataset.padd, role:b.dataset.prol||"" }); redraw(); }));
-    const addP = ()=>{ const n = document.getElementById("bsPartName").value.trim(); if(!n) return; if(!bsParts.some(x=>x.name.toLowerCase()===n.toLowerCase())) bsParts.push({ name:n, role:document.getElementById("bsPartRole").value.trim() }); redraw(); document.getElementById("bsPartName").focus(); };
+    document.querySelectorAll("[data-padd]").forEach(b=>b.addEventListener("click", ()=>{ bsParts.push({ name:b.dataset.padd, role:b.dataset.prol||"", org:b.dataset.porg||"" }); redraw(); }));
+    bsBindLevelGloss(redraw);
+    const pn = document.getElementById("bsPartName");
+    pn.addEventListener("change", ()=>{ const m = bsMemFind(pn.value); const r = document.getElementById("bsPartRole"); if(m && r && !r.value) r.value = m.role || ""; });
+    const addP = ()=>{ const n = document.getElementById("bsPartName").value.trim(); if(!n) return; const m = bsMemFind(n); if(!bsParts.some(x=>x.name.toLowerCase()===n.toLowerCase())) bsParts.push({ name: m ? m.name : n, role:document.getElementById("bsPartRole").value.trim() || (m && m.role) || "", org: (m && m.org) || "" }); redraw(); document.getElementById("bsPartName").focus(); };
     document.getElementById("bsPartAdd").addEventListener("click", addP);
     ["bsPartName","bsPartRole"].forEach(id=>document.getElementById(id).addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); addP(); } }));
     const cn = document.getElementById("bsCopyNotice");
     if(cn) cn.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(BS_CHAT_NOTICE); cn.textContent = "✓ Aviso copiado: pégalo en el chat de la reunión"; }catch(e){ toast("No pude copiar.","error"); } });
-    go.addEventListener("click", ()=>bsStartRecording(document.getElementById("bsRecTitle").value.trim(), { mode: bsPickMode, event: ev, participants: bsParts.map(x=>({ name:x.name, role:x.role||"", self:!!x.self })) }));
+    go.addEventListener("click", ()=>{
+      const g = document.getElementById("bsGloss"); if(g) bsGlossary = g.value;
+      const participants = bsParts.map(x=>({ name:x.name, role:x.role||"", org:x.org||"", email:x.email||"", self:!!x.self }));
+      // memoria: se guardan las personas (con cargo) y los términos para la próxima vez
+      if(bsMemRemember(participants, bsGlossList())) saveDB();
+      bsStartRecording(document.getElementById("bsRecTitle").value.trim(), { mode: bsPickMode, event: ev, participants, level: bsLevel, glossary: bsGlossList() });
+    });
   };
   draw();
 }
@@ -14483,7 +14571,7 @@ async function bsStartRecording(title, opts){
   }
   const mime = bsPickMime();
   trackUse(tabAudio ? "bs.grabar_online" : "bs.grabar");
-  bsRec = { title, participants: opts.participants || [], mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
+  bsRec = { title, participants: opts.participants || [], level: opts.level || "normal", glossary: opts.glossary || [], mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
             startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
             segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, active:0, decision:null };
   // Si se corta el audio de la reunión (cerraste Meet o terminó), lo más probable
@@ -14597,7 +14685,7 @@ async function bsTranscribeSegment(seg){
   const prev = bsRec ? bsRec.segments.find(x=>x.n===seg.n-1 && x.text) : null;
   const tail = prev ? prev.text.slice(-300) : "";
   const prompt = `Transcribe este audio EN EL IDIOMA EN QUE SE HABLA (no traduzcas). Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
-${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}${bsRec && bsRec.participants && bsRec.participants.length ? `Participantes de esta reunión: ${bsPartsText(bsRec.participants)}. Usa SUS NOMBRES cuando por contexto quede claro quién habla (se presenta, lo nombran, le hacen una pregunta y responde, o habla de su área). Si no estás seguro, usa "Persona 1", "Persona 2"… No adivines.\n` : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
+${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}${bsRec && bsRec.participants && bsRec.participants.length ? `Participantes de esta reunión: ${bsPartsText(bsRec.participants)}. Usa un nombre SOLO si es inequívoco: la persona se presenta ("soy Carlos"), o la nombran y responde justo después. Ante la mínima duda usa "Persona 1", "Persona 2"… NUNCA uses el nombre de quien graba para otras voces. Es preferible "Persona N" a un nombre equivocado.\n` : ""}${bsRec && bsRec.glossary && bsRec.glossary.length ? `Términos que pueden aparecer (escríbelos así): ${bsRec.glossary.join(", ")}.\n` : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
 Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si una parte no se entiende, escribe [inaudible] en vez de adivinar. Si no hay voz entendible, responde exactamente: (sin voz)
 Responde solo con la transcripción, en texto plano.`;
   for(let attempt=1; attempt<=2; attempt++){
@@ -14651,7 +14739,7 @@ async function bsStopRecording(){
   }
   const doc = { id: uid("bs"), title: r.title || (r.event && r.event.title) || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
                 source:"grabacion", mode: r.mode, eventId: r.event ? r.event.id : null, eventTitle: r.event ? r.event.title : "",
-                participants: r.participants || [], agenda: (r.event && r.event.description) || "",
+                participants: r.participants || [], agenda: (r.event && r.event.description) || "", level: r.level || "normal", glossary: r.glossary || [],
                 transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
                 missingParts: failed };
   DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
@@ -14711,23 +14799,34 @@ function bsRenderRecorder(){
 
 /* ---------- Pegar texto ---------- */
 function openBrainstormPaste(){
-  openGenericModal("", `
+  bsLevel = "normal"; bsGlossary = "";
+  const draw = (keep)=>{
+    openGenericModal("", `
     <div class="bs-modal">
       <div class="bs-modal-title">📝 Desde texto</div>
       <p class="tl-muted">Pega tus notas, una transcripción (Meet, Teams, Zoom) o ideas sueltas. Alma las ordena igual que una grabación.</p>
       <input class="tl-input" id="bsPasteTitle" placeholder="Título (opcional)" style="margin-bottom:8px;">
       <textarea class="tl-input" id="bsPasteText" rows="9" placeholder="Pega aquí el texto…"></textarea>
-      <button class="btn btn-primary" id="bsPasteGo" style="width:100%;justify-content:center;margin-top:10px;">✨ Ordenar con Alma</button>
+      ${bsLevelHTML()}
+      ${bsGlossaryHTML()}
+      <button class="btn btn-primary" id="bsPasteGo" style="width:100%;justify-content:center;margin-top:12px;">✨ Ordenar con Alma</button>
     </div>`);
-  document.getElementById("genericModalTitle").style.display = "none";
-  document.getElementById("bsPasteGo").addEventListener("click", ()=>{
-    const text = document.getElementById("bsPasteText").value.trim();
-    if(text.length < 40){ toast("Pega un poco más de texto para que Alma pueda ordenarlo.","info"); return; }
-    const doc = { id: uid("bs"), title: document.getElementById("bsPasteTitle").value.trim(), createdAt: new Date().toISOString(), durationSec:0,
-                  source:"texto", transcript: text.slice(0, 120000), status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[] };
-    trackUse("bs.texto");
-    DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB(); closeGenericModal(); bsOpenId = doc.id; showView("brainstorm"); bsProcessDoc(doc.id);
-  });
+    document.getElementById("genericModalTitle").style.display = "none";
+    if(keep){ document.getElementById("bsPasteTitle").value = keep.t; document.getElementById("bsPasteText").value = keep.x; }
+    const redraw = ()=>{ const g = document.getElementById("bsGloss"); if(g) bsGlossary = g.value; draw({ t:document.getElementById("bsPasteTitle").value, x:document.getElementById("bsPasteText").value }); };
+    bsBindLevelGloss(redraw);
+    document.getElementById("bsPasteGo").addEventListener("click", ()=>{
+      const text = document.getElementById("bsPasteText").value.trim();
+      if(text.length < 40){ toast("Pega un poco más de texto para que Alma pueda ordenarlo.","info"); return; }
+      const g = document.getElementById("bsGloss"); if(g) bsGlossary = g.value;
+      if(bsMemRemember([], bsGlossList())) saveDB();
+      const doc = { id: uid("bs"), title: document.getElementById("bsPasteTitle").value.trim(), createdAt: new Date().toISOString(), durationSec:0,
+                    source:"texto", transcript: text.slice(0, 120000), status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[], level: bsLevel, glossary: bsGlossList() };
+      trackUse("bs.texto");
+      DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB(); closeGenericModal(); bsOpenId = doc.id; showView("brainstorm"); bsProcessDoc(doc.id);
+    });
+  };
+  draw();
 }
 
 /* ---------- Alma arma el documento ---------- */
@@ -14773,68 +14872,215 @@ function bsBindWhoIsWho(wrap, d){
     d.transcript = d.transcriptOriginal; delete d.transcriptOriginal; saveDB(); bsProcessDoc(d.id);
   });
 }
+// Barra de versiones del documento: nivel actual, otras versiones, generar otra, rehacer
+function bsVersionBar(d){
+  if(!d.versions){   // documentos anteriores a los niveles: se convierten en versión "normal"
+    d.versions = {}; d.level = d.level || "normal";
+    d.versions[d.level] = { level:d.level, generatedAt:d.createdAt, summary:d.summary||"", context:"", ideas:d.ideas||[], decisions:d.decisions||[], topics:[], figures:[], actions:d.actions||[], openPoints:[], risks:[], nextSteps:d.nextSteps||[], peopleDetected:[], avisos:[] };
+    d.activeLevel = d.level;
+  }
+  const have = Object.keys(d.versions).filter(k=>BS_LEVELS[k]);
+  const missing = Object.keys(BS_LEVELS).filter(k=>!have.includes(k));
+  const busy = bsProcessing.has(d.id);
+  return `<div class="bs-verbar">
+    <div class="bs-vertabs">${have.map(k=>`<button type="button" class="bs-vertab ${d.activeLevel===k?"on":""}" data-bsver="${k}" ${busy?"disabled":""}>${BS_LEVELS[k].ico} ${BS_LEVELS[k].name}</button>`).join("")}</div>
+    <div class="bs-veractions">
+      ${busy?`<span class="tl-muted">⏳ Armando versión ${esc(BS_LEVELS[d.processingLevel||"normal"].name)}…</span>`:`
+      ${missing.length?`<select class="tl-select bs-gen" id="bsGenLevel"><option value="">＋ Generar otra versión…</option>${missing.map(k=>`<option value="${k}">${BS_LEVELS[k].ico} ${BS_LEVELS[k].name}${k==="importante"?" (más completa)":k==="rapida"?" (más breve)":""}</option>`).join("")}</select>`:""}
+      <button type="button" class="btn btn-ghost btn-sm" id="bsRedo" title="Volver a armar esta versión desde la transcripción">🔄 Rehacer</button>`}
+    </div>
+  </div>`;
+}
+// Personas que Alma detectó y aún no conoce → guardarlas en la memoria
+function bsNewPeopleHTML(d){
+  const nw = (d.peopleDetected||[]).map((x,i)=>({x,i})).filter(({x})=>!bsMemFind(x.name));
+  if(!nw.length) return "";
+  return `<div class="bs-sec bs-mem-sug"><div class="bs-sec-head"><h3>🧠 Personas nuevas que detecté</h3>${nw.length>1?`<button class="btn btn-primary btn-sm" id="bsMemSaveAll">Recordar todas</button>`:""}</div>
+    <p class="tl-muted" style="margin:0 0 6px;font-size:12.5px;">Si las guardas, en las próximas reuniones Alma sabrá quiénes son y su cargo.</p>
+    ${nw.map(({x,i})=>`<div class="bs-act"><div class="bs-act-main"><b>${esc(x.name)}</b><small>${esc([x.role,x.org].filter(Boolean).join(" · ")||"Sin cargo detectado")}</small></div><button class="btn btn-ghost btn-sm" data-memsave="${i}">＋ Recordar</button></div>`).join("")}
+  </div>`;
+}
+/* ---------- "Lo que Alma conoce": revisar y corregir la memoria ---------- */
+let bsMemOpen = false;
+function bsMemoryCardHTML(){
+  const m = bsMem();
+  return `<details class="bs-sec bs-memcard" ${bsMemOpen?"open":""} id="bsMemCard">
+    <summary><b>🧠 Lo que Alma conoce</b> <span class="tl-muted">${m.people.length} persona${m.people.length===1?"":"s"} · ${m.terms.length} término${m.terms.length===1?"":"s"} — se usan para reconocer nombres y escribirlos bien</span></summary>
+    <div class="bs-mem-body">
+      ${m.people.length?`<div class="bs-mem-people">${m.people.slice().sort((a,b)=>a.name.localeCompare(b.name,"es")).map(p=>`<div class="bs-mem-row" data-mid="${esc(p.id)}">
+        <b>${esc(p.name)}</b>
+        <input class="tl-input" data-mfield="role" value="${esc(p.role||"")}" placeholder="Cargo" maxlength="60">
+        <input class="tl-input" data-mfield="org" value="${esc(p.org||"")}" placeholder="Empresa" maxlength="60">
+        <button type="button" class="small-x" data-mdel title="Olvidar">✕</button></div>`).join("")}</div>`:`<div class="tl-muted" style="font-size:13px;">Todavía no hay personas. Se agregan solas cuando indicas participantes al grabar, o al tocar "Recordar" en un documento.</div>`}
+      <div class="bs-part-add" style="margin-top:8px;"><input class="tl-input" id="bsMemName" placeholder="Nombre" maxlength="60"><input class="tl-input" id="bsMemRole" placeholder="Cargo · Empresa" maxlength="120"><button type="button" class="btn btn-ghost btn-sm" id="bsMemAdd">＋ Agregar</button></div>
+      <div class="tl-sec" style="margin-top:12px;">Términos</div>
+      <div class="tl-chips">${m.terms.map((t,i)=>`<span class="tl-chip on">${esc(t)} <button type="button" class="small-x" data-tdel="${i}" title="Quitar">✕</button></span>`).join("")}
+        <input class="tl-input bs-term-in" id="bsMemTerm" placeholder="+ término (Enter)" maxlength="40"></div>
+    </div>
+  </details>`;
+}
+function bsBindMemoryCard(wrap){
+  const card = wrap.querySelector("#bsMemCard"); if(!card) return;
+  card.addEventListener("toggle", ()=>{ bsMemOpen = card.open; });
+  card.querySelectorAll("[data-mid]").forEach(row=>{
+    const p = bsMem().people.find(x=>x.id===row.dataset.mid); if(!p) return;
+    row.querySelectorAll("[data-mfield]").forEach(inp=>inp.addEventListener("change", ()=>{ p[inp.dataset.mfield] = inp.value.trim(); saveDB(); }));
+    row.querySelector("[data-mdel]").addEventListener("click", ()=>{ DB.bsMemory.people = bsMem().people.filter(x=>x!==p); saveDB(); renderBrainstorm(); });
+  });
+  const add = ()=>{ const n = wrap.querySelector("#bsMemName").value.trim(); if(!n) return; const [role, org] = wrap.querySelector("#bsMemRole").value.split("·").map(x=>(x||"").trim()); bsMemRemember([{ name:n, role:role||"", org:org||"" }], []); saveDB(); renderBrainstorm(); };
+  wrap.querySelector("#bsMemAdd").addEventListener("click", add);
+  card.querySelectorAll("[data-tdel]").forEach(b=>b.addEventListener("click", (e)=>{ e.preventDefault(); bsMem().terms.splice(+b.dataset.tdel,1); saveDB(); renderBrainstorm(); }));
+  const ti = wrap.querySelector("#bsMemTerm");
+  ti.addEventListener("keydown", e=>{ if(e.key==="Enter" && ti.value.trim()){ e.preventDefault(); bsMemRemember([], ti.value.split(",")); saveDB(); renderBrainstorm(); } });
+}
 const bsProcessing = new Set();   // documentos que se están armando AHORA en esta sesión
-async function bsProcessDoc(id){
+/* ---------- Niveles de informe: se elige al grabar; una sola consulta a la IA ---------- */
+const BS_LEVELS = {
+  rapida:     { ico:"⚡", name:"Rápida",     desc:"Coordinación corta o seguimiento: resumen breve, decisiones y tareas." },
+  normal:     { ico:"📋", name:"Normal",     desc:"Reunión de trabajo: temas principales, decisiones, tareas, cifras clave y próximos pasos." },
+  importante: { ico:"⭐", name:"Importante", desc:"Negociación, comité, cliente o proveedor: informe ejecutivo completo y detallado." },
+};
+/* ---------- Memoria de Brainstorm: personas (nombre, cargo, empresa) y términos ---------- */
+function bsMem(){ if(!DB.bsMemory || typeof DB.bsMemory!=="object") DB.bsMemory = { people:[], terms:[] }; DB.bsMemory.people = DB.bsMemory.people||[]; DB.bsMemory.terms = DB.bsMemory.terms||[]; return DB.bsMemory; }
+function bsMemFind(name){ const n = String(name||"").trim().toLowerCase(); return n ? bsMem().people.find(p=>p.name.toLowerCase()===n) : null; }
+function bsMemRemember(people, terms){
+  const m = bsMem(); let changed = false;
+  (people||[]).forEach(x=>{
+    const name = String(x && x.name || "").trim(); if(!name || /^persona \d+$/i.test(name) || x.self) return;
+    const ex = bsMemFind(name);
+    if(ex){ ["role","org","email"].forEach(k=>{ if(x[k] && x[k]!==ex[k]){ ex[k] = x[k]; changed = true; } }); ex.lastSeen = TODAY(); }
+    else { m.people.push({ id: uid("bp"), name, role: x.role||"", org: x.org||"", email: x.email||"", lastSeen: TODAY() }); changed = true; }
+  });
+  (terms||[]).forEach(t=>{ t = String(t||"").trim(); if(t && !m.terms.some(x=>x.toLowerCase()===t.toLowerCase())){ m.terms.push(t); changed = true; } });
+  if(m.people.length > 300) m.people = m.people.slice(-300);
+  if(m.terms.length > 200) m.terms = m.terms.slice(-200);
+  return changed;
+}
+function bsPersonText(p){ return p.name + ((p.role||p.org) ? ` (${[p.role, p.org].filter(Boolean).join(", ")})` : ""); }
+// Copia la versión elegida a los campos "visibles" del documento (los que usan
+// crear tareas, copiar, descargar y correo), guardando antes la versión actual.
+function bsStoreActive(d){
+  if(!d.versions || !d.activeLevel || !d.versions[d.activeLevel]) return;
+  const v = d.versions[d.activeLevel];
+  ["summary","context","ideas","decisions","topics","figures","actions","openPoints","risks","nextSteps","peopleDetected","avisos"].forEach(k=>{ v[k] = d[k]; });
+}
+function bsShowVersion(d, level){
+  if(!d.versions || !d.versions[level]) return;
+  bsStoreActive(d);
+  const v = d.versions[level];
+  ["summary","context","ideas","decisions","topics","figures","actions","openPoints","risks","nextSteps","peopleDetected","avisos"].forEach(k=>{ d[k] = Array.isArray(v[k]) ? v[k] : (v[k]||(k==="summary"||k==="context"?"":[])); });
+  d.activeLevel = level;
+}
+async function bsProcessDoc(id, level){
   if(bsProcessing.has(id)) return;   // evita armarlo dos veces a la vez
-  const d0 = (DB.brainstorms||[]).find(x=>x.id===id); if(!d0) return;
+  const d = (DB.brainstorms||[]).find(x=>x.id===id); if(!d) return;
+  level = level || d.level || "normal"; if(!BS_LEVELS[level]) level = "normal";
   bsProcessing.add(id);
-  d0.status = "procesando"; d0.error = ""; saveDB(); if(bsOpenId===id) renderBrainstorm();
-  const d = d0;
-  const people = (DB.responsables||[]).map(r=>r.name).filter(Boolean).join(", ") || "(ninguna registrada)";
-  const projects = (DB.projects||[]).filter(p=>!p.archived).map(p=>p.name).join(", ") || "(ninguno)";
+  d.processingLevel = level;
+  const hadReady = d.status==="listo";
+  d.status = "procesando"; d.error = ""; saveDB(); if(bsOpenId===id) renderBrainstorm();
   const me = DB.config.userName || "el usuario";
-  const prompt = `Eres Alma, asistente de la app TaskFlow Pro. Ordena esta conversación (o notas) en un documento de trabajo claro, en español de Chile neutro.
-${d.missingParts ? `IMPORTANTE: a esta transcripción le faltan ${d.missingParts} minuto(s) que no se pudieron transcribir (el usuario decidió continuar). Trabaja con lo que hay, no inventes lo que falta, y menciónalo en una frase en el resumen.` : ""}
-La transcripción puede estar en otro idioma: el documento va en español, pero conserva nombres, cifras y términos tal cual.
-${(d.participants||[]).length ? `Participantes (con su cargo): ${bsPartsText(d.participants)}. Úsalos para asignar responsables con el nombre correcto. "Persona N" son voces no identificadas: no las asignes a un participante por suposición.` : ""}
-${d.agenda ? `Agenda de la invitación (es lo PLANEADO; puede no reflejar lo que realmente se habló, no la uses como si hubiera ocurrido): «${String(d.agenda).slice(0,1500)}»` : ""}
+  const projects = (DB.projects||[]).filter(p=>!p.archived).map(p=>p.name).join(", ") || "(ninguno)";
+  // personas conocidas que aparecen en la transcripción (por nombre o apellido)
+  const tl = String(d.transcript||"").toLowerCase();
+  const known = bsMem().people.filter(p=>p.name.split(/\s+/).some(w=>w.length>=3 && tl.includes(w.toLowerCase()))).slice(0,40);
+  const terms = [...new Set([...(d.glossary||[]), ...bsMem().terms])].slice(0,60);
+  const SPEC = {
+    rapida: `NIVEL: RÁPIDA. Documento breve: "resumen" de 2-3 frases; "decisiones", "tareas" y "proximos_pasos". Deja vacíos "temas", "cifras", "puntos_abiertos", "riesgos" y "contexto" salvo algo crítico.`,
+    normal: `NIVEL: NORMAL. "resumen" de 4-7 frases; "temas" con los temas principales (detalle de 1-3 frases cada uno); "cifras" con las cifras importantes; "decisiones", "tareas", "proximos_pasos" e "ideas". "riesgos" y "contexto" solo si son relevantes.`,
+    importante: `NIVEL: IMPORTANTE (informe ejecutivo completo). "resumen" ejecutivo de 8-12 frases; "contexto" (quiénes son las partes, para qué es la reunión); "participantes" con nombre, rol y organización; "temas" con TODOS los temas tratados, cada uno con "detalle" de 3-6 frases (qué se planteó, quién, qué se respondió) y "puntos"; "cifras" con TODAS las cifras dichas (montos, cantidades, plazos, porcentajes, usuarios, instancias…); "decisiones"; "tareas" con TODOS los compromisos de cada parte (también los del proveedor o cliente); "puntos_abiertos"; "riesgos"; "proximos_pasos".`,
+  }[level];
+  const prompt = `Eres Alma, asistente de la app TaskFlow Pro. Arma un documento de trabajo a partir de esta conversación (o notas), en español de Chile neutro.
+${SPEC}
+${d.missingParts ? `A esta transcripción le faltan ${d.missingParts} minuto(s) que no se pudieron transcribir. No inventes lo que falta y menciónalo en una frase del resumen.` : ""}
+REGLAS DE FIDELIDAD:
+- No inventes nada: ni cifras, ni nombres, ni años, ni compromisos. Si algo no se dijo, no aparece.
+- Conserva el grado de certeza: "deberíamos tener la respuesta" NO es "tomará la decisión"; una estimación no es una garantía; una propuesta no es un acuerdo.
+- Fechas: no agregues el año si no se dijo. Respeta "antes de" (día excluido) y "a más tardar" (día incluido).
+- Cifras: copia cada cifra con su unidad y moneda tal como se dijo, y di a qué corresponde (total, por unidad, por usuario, anual, por hito…).
+- ROTULOS POCO CONFIABLES: los nombres antes de ":" en la transcripción los puso la transcripción automática y pueden estar EQUIVOCADOS. Identifica a cada persona por lo que dice ("Yo soy Carlos Acuña, CEO de Sima", "le doy la palabra a…") y por el contenido; no por el rótulo. "Persona N" = voz no identificada.
+- Tareas: "responsable" = quien se comprometió (puede ser de otra empresa; si es así pon la organización en "organizacion"). Si no está claro: "". Si fue quien graba: "${me}".
+- Nombres y términos mal transcritos: corrígelos usando el glosario y las personas conocidas (ej. si la transcripción dice "Socobox" o "Sogamoso" y el glosario dice "Sokobox", usa "Sokobox").
 Quien graba es ${me}. Hoy es ${TODAY()}.
-Personas que el usuario tiene registradas (úsalas si coinciden): ${people}. Sus proyectos: ${projects}.
-${d.title?`El usuario la tituló: "${d.title}".`:""}
+${(d.participants||[]).length ? `Participantes indicados por el usuario: ${bsPartsText(d.participants)}.` : ""}
+${known.length ? `Personas que Alma ya conoce (nombre, cargo, empresa): ${known.map(bsPersonText).join("; ")}.` : ""}
+${terms.length ? `Glosario (escríbelos así): ${terms.join(", ")}.` : ""}
+${d.agenda ? `Agenda de la invitación (es lo PLANEADO; puede no reflejar lo que se habló): «${String(d.agenda).slice(0,1500)}»` : ""}
+Proyectos del usuario: ${projects}.
+${d.title?`Título puesto por el usuario: "${d.title}" (respétalo).`:""}
 
-TEXTO:
+TRANSCRIPCIÓN:
 """${d.transcript}"""
 
-Responde SOLO un JSON válido, sin texto extra ni backticks, con esta forma exacta:
-{"titulo":"...","resumen":"...","ideas":["..."],"decisiones":["..."],"tareas":[{"titulo":"...","responsable":"...","fecha":"YYYY-MM-DD","prioridad":"alta|media|baja","tipo":"laboral|personal"}],"proximos_pasos":["..."],"participantes":["..."],"etiquetas":["..."]}
-Reglas:
-- "titulo": corto (máx 60 caracteres). Si el usuario ya puso uno, respétalo.
-- "resumen": 3 a 6 frases con lo esencial.
-- "ideas": las ideas principales que surgieron (máx 8). "decisiones": SOLO lo que quedó decidido de verdad (puede ir vacío).
-- "tareas": compromisos concretos. "titulo" corto que empiece con verbo. "responsable": nombre de quien se comprometió; si fue quien graba usa "${me}"; si no está claro, "". "fecha": solo si se mencionó un plazo, si no null.
-- "proximos_pasos": qué viene después (máx 5). "participantes": nombres que aparecen. "etiquetas": 0 a 3, minúsculas.
-- No inventes nada que no esté en el texto.`;
+Responde SOLO un JSON válido:
+{"titulo":"máx 70 caracteres","resumen":"…","contexto":"…","participantes":[{"nombre":"…","rol":"…","organizacion":"…"}],
+"temas":[{"titulo":"…","detalle":"…","puntos":["…"]}],
+"cifras":[{"dato":"qué es","valor":"cifra con unidad y moneda tal como se dijo","contexto":"a qué corresponde / condiciones","quien":"quién lo dijo o null"}],
+"ideas":["…"],"decisiones":["solo lo realmente decidido"],
+"tareas":[{"titulo":"empieza con verbo","responsable":"…","organizacion":"…","fecha":"YYYY-MM-DD o null","prioridad":"alta|media|baja","tipo":"laboral|personal"}],
+"puntos_abiertos":["…"],"riesgos":["…"],"proximos_pasos":["…"],"etiquetas":["máx 3, minúsculas"]}`;
   try{
-    const raw = await askAI(prompt, { json:true, temperature:0.3 });
-    const j = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
+    const raw = await askAI(prompt, { json:true, temperature:0.25 });
+    const j = idCleanDeep(JSON.parse(String(raw).replace(/```json|```/g,"").trim()));
     const okD = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : "";
-    d.title = d.title || String(j.titulo||"Lluvia de ideas").slice(0,120);
-    d.summary = String(j.resumen||"");
-    d.ideas = (j.ideas||[]).map(String).slice(0,12);
-    d.decisions = (j.decisiones||[]).map(String).slice(0,12);
-    d.nextSteps = (j.proximos_pasos||[]).map(String).slice(0,8);
-    d.speakers = (j.participantes||[]).map(String).slice(0,12);
-    d.tags = (j.etiquetas||[]).map(x=>String(x).toLowerCase()).slice(0,3);
-    d.actions = (j.tareas||[]).filter(t=>t && t.titulo).slice(0,20).map(t=>({ title:String(t.titulo).slice(0,120), owner:String(t.responsable||""), due:okD(t.fecha), priority:["alta","media","baja"].includes(t.prioridad)?t.prioridad:"media", tipo: t.tipo==="personal"?"personal":"laboral", taskId:null }));
-    d.status = "listo";
-  }catch(e){ d.status = "error"; d.error = "Alma no pudo armar el documento ahora (" + (e.message||"error") + ")."; }
+    const arr = (v, n, len) => (Array.isArray(v)?v:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,n).map(x=>x.slice(0,len||600));
+    const v = {
+      level, generatedAt: new Date().toISOString(),
+      summary: String(j.resumen||"").slice(0,4000), context: String(j.contexto||"").slice(0,1500),
+      ideas: arr(j.ideas,12), decisions: arr(j.decisiones,15), nextSteps: arr(j.proximos_pasos,12),
+      openPoints: arr(j.puntos_abiertos,15), risks: arr(j.riesgos,10),
+      topics: (Array.isArray(j.temas)?j.temas:[]).filter(t=>t && t.titulo).slice(0,20).map(t=>({ title:String(t.titulo).slice(0,140), detail:String(t.detalle||"").slice(0,1500), points: arr(t.puntos,10,300) })),
+      figures: (Array.isArray(j.cifras)?j.cifras:[]).filter(c=>c && c.valor).slice(0,40).map(c=>({ dato:String(c.dato||"").slice(0,140), valor:String(c.valor).slice(0,80), contexto:String(c.contexto||"").slice(0,300), quien:String(c.quien||"").replace(/^null$/,"").slice(0,80) })),
+      actions: (Array.isArray(j.tareas)?j.tareas:[]).filter(t=>t && t.titulo).slice(0,30).map(t=>({ title:String(t.titulo).slice(0,140), owner:String(t.responsable||"").replace(/^null$/,""), org:String(t.organizacion||"").replace(/^null$/,""), due:okD(t.fecha), priority:["alta","media","baja"].includes(t.prioridad)?t.prioridad:"media", tipo: t.tipo==="personal"?"personal":"laboral", taskId:null })),
+      peopleDetected: (Array.isArray(j.participantes)?j.participantes:[]).filter(x=>x && x.nombre && !/^persona \d+$/i.test(x.nombre)).slice(0,20).map(x=>({ name:String(x.nombre).slice(0,60), role:String(x.rol||"").replace(/^null$/,"").slice(0,60), org:String(x.organizacion||"").replace(/^null$/,"").slice(0,60) })),
+    };
+    bsValidateVersion(v, d.transcript);
+    const dd = (DB.brainstorms||[]).find(x=>x.id===id) || d;   // por si los datos se combinaron entremedio
+    if(!dd.title) dd.title = String(j.titulo||"Lluvia de ideas").slice(0,120);
+    if(!dd.tags || !dd.tags.length) dd.tags = arr(j.etiquetas,3,30).map(x=>x.toLowerCase());
+    dd.speakers = v.peopleDetected.map(x=>x.name);
+    dd.versions = dd.versions || {};
+    if(dd.activeLevel && dd.versions[dd.activeLevel]) bsStoreActive(dd);
+    dd.versions[level] = v;
+    if(!dd.level) dd.level = level;
+    dd.activeLevel = null; bsShowVersion(dd, level);
+    dd.status = "listo";
+  }catch(e){
+    const dd = (DB.brainstorms||[]).find(x=>x.id===id) || d;
+    dd.status = hadReady ? "listo" : "error";
+    dd.error = "Alma no pudo armar el documento ahora (" + (e.message||"error") + ").";
+    if(hadReady) toast(dd.error, "error");
+  }
+  const dd = (DB.brainstorms||[]).find(x=>x.id===id) || d;
+  delete dd.processingLevel;
   bsProcessing.delete(id);
-  // por seguridad: si el documento en tus datos ya no es el mismo objeto, se le copian los resultados
-  const live = (DB.brainstorms||[]).find(x=>x.id===id);
-  if(live && live!==d) Object.assign(live, d);
   saveDB(); if(bsOpenId===id || document.getElementById("view-brainstorm").classList.contains("hidden")===false) renderBrainstorm();
-  if(d.status==="listo") toast(`✨ Listo: "${d.title}".`,"success");
+  if(dd.status==="listo" && !dd.error) toast(`✨ Listo: "${dd.title}" (${BS_LEVELS[level].name}).`,"success");
+}
+// Controles deterministas del informe: cifras y años que no aparecen en la transcripción.
+function bsValidateVersion(v, transcript){
+  const src = String(transcript||""), set = idValSet(src);
+  const flagged = new Set();
+  const chk = (txt)=> idMissing(txt, set, src);
+  v.figures.forEach(f=>{ const bad = chk(f.valor); if(bad.length){ f.flag = bad; bad.forEach(n=>flagged.add(n)); } });
+  [v.summary, v.context, ...v.decisions, ...v.nextSteps, ...v.openPoints, ...v.topics.map(t=>t.detail+" "+t.points.join(" "))].forEach(t=>chk(t).forEach(n=>flagged.add(n)));
+  v.actions.forEach(a=>chk(a.title).forEach(n=>flagged.add(n)));
+  v.avisos = flagged.size ? [`Aparece${flagged.size>1?"n":""} ${[...flagged].map(n=>`“${n}”`).join(", ")}, que no coincide${flagged.size>1?"n":""} con ninguna cifra de la transcripción (podría ser un año agregado o un error). Revísalo.`] : [];
+  return v;
 }
 
 /* ---------- Compartir: texto, descargar, correo ---------- */
 function bsDocToText(d, withTranscript){
-  const L = [];
-  L.push(d.title||"Lluvia de ideas"); L.push(bsFmtDate(d.createdAt)); L.push("");
-  if(d.summary){ L.push("RESUMEN"); L.push(d.summary); L.push(""); }
-  if((d.ideas||[]).length){ L.push("IDEAS CLAVE"); d.ideas.forEach(x=>L.push("• "+x)); L.push(""); }
-  if((d.decisions||[]).length){ L.push("DECISIONES"); d.decisions.forEach(x=>L.push("• "+x)); L.push(""); }
-  if((d.actions||[]).length){ L.push("TAREAS Y RESPONSABLES"); d.actions.forEach(a=>L.push(`• ${a.title} — ${a.owner||"sin responsable"}${a.due?` (plazo ${a.due})`:""}`)); L.push(""); }
-  if((d.nextSteps||[]).length){ L.push("PRÓXIMOS PASOS"); d.nextSteps.forEach(x=>L.push("• "+x)); L.push(""); }
+  const L = [], bl = (t, arr)=>{ if((arr||[]).length){ L.push(t); arr.forEach(x=>L.push("• "+x)); L.push(""); } };
+  L.push(d.title||"Lluvia de ideas"); L.push(bsFmtDate(d.createdAt) + (d.activeLevel ? ` · Informe ${BS_LEVELS[d.activeLevel].name}` : "")); L.push("");
+  if(d.summary){ L.push(d.activeLevel==="importante" ? "RESUMEN EJECUTIVO" : "RESUMEN"); L.push(d.summary); L.push(""); }
+  if(d.context){ L.push("CONTEXTO"); L.push(d.context); L.push(""); }
+  if((d.peopleDetected||[]).length && d.activeLevel==="importante") bl("PARTICIPANTES", d.peopleDetected.map(x=>x.name + ((x.role||x.org)?` — ${[x.role,x.org].filter(Boolean).join(", ")}`:"")));
+  if((d.topics||[]).length){ L.push("TEMAS TRATADOS"); d.topics.forEach(t=>{ L.push("■ "+t.title); if(t.detail) L.push(t.detail); (t.points||[]).forEach(x=>L.push("  • "+x)); }); L.push(""); }
+  if((d.figures||[]).length) bl("CIFRAS Y DATOS CLAVE", d.figures.map(f=>`${f.dato}: ${f.valor}${f.contexto?` (${f.contexto})`:""}${f.quien?` — ${f.quien}`:""}`));
+  bl("IDEAS CLAVE", d.ideas); bl("DECISIONES", d.decisions);
+  if((d.actions||[]).length) bl("TAREAS Y RESPONSABLES", d.actions.map(a=>`${a.title} — ${a.owner||"por definir"}${a.org?` (${a.org})`:""}${a.due?` (plazo ${a.due})`:""}`));
+  bl("PUNTOS ABIERTOS", d.openPoints); bl("RIESGOS", d.risks); bl("PRÓXIMOS PASOS", d.nextSteps);
   if(withTranscript && d.transcript){ L.push("TRANSCRIPCIÓN"); L.push(d.transcript); }
   return L.join("\n");
 }
@@ -14843,9 +15089,13 @@ function bsDocToHTML(d, withTranscript){
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(d.title||"Documento")}</title>
 <style>body{font-family:Arial,Helvetica,sans-serif;color:#2b1b2e;max-width:720px;margin:32px auto;padding:0 20px;line-height:1.5}h1{font-size:24px;margin:0 0 4px}.m{color:#8a7a8c;font-size:13px;margin-bottom:18px}h2{font-size:15px;color:#ED3F7C;margin:22px 0 6px;text-transform:uppercase;letter-spacing:.5px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:6px 4px;text-align:left;font-size:14px}.t{white-space:pre-wrap;font-size:13px;color:#555}</style></head><body>
 <h1>${esc(d.title||"Lluvia de ideas")}</h1><div class="m">${esc(bsFmtDate(d.createdAt))}${d.source==="texto"?"":" · "+esc(bsFmtDur(d.durationSec))} · TaskFlow Pro · Alma Brainstorm</div>
-${d.summary?`<h2>Resumen</h2><p>${esc(d.summary)}</p>`:""}${sec("Ideas clave",d.ideas)}${sec("Decisiones",d.decisions)}
-${(d.actions||[]).length?`<h2>Tareas y responsables</h2><table><tr><th>Tarea</th><th>Responsable</th><th>Plazo</th></tr>${d.actions.map(a=>`<tr><td>${esc(a.title)}</td><td>${esc(a.owner||"—")}</td><td>${esc(a.due||"—")}</td></tr>`).join("")}</table>`:""}
-${sec("Próximos pasos",d.nextSteps)}${withTranscript&&d.transcript?`<h2>Transcripción</h2><div class="t">${esc(d.transcript)}</div>`:""}
+${d.summary?`<h2>${d.activeLevel==="importante"?"Resumen ejecutivo":"Resumen"}</h2><p>${esc(d.summary)}</p>`:""}${d.context?`<h2>Contexto</h2><p>${esc(d.context)}</p>`:""}
+${(d.peopleDetected||[]).length && d.activeLevel==="importante" ? sec("Participantes", d.peopleDetected.map(x=>x.name + ((x.role||x.org)?` — ${[x.role,x.org].filter(Boolean).join(", ")}`:""))) : ""}
+${(d.topics||[]).length?`<h2>Temas tratados</h2>${d.topics.map(t=>`<h3 style="font-size:15px;margin:14px 0 4px">${esc(t.title)}</h3>${t.detail?`<p>${esc(t.detail)}</p>`:""}${(t.points||[]).length?`<ul>${t.points.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`).join("")}`:""}
+${(d.figures||[]).length?`<h2>Cifras y datos clave</h2><table><tr><th>Dato</th><th>Valor</th><th>A qué corresponde</th><th>Quién</th></tr>${d.figures.map(f=>`<tr><td>${esc(f.dato)}</td><td><b>${esc(f.valor)}</b></td><td>${esc(f.contexto||"")}</td><td>${esc(f.quien||"")}</td></tr>`).join("")}</table>`:""}
+${sec("Ideas clave",d.ideas)}${sec("Decisiones",d.decisions)}
+${(d.actions||[]).length?`<h2>Tareas y responsables</h2><table><tr><th>Tarea</th><th>Responsable</th><th>Plazo</th></tr>${d.actions.map(a=>`<tr><td>${esc(a.title)}</td><td>${esc((a.owner||"Por definir") + (a.org?` (${a.org})`:""))}</td><td>${esc(a.due||"—")}</td></tr>`).join("")}</table>`:""}
+${sec("Puntos abiertos",d.openPoints)}${sec("Riesgos",d.risks)}${sec("Próximos pasos",d.nextSteps)}${withTranscript&&d.transcript?`<h2>Transcripción</h2><div class="t">${esc(d.transcript)}</div>`:""}
 </body></html>`;
 }
 function bsSlug(t){ return String(t||"documento").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,50) || "documento"; }
@@ -14894,8 +15144,9 @@ function bsOpenEmail(d){
     try{
       const res = await fetch("/.netlify/functions/send-doc", { method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ token:getAuthToken(), to, subject: document.getElementById("bsSubj").value.slice(0,150),
-          doc:{ title:d.title, date:bsFmtDate(d.createdAt), summary:d.summary, ideas:d.ideas, decisions:d.decisions,
-                actions:(d.actions||[]).map(a=>({title:a.title, owner:a.owner, due:a.due})), nextSteps:d.nextSteps,
+          doc:{ title:d.title, date:bsFmtDate(d.createdAt) + (d.activeLevel ? ` · Informe ${BS_LEVELS[d.activeLevel].name}` : ""), summary:d.summary, context:d.context||"", ideas:d.ideas, decisions:d.decisions,
+                topics:(d.topics||[]).map(t=>({ title:t.title, detail:t.detail, points:t.points })), figures:(d.figures||[]).map(f=>({ dato:f.dato, valor:f.valor, contexto:f.contexto, quien:f.quien })), openPoints:d.openPoints||[], risks:d.risks||[],
+                actions:(d.actions||[]).map(a=>({title:a.title, owner:(a.owner||"Por definir")+(a.org?` (${a.org})`:""), due:a.due})), nextSteps:d.nextSteps,
                 transcript: document.getElementById("bsMailTrans").checked ? d.transcript : "" } }) });
       const j = await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(j.error || ("HTTP "+res.status));
@@ -15063,7 +15314,7 @@ const USE_LABELS = {
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
   "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo","bs.quien_es_quien":"Voces nombradas (¿Quién es quién?)",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
-  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
+  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","feedback.audio":"Sugerencias dictadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
 };
 const useLabel = k => USE_LABELS[k] || k;
 
@@ -15092,7 +15343,9 @@ function renderMejorar(){
         </div>
         ${userTurns===0 && !fbChat.busy?`<div class="tl-chips fb-quick">${["💡 Tengo una idea","🐞 Algo no funciona bien","✨ Algo se podría mejorar","❤️ Algo que me encanta"].map(q=>`<button type="button" class="tl-chip" data-fbq="${esc(q)}">${q}</button>`).join("")}</div>`:""}
         ${fbChat.sent?`<div class="tl-row" style="padding:0 16px 16px;"><button class="btn btn-primary" id="fbAgain">💬 Contarle otra cosa</button></div>`:`
-        <div class="fb-inputbar"><textarea id="fbInput" rows="1" placeholder="Escribe aquí…" ${fbChat.busy?"disabled":""}></textarea><button class="btn btn-primary" id="fbGo" ${fbChat.busy?"disabled":""} aria-label="Enviar mensaje">➤</button></div>`}
+        ${fbRec ? `<div class="id-rec" style="margin:0 12px;"><span class="bs-dot"></span> Grabando <b id="fbRecClock">00:00</b> <span class="tl-muted">(máx. 3 min)</span><button type="button" class="btn btn-ghost btn-sm" id="fbRecCancel">Descartar</button><button type="button" class="btn btn-primary btn-sm" id="fbRecStop">■ Listo</button></div>` : ""}
+        ${fbTranscribing ? `<div class="id-busy" style="margin:0 16px;"><span class="id-spin"></span>Transcribiendo tu audio…</div>` : ""}
+        <div class="fb-inputbar"><button type="button" class="btn btn-ghost fb-mic" id="fbMic" title="Grabar un audio (se transcribe y lo revisas antes de enviar)" ${fbChat.busy||fbRec||fbTranscribing?"disabled":""}>🎙️</button><textarea id="fbInput" rows="1" placeholder="Escribe aquí o graba un audio…" ${fbChat.busy?"disabled":""}>${esc(fbDraft)}</textarea><button class="btn btn-primary" id="fbGo" ${fbChat.busy||fbRec||fbTranscribing?"disabled":""} aria-label="Enviar mensaje">➤</button></div>`}
       </div>
       <div class="fb-side">
         <div class="fb-note">🔒 <b>Tu privacidad:</b> ${ADMIN_DISPLAY_NAME} ve cuánto se usa cada función para mejorar la app, pero <b>no ve tus tareas ni tus documentos</b>. Lo que escribas aquí sí le llega, con tu nombre de usuario. <a href="/privacy.html" target="_blank" rel="noopener">Ver política completa</a></div>
@@ -15103,7 +15356,11 @@ function renderMejorar(){
     </div>`;
   const box = document.getElementById("fbMsgs"); if(box) box.scrollTop = box.scrollHeight;
   const inp = document.getElementById("fbInput");
-  const go = ()=>{ const v = inp.value.trim(); if(v) fbUserSays(v); };
+  const go = ()=>{ const v = inp.value.trim(); if(v){ fbDraft = ""; fbUserSays(v); } };
+  if(inp) inp.addEventListener("input", ()=>{ fbDraft = inp.value; });
+  const mic = document.getElementById("fbMic"); if(mic) mic.addEventListener("click", fbStartRec);
+  const rs = document.getElementById("fbRecStop"); if(rs) rs.addEventListener("click", ()=>fbStopRec(true));
+  const rc = document.getElementById("fbRecCancel"); if(rc) rc.addEventListener("click", ()=>fbStopRec(false));
   if(inp){ inp.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); go(); } }); if(!fbChat.busy) setTimeout(()=>inp.focus(),30); }
   const g = document.getElementById("fbGo"); if(g) g.addEventListener("click", go);
   wrap.querySelectorAll("[data-fbq]").forEach(b=>b.addEventListener("click", ()=>{ const i = document.getElementById("fbInput"); i.value = b.dataset.fbq.replace(/^\S+\s/,"")+": "; i.focus(); }));
@@ -15111,6 +15368,37 @@ function renderMejorar(){
   const mo = document.getElementById("fbMore"); if(mo) mo.addEventListener("click", ()=>{ fbChat.summary = null; fbChat.msgs.push({ role:"alma", text:"¡Claro! ¿Qué más te gustaría agregar?" }); renderMejorar(); });
   const ag = document.getElementById("fbAgain"); if(ag) ag.addEventListener("click", ()=>{ fbReset(); renderMejorar(); });
 }
+/* ---------- Audio en "Ayúdanos a mejorar": grabar → transcribir → revisar → enviar ---------- */
+let fbRec = null, fbTranscribing = false, fbDraft = "";
+async function fbStartRec(){
+  if(fbRec || fbTranscribing) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || bsPickMime()===null){ toast("Este navegador no permite grabar. Escribe tu mensaje.","info"); return; }
+  let stream;
+  try{ stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); }
+  catch(e){ toast("No tengo permiso para usar el micrófono. Puedes escribir tu mensaje.","error"); return; }
+  const mime = bsPickMime(), chunks = [];
+  const rec = new MediaRecorder(stream, mime ? { mimeType:mime, audioBitsPerSecond:32000 } : { audioBitsPerSecond:32000 });
+  rec.ondataavailable = e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+  fbRec = { rec, stream, chunks, started: Date.now(), keep:false,
+            tick: setInterval(()=>{ const sec = Math.floor((Date.now()-fbRec.started)/1000); const el = document.getElementById("fbRecClock"); if(el) el.textContent = bsFmtClock(sec); if(sec >= 180) fbStopRec(true); }, 500) };
+  rec.onstop = async ()=>{
+    const r = fbRec; clearInterval(r.tick); r.stream.getTracks().forEach(t=>t.stop()); fbRec = null;
+    if(!r.keep){ renderMejorar(); return; }
+    const blob = new Blob(r.chunks, { type:(rec.mimeType||mime||"audio/webm").split(";")[0] });
+    if(blob.size < 1500){ toast("La grabación quedó vacía. Intenta de nuevo.","info"); renderMejorar(); return; }
+    fbTranscribing = true; renderMejorar();
+    try{
+      const tr = await idTranscribeAudio({ b64: await fileToBase64(blob), type: blob.type }, "Quien habla es un usuario de la app contando una sugerencia, en español.");
+      fbDraft = [fbDraft.trim(), tr.texto].filter(Boolean).join(" ");
+      trackUse("feedback.audio");
+      toast("Revisa el texto y envíalo cuando esté listo.","info");
+    }catch(e){ toast("No pude transcribir el audio ("+e.message+"). Puedes escribirlo.","error"); }
+    fbTranscribing = false; renderMejorar();
+    const i = document.getElementById("fbInput"); if(i){ i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+  };
+  rec.start(1000); renderMejorar();
+}
+function fbStopRec(keep){ if(!fbRec) return; fbRec.keep = keep; try{ fbRec.rec.stop(); }catch(e){ fbRec = null; renderMejorar(); } }
 async function fbUserSays(text){
   fbChat.msgs.push({ role:"usuario", text: text.slice(0,1000) }); fbChat.summary = null; fbChat.busy = true; renderMejorar();
   const userTurns = fbChat.msgs.filter(m=>m.role==="usuario").length;
