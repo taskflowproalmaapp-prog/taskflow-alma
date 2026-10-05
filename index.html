@@ -978,6 +978,9 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 .att-hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
 .att-st{font-size:11.5px;color:var(--text-muted);margin-left:4px;}
 .att-err{color:#C2410C;font-weight:700;}
+
+.bs-prog{height:6px;background:var(--surface-alt);border-radius:6px;overflow:hidden;margin:8px auto 6px;max-width:260px;}
+.bs-prog span{display:block;height:100%;background:linear-gradient(90deg,#FF6B45,#ED3F7C,#8157EF);transition:width .3s;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -12993,23 +12996,38 @@ const WB_OPTIONS = {
   mood:   [["bajo","🌧️ Bajo"],["normal","⛅ Normal"],["bien","☀️ Bien"]],
 };
 let wbDraft = {}; // selección temporal antes de confirmar
+// Momento del día para el chequeo de ánimo (hora del dispositivo):
+// mañana 5–12 · tarde 12–19 · noche 19–22 · después de las 22 (y hasta las 5) no se pregunta.
+function wbPeriod(){
+  const h = new Date().getHours();
+  return (h>=5 && h<12) ? "manana" : (h>=12 && h<19) ? "tarde" : (h>=19 && h<22) ? "noche" : "tarde_noche";
+}
+function wbRowsFor(period, prefs){
+  const P = {
+    manana: { sleep:"¿Cómo dormiste?", energy:"¿Cómo está tu energía?", mood:"¿Y tu ánimo?" },
+    tarde:  { sleep:"¿Cómo dormiste anoche?", energy:"¿Cómo está tu energía?", mood:"¿Y tu ánimo?" },
+    noche:  { energy:"¿Con cuánta energía terminas el día?", mood:"¿Y cómo te sientes?" },   // de noche no se pregunta por el sueño
+  }[period] || {};
+  return ["sleep","energy","mood"].filter(k=>P[k] && prefs[k]!==false).map(k=>({ key:k, label:P[k] }));
+}
 function needsWellbeingCheck(){
   const alma = DB.config.alma || {};
   if(alma.checkEnabled === false) return false; // desactivado en Mi asistente
   const prefs = alma.checkPrefs || {sleep:true, energy:true, mood:true};
-  if(prefs.sleep===false && prefs.energy===false && prefs.mood===false) return false; // no hay nada que preguntar
+  const period = wbPeriod();
+  if(period==="tarde_noche") return false;      // muy tarde: no interrumpir
+  if(!wbRowsFor(period, prefs).length) return false; // no hay nada que preguntar a esta hora
   const wb = alma.wellbeing || {};
   return wb.lastCheckDate !== TODAY();
 }
 function renderWellbeingCheck(firstName){
   const msg = document.getElementById("almaPanelMsg");
-  msg.innerHTML = `${firstName?`${almaGreetingByHour()}, ${esc(firstName)} 🌤️`:`${almaGreetingByHour()} 🌤️`}<br>Antes de empezar, ¿cómo amaneciste hoy? <span style="color:var(--text-faint);font-weight:400;">(opcional)</span>`;
+  const period = wbPeriod();
+  const ask = { manana:"Antes de empezar, ¿cómo amaneciste hoy?", tarde:"¿Cómo va tu día?", noche:"¿Cómo estuvo tu día?" }[period] || "¿Cómo estás?";
+  const ico = { manana:"🌤️", tarde:"☀️", noche:"🌙" }[period] || "";
+  msg.innerHTML = `${firstName?`${almaGreetingByHour()}, ${esc(firstName)} ${ico}`:`${almaGreetingByHour()} ${ico}`}<br>${ask} <span style="color:var(--text-faint);font-weight:400;">(opcional)</span>`;
   const prefs = (DB.config.alma && DB.config.alma.checkPrefs) || {sleep:true, energy:true, mood:true};
-  const rows = [
-    {key:"sleep", label:"¿Cómo dormiste?"},
-    {key:"energy", label:"¿Cómo está tu energía?"},
-    {key:"mood", label:"¿Y tu ánimo?"},
-  ].filter(r=>prefs[r.key] !== false);
+  const rows = wbRowsFor(period, prefs);
   const actions = document.getElementById("almaPanelActions");
   actions.innerHTML = rows.map(r=>`
     <div class="wb-group">
@@ -13054,16 +13072,22 @@ function saveWellbeing(data, firstName){
   // Alma responde con calidez (regla local) y luego vuelve al saludo normal
   const reply = almaWellbeingReply(data);
   document.getElementById("almaPanelMsg").textContent = reply;
-  document.getElementById("almaPanelActions").innerHTML = `<button class="btn btn-primary btn-sm" id="almaActVerDia">Ver mi día</button>`;
+  document.getElementById("almaPanelActions").innerHTML = `<button class="btn btn-primary btn-sm" id="almaActVerDia">${wbPeriod()==="noche" ? "Ver mis tareas" : "Ver mi día"}</button>`;
   document.getElementById("almaActVerDia").addEventListener("click", ()=>{
     almaCloudExpanded = false;
     document.querySelector('.nav-item[data-view="mytasks"]').click();
   });
 }
 function almaWellbeingReply(data){
-  if(!data || !Object.keys(data).length) return "Sin problema. Cuando quieras me cuentas. Veamos tu día.";
+  const night = wbPeriod()==="noche";
+  if(!data || !Object.keys(data).length) return night ? "Sin problema. Cuando quieras me cuentas." : "Sin problema. Cuando quieras me cuentas. Veamos tu día.";
   const low = (data.energy==="baja") || (data.mood==="bajo") || (data.sleep==="poco");
   const allHigh = (data.energy==="alta" || !data.energy) && (data.mood==="bien" || !data.mood) && (data.sleep==="bien" || !data.sleep) && Object.keys(data).length>=2;
+  if(night){
+    if(allHigh) return "¡Qué bueno! Buen cierre de día. Descansa. 🌙";
+    if(low) return "Gracias por contarme. Fue un día pesado: date permiso para descansar. 💙";
+    return "Anotado. Que descanses, mañana seguimos.";
+  }
   if(allHigh) return "¡Qué bueno saberlo! Aprovechemos ese impulso hoy.";
   if(low) return "Gracias por contarme. Hoy vamos con calma, sin exigirnos de más. 💙";
   return "Anotado. Veamos tu día con eso en mente.";
@@ -14140,12 +14164,13 @@ function renderToolSplit(body){
 })();
 /* ====================================================================== *
  * ALMA BRAINSTORM — grabar una conversación y convertirla en documento.
- * Cómo graba: en trozos de BS_SEGMENT_SEC segundos (cada trozo < 1 MB),
+ * Cómo graba: en trozos de BS_SEGMENT_SEC segundos (cada trozo < 1 MB), de a BS_PARALLEL a la vez,
  * porque Netlify acepta máx. ~4,5 MB y 60 s por llamada. Cada trozo se
  * transcribe con Gemini MIENTRAS sigues grabando. El audio NO se guarda:
  * solo queda el texto. Al terminar, Alma arma el documento.
  * ====================================================================== */
-let BS_SEGMENT_SEC = 180;           // 3 minutos por trozo
+let BS_SEGMENT_SEC = 60;            // 1 minuto por trozo: al terminar queda poco por transcribir
+const BS_PARALLEL = 2;              // trozos transcribiéndose a la vez
 const BS_MAX_MINUTES = 90;          // tope por grabación
 let bsOpenId = null;                // documento abierto (null = lista)
 let bsRec = null;                   // estado de la grabación en curso
@@ -14377,7 +14402,7 @@ async function bsStartRecording(title, opts){
   trackUse(tabAudio ? "bs.grabar_online" : "bs.grabar");
   bsRec = { title, mode: tabAudio ? "online" : "mic", event: opts.event || null, stream, mic, display, audioCtx, tabAudio, tabLost:false, mime,
             startedAt: Date.now(), elapsedMs:0, runStart: Date.now(), paused:false,
-            segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, queue: Promise.resolve() };
+            segments:[], segIndex:0, recorder:null, segTimer:null, tick:null, stopping:false, active:0, decision:null };
   // Si se corta el audio de la reunión (cerraste Meet o terminó), lo más probable
   // es que la reunión terminó: cuenta regresiva y se cierra sola.
   if(tabAudio) tabAudio.addEventListener("ended", ()=>{ if(bsRec && !bsRec.stopping){ bsRec.tabLost = true; bsAutoStop("La reunión terminó (se dejó de compartir la pestaña).", BS_AUTOSTOP_SEC); } });
@@ -14462,27 +14487,42 @@ function bsStartSegment(){
   rec.onstop = ()=>{
     const blob = new Blob(chunks, { type: rec.mimeType || r.mime || "audio/webm" });
     seg.status = "en cola"; seg.blob = blob; bsRenderRecorder();
-    r.queue = r.queue.then(()=>bsTranscribeSegment(seg));
     if(!r.stopping) bsStartSegment();
+    bsPump();
   };
   rec.start(1000);
   r.recorder = rec;
   clearTimeout(r.segTimer);
   r.segTimer = setTimeout(()=>{ if(rec.state!=="inactive" && !r.paused) rec.stop(); }, BS_SEGMENT_SEC*1000);
 }
+// Despachador: transcribe hasta BS_PARALLEL trozos a la vez, en orden.
+function bsPump(){
+  const r = bsRec; if(!r) return;
+  while(r.active < BS_PARALLEL){
+    const seg = r.segments.find(x=>x.status==="en cola");
+    if(!seg) break;
+    r.active++;
+    bsTranscribeSegment(seg).finally(()=>{ r.active--; bsPump(); });
+  }
+}
+function bsSegmentsSettled(r){ return r.segments.every(x=>x.status==="listo" || x.status==="error"); }
+function bsWaitSettled(r){ return new Promise(res=>{ const chk = ()=>{ if(bsSegmentsSettled(r)) res(); else setTimeout(chk, 250); }; chk(); }); }
 async function bsTranscribeSegment(seg){
   seg.status = "transcribiendo"; bsRenderRecorder();
   if(!seg.blob || seg.blob.size < 2000){ seg.status="listo"; seg.text=""; bsRenderRecorder(); return; }
-  const prompt = `Transcribe en español este audio. Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
-${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
-Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si no hay voz entendible, responde exactamente: (sin voz)
+  // continuidad: cómo terminó el trozo anterior (si ya está), para mantener los mismos nombres
+  const prev = bsRec ? bsRec.segments.find(x=>x.n===seg.n-1 && x.text) : null;
+  const tail = prev ? prev.text.slice(-300) : "";
+  const prompt = `Transcribe este audio EN EL IDIOMA EN QUE SE HABLA (no traduzcas). Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
+${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\\n" : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
+Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si una parte no se entiende, escribe [inaudible] en vez de adivinar. Si no hay voz entendible, responde exactamente: (sin voz)
 Responde solo con la transcripción, en texto plano.`;
   for(let attempt=1; attempt<=2; attempt++){
     try{
       const b64 = await fileToBase64(seg.blob);
-      const out = await askAI([{ type:"text", text: prompt }, { type:"audio", source:{ data:b64, media_type: seg.blob.type || "audio/webm" } }]);
+      const out = await askAI([{ type:"text", text: prompt }, { type:"audio", source:{ data:b64, media_type: seg.blob.type || "audio/webm" } }], { temperature:0 });
       seg.text = /^\(sin voz\)$/i.test(out.trim()) ? "" : out.trim();
-      seg.status = "listo"; delete seg.blob; bsRenderRecorder(); return;
+      seg.status = "listo"; delete seg.blob; delete seg.error; bsRenderRecorder(); return;
     }catch(e){ if(attempt===2){ seg.status = "error"; seg.error = String(e.message||e); bsRenderRecorder(); } }
   }
 }
@@ -14503,9 +14543,21 @@ async function bsStopRecording(){
   bsStopStreams(r);
   { const b = document.getElementById("bsRecordBtn"); if(b) b.textContent = "⏳ Procesando…"; }
   bsRenderRecorder();
-  await r.queue;                          // espera que terminen todas las transcripciones
-  // reintento final de trozos con error
-  for(const seg of r.segments.filter(x=>x.status==="error" && x.blob)) await bsTranscribeSegment(seg);
+  bsPump();
+  await bsWaitSettled(r);                 // espera que terminen TODAS las transcripciones
+  // trozos con error: un reintento automático; si siguen fallando, se pregunta
+  let retried = false;
+  while(r.segments.some(x=>x.status==="error" && x.blob)){
+    if(!retried){ retried = true; }
+    else{
+      r.decision = "pending"; bsRenderRecorder();
+      const choice = await new Promise(res=>{ r.decide = res; });
+      r.decision = null;
+      if(choice==="continue") break;
+    }
+    r.segments.filter(x=>x.status==="error" && x.blob).forEach(x=>{ x.status = "en cola"; });
+    bsRenderRecorder(); bsPump(); await bsWaitSettled(r);
+  }
   const failed = r.segments.filter(x=>x.status==="error").length;
   const transcript = r.segments.map(x=>x.text).filter(Boolean).join("\n");
   // grabación sin voz: no se guarda un documento vacío, solo se avisa
@@ -14521,7 +14573,7 @@ async function bsStopRecording(){
   DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
   bsRec = null; closeGenericModal(); bsUpdateClock();
   bsOpenId = doc.id; showView("brainstorm");
-  if(failed) toast(`⚠️ ${failed} trozo${failed===1?"":"s"} no se pudo transcribir; el documento queda sin esa parte.`,"info");
+  if(failed) toast(`⚠️ Elegiste continuar sin ${failed} minuto${failed===1?"":"s"} que no se pudo${failed===1?"":"ieron"} transcribir.`,"info");
   bsProcessDoc(doc.id);
 }
 function bsCancelRecording(){
@@ -14553,7 +14605,9 @@ function bsRenderRecorder(){
       <div class="af-wave bs-wave ${r.paused||r.stopping?"":"on"}"><span></span><span></span><span></span><span></span><span></span></div>
       ${(!r.stopping && r.autoStop)?`<div class="bs-autostop" role="alert"><div><b>${esc(r.autoStop.reason)}</b><br>Termino y armo el documento en <b id="bsAutoLeft">${Math.max(0,Math.ceil((r.autoStop.at-Date.now())/1000))}</b> s.</div>
         <div class="tl-row" style="margin-top:10px;"><button class="btn btn-ghost" id="bsKeep">Seguir grabando</button><button class="btn btn-primary" id="bsStopNow">Terminar ahora</button></div></div>`:""}
-      ${r.stopping?`<div class="bs-note" style="text-align:center;">✍️ Terminando de transcribir… luego Alma arma el documento.</div>`:r.autoStop?"":`
+      ${r.stopping ? (r.decision==="pending" ? (()=>{ const miss = r.segments.filter(x=>x.status==="error"); return `<div class="bs-autostop" role="alert"><div><b>Falta${miss.length===1?"":"n"} ${miss.length} minuto${miss.length===1?"":"s"} por transcribir</b> (${miss.map(x=>"min "+bsFmtClock(x.startSec)).join(", ")}). Puede ser la conexión.</div>
+        <div class="tl-row" style="margin-top:10px;"><button class="btn btn-ghost" id="bsSkipMissing">Continuar sin ${miss.length===1?"él":"ellos"}</button><button class="btn btn-primary" id="bsRetryMissing">↻ Reintentar</button></div></div>`; })()
+        : (()=>{ const done = r.segments.filter(x=>x.status==="listo").length, total = r.segments.length; return `<div class="bs-note" style="text-align:center;">✍️ Transcribiendo… <b>${done} de ${total}</b> trozo${total===1?"":"s"} listo${total===1?"":"s"}<div class="bs-prog"><span style="width:${Math.round(done/Math.max(1,total)*100)}%"></span></div><span class="tl-muted">Cuando esté todo, Alma arma el documento.</span></div>`; })()) : r.autoStop?"":`
       <div class="tl-row"><button class="btn btn-ghost" id="bsCancel">✕ Descartar</button><button class="btn btn-ghost" id="bsPause">${r.paused?"▶ Seguir":"⏸ Pausar"}</button><button class="btn btn-primary" id="bsStop">■ Terminar</button></div>`}
       <div class="tl-sec">Trozos de ${Math.round(BS_SEGMENT_SEC/60)||1} min</div>
       <div class="bs-segs">${r.segments.map(x=>`<span class="bs-seg ${x.status==="error"?"err":""}" title="${esc(x.status)}">${stIcon[x.status]||"•"} ${x.n}</span>`).join("")}</div>
@@ -14566,6 +14620,8 @@ function bsRenderRecorder(){
   const pa = document.getElementById("bsPause"); if(pa) pa.addEventListener("click", bsPauseResume);
   const ca = document.getElementById("bsCancel"); if(ca) ca.addEventListener("click", bsCancelRecording);
   const kg = document.getElementById("bsKeep"); if(kg) kg.addEventListener("click", bsKeepGoing);
+  const rm = document.getElementById("bsRetryMissing"); if(rm) rm.addEventListener("click", ()=>{ if(r.decide) r.decide("retry"); });
+  const sm = document.getElementById("bsSkipMissing"); if(sm) sm.addEventListener("click", ()=>{ if(r.decide) r.decide("continue"); });
   const sn = document.getElementById("bsStopNow"); if(sn) sn.addEventListener("click", bsStopRecording);
 }
 
@@ -14598,6 +14654,8 @@ async function bsProcessDoc(id){
   const projects = (DB.projects||[]).filter(p=>!p.archived).map(p=>p.name).join(", ") || "(ninguno)";
   const me = DB.config.userName || "el usuario";
   const prompt = `Eres Alma, asistente de la app TaskFlow Pro. Ordena esta conversación (o notas) en un documento de trabajo claro, en español de Chile neutro.
+${d.missingParts ? `IMPORTANTE: a esta transcripción le faltan ${d.missingParts} minuto(s) que no se pudieron transcribir (el usuario decidió continuar). Trabaja con lo que hay, no inventes lo que falta, y menciónalo en una frase en el resumen.` : ""}
+La transcripción puede estar en otro idioma: el documento va en español, pero conserva nombres, cifras y términos tal cual.
 Quien graba es ${me}. Hoy es ${TODAY()}.
 Personas que el usuario tiene registradas (úsalas si coinciden): ${people}. Sus proyectos: ${projects}.
 ${d.title?`El usuario la tituló: "${d.title}".`:""}
@@ -14869,7 +14927,7 @@ const USE_LABELS = {
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
   "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
-  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones",
+  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
 };
 const useLabel = k => USE_LABELS[k] || k;
 
@@ -15527,6 +15585,7 @@ function idInputCard(title, ph, goLabel, action){
   const isTr = action==="translate";
   return `<div class="id-card">
     <div class="id-card-title">${title}</div>
+    ${(!(idS.image||idS.audio) && idS.fromAudio && idS.text)?`<div class="id-note">🎙️ <b>Esto escuché.</b> Si algo quedó mal transcrito, corrígelo aquí antes de seguir.</div>`:""}
     ${!(idS.image||idS.audio)?`<textarea class="tl-input id-textarea" id="idText" rows="6" placeholder="${ph}" ${idS.busy?"disabled":""}>${esc(idS.text)}</textarea>`:att}
     ${recording?idRecHTML():""}
     <div class="id-tools">
@@ -15731,7 +15790,7 @@ async function idAttachImage(file){
       blob = await new Promise(res=>c.toBlob(res, "image/jpeg", 0.85)); type = "image/jpeg";
     }
     if(blob.size > ID_MAX_BYTES){ toast("La imagen es demasiado pesada incluso reducida. Prueba con una captura más chica.","error"); return; }
-    idS.image = { b64: await fileToBase64(blob), type, name: file.name || "imagen", size: blob.size }; idS.audio = null;
+    idS.image = { b64: await fileToBase64(blob), type, name: file.name || "imagen", size: blob.size }; idS.audio = null; idS.fromAudio = null;
     renderIdiomas();
   }catch(e){ toast("No pude leer esa imagen. Prueba con otra (JPG o PNG).","error"); }
 }
@@ -15747,7 +15806,7 @@ async function idAttachAudio(file){
   const type = idAudioType(file);
   if(!ID_AUDIO_OK.test(type)){ toast("Ese formato de audio no se puede procesar. Usa MP3, M4A, WAV, OGG/OPUS o WEBM.","error"); return; }
   if(file.size > ID_MAX_BYTES){ toast(`El audio pesa ${(file.size/1024/1024).toFixed(1)} MB y el máximo es 4 MB. Recorta el audio o grábalo aquí (hasta 5 min).`,"error"); return; }
-  try{ idS.audio = { b64: await fileToBase64(file), type, name: file.name || "audio", size: file.size }; idS.image = null; renderIdiomas(); }
+  try{ idS.audio = { b64: await fileToBase64(file), type, name: file.name || "audio", size: file.size }; idS.image = null; idS.fromAudio = null; renderIdiomas(); }
   catch(e){ toast("No pude leer ese audio.","error"); }
 }
 async function idStartRec(target){
@@ -15772,7 +15831,7 @@ async function idStartRec(target){
       const blob = new Blob(r.chunks, { type: (rec.mimeType||mime||"audio/webm").split(";")[0] });
       if(blob.size < 1500){ toast("La grabación quedó vacía. Intenta de nuevo.","info"); renderIdiomas(); return; }
       const item = { b64: await fileToBase64(blob), type: blob.type, name:"Grabación", size: blob.size, dur };
-      if(r.target==="input"){ idS.audio = item; idS.image = null; } else idS.reply.instrAudio = item;
+      if(r.target==="input"){ idS.audio = item; idS.image = null; idS.fromAudio = null; } else idS.reply.instrAudio = item;
     }
     renderIdiomas();
   };
@@ -15799,10 +15858,29 @@ function idContentParts(prompt){
   else if(idS.audio) parts.push({ type:"audio", source:{ data: idS.audio.b64, media_type: idS.audio.type } });
   return parts;
 }
+// Paso 1 (audio): SOLO transcribir, rápido y literal. El análisis o la respuesta se
+// hacen después, sobre el texto (más rápido de ver, más preciso y corregible).
+async function idTranscribeAudio(audio, hint){
+  const prompt = `Transcribe este audio de forma LITERAL, en el idioma en que se habla (no traduzcas, no resumas, no ordenes).${hint?` ${hint}`:""} Si es mandarín, escríbelo en caracteres chinos simplificados.
+Si una palabra, nombre, cifra o fecha no se entiende, escribe [inaudible] en ese lugar: no la adivines.
+Responde SOLO un JSON válido: {"idioma":"es|en|pt|zh|ko|otro","texto":"transcripción completa","dudoso":["fragmentos que no se entendieron bien"]}`;
+  const r = idCleanDeep(idParse(await askAI([{ type:"text", text:prompt }, { type:"audio", source:{ data:audio.b64, media_type:audio.type } }], { json:true, temperature:0 })));
+  const texto = String(r.texto||"").trim();
+  if(!texto) throw new Error("no se escuchó voz en el audio");
+  return { texto, idioma: String(r.idioma||""), dudoso: Array.isArray(r.dudoso) ? r.dudoso.map(String) : [] };
+}
 function idAnalyze(forced){
   const hasText = idS.text.trim().length >= 2;
   if(!hasText && !idS.image && !idS.audio){ toast("Pega el mensaje, sube una imagen o graba un audio.","info"); return; }
-  if(!forced && idS.analysis && !idS.image && !idS.audio && idS.analysis._src === idS.text && idS.analysis._lang === idS.srcLang) return;
+  if(idS.audio){
+    return idRun("analyze", "Paso 1 de 2: escuchando y transcribiendo el audio…", async ()=>{
+      const tr = await idTranscribeAudio(idS.audio, idS.srcLang!=="auto" ? `El idioma es ${ID_LANGS[idS.srcLang].p}.` : "");
+      idS.text = tr.texto; idS.audio = null; idS.fromAudio = { dudoso: tr.dudoso };
+      trackUse("idiomas.transcripcion");
+    }).then(()=>{ if(!idS.error && !idS.audio) idAnalyze(true); });
+  }
+  // sin cambios en el texto: no se vuelve a analizar, pero se sale de "Editar mensaje"
+  if(!forced && idS.analysis && !idS.image && !idS.audio && idS.analysis._src === idS.text && idS.analysis._lang === idS.srcLang){ idS.editInput = false; renderIdiomas(); return; }
   const langHint = idS.srcLang!=="auto" ? `El usuario indica que el idioma del mensaje es ${ID_LANGS[idS.srcLang].p}.` : "Detecta el idioma automáticamente.";
   const media = idS.image ? "una IMAGEN o captura (lee todo el texto visible)" : idS.audio ? "un AUDIO (transcríbelo; en chino es mandarín)" : "el TEXTO de abajo";
   const prompt = `Eres Alma, asistente de idiomas de TaskFlow Pro. El usuario habla español de Chile. Recibió un mensaje en ${media} y necesita entenderlo con exactitud para decidir qué responder.
@@ -15828,14 +15906,16 @@ Responde SOLO un JSON válido:
 "contradicciones":["contradicciones entre partes del mensaje o entre mensajes, sin resolverlas"],
 "interpretaciones":[{"texto":"Posiblemente…","basado_en":"fragmento EXACTO copiado del mensaje que la motiva"}],
 "dudoso":["fragmentos ilegibles o inaudibles"]}`;
-  return idRun("analyze", idS.image ? "Leyendo la imagen…" : idS.audio ? "Escuchando el audio…" : "Entendiendo el mensaje…", async ()=>{
+  return idRun("analyze", idS.image ? "Leyendo la imagen…" : idS.fromAudio ? "Paso 2 de 2: analizando lo que dice el audio…" : "Entendiendo el mensaje…", async ()=>{
     const raw = idCleanDeep(idParse(await askAI(idContentParts(prompt), { json:true, temperature:0.2 })));
     const a = idNormalizeAnalysis(raw);
     if(!a.traduccion || !(a.texto_original || idS.text)) throw new Error("la respuesta de la IA llegó incompleta; reintenta");
-    a._fromMedia = idS.audio ? "audio" : (idS.image ? "imagen" : false);
+    a._fromMedia = idS.fromAudio ? "audio" : (idS.image ? "imagen" : false);
+    if(idS.fromAudio && idS.fromAudio.dudoso.length) a.dudoso = [...new Set([...(a.dudoso||[]), ...idS.fromAudio.dudoso])];
     // Entrada escrita: el "original" es SIEMPRE lo que pegaste, no lo que devuelve la IA.
-    if(!a._fromMedia){ a.texto_original = idS.text; a.asunto_original = ""; }
-    idValidateAnalysis(a, a._fromMedia ? ((a.asunto_original||"") + "\n" + (a.texto_original||"")) : idS.text);
+    // texto escrito o transcripción ya hecha: el "original" es ese texto, no lo que devuelva la IA
+    if(a._fromMedia!=="imagen"){ a.texto_original = idS.text; a.asunto_original = ""; }
+    idValidateAnalysis(a, a._fromMedia==="imagen" ? ((a.asunto_original||"") + "\n" + (a.texto_original||"")) : idS.text);
     a._src = idS.text; a._lang = idS.srcLang;
     idS.analysis = a; idS.editInput = false; idS.anTab = "resumen"; idS.mTab = "msg"; idS.reply.decisions = {}; idS.evOpen = null;
     // el archivo ya cumplió su función: se descarta de la memoria
@@ -15846,6 +15926,13 @@ Responde SOLO un JSON válido:
   });
 }
 function idReply(adjust){
+  if(!adjust && idS.reply.instrAudio){
+    const r0 = idS.reply;
+    return idRun("reply", "Paso 1 de 2: transcribiendo tus instrucciones…", async ()=>{
+      const tr = await idTranscribeAudio(r0.instrAudio, "Quien habla es el usuario dando instrucciones en español.");
+      r0.instr = [r0.instr, tr.texto].filter(Boolean).join(" "); r0.fromAudio = true; r0.instrAudio = null;
+    }).then(()=>{ if(!idS.error && !idS.reply.instrAudio) idReply(null); });
+  }
   const r = idS.reply;
   const instrText = (r.instr||"").trim();
   const decs = (idS.analysis && idS.analysis.decisiones) ? idS.analysis.decisiones.map((d,i)=>({ d, c: r.decisions[i] })).filter(x=>x.c && x.c.choice) : [];
@@ -15879,28 +15966,24 @@ ${ID_PRECISION}
 ${ctx}
 ${prev}
 ${decsTxt}
-${instrText?`Instrucciones del usuario: ${instrText}`:""}${r.instrAudio?"Las instrucciones del usuario vienen en el AUDIO adjunto (en español): transcríbelas y síguelas.":""}
+${instrText?`Instrucciones del usuario: ${instrText}`:""}
 ${r.accepted.length?`Sugerencias que el usuario ACEPTÓ incluir: ${r.accepted.join(" | ")}`:""}
 ${adjust&&cur?`BORRADOR ACTUAL (${L.p}):\n${cur.asunto?`Asunto: ${cur.asunto}\n`:""}${cur.respuesta}\nAJUSTE PEDIDO: "${adjust}". Aplica solo ese ajuste y conserva todo lo demás.`:""}
 Responde SOLO un JSON válido:
-{"instrucciones_entendidas":"en 1 frase, qué entendiste que quiere decir el usuario",${r.instrAudio&&!adjust?`"transcripcion_instrucciones":"transcripción COMPLETA y literal del audio del usuario (sin resumir)",`:""}"formato":"correo|mensaje","asunto":"en ${L.p} o null","respuesta":"texto listo para enviar en ${L.p}","asunto_es":"o null","respuesta_es":"traducción fiel al español",
+{"instrucciones_entendidas":"en 1 frase, qué entendiste que quiere decir el usuario","formato":"correo|mensaje","asunto":"en ${L.p} o null","respuesta":"texto listo para enviar en ${L.p}","asunto_es":"o null","respuesta_es":"traducción fiel al español",
 "sugerencias":[{"texto_es":"algo que podría agregar","por_que":"breve"}],"falta_info":["pregunta concreta al usuario"]${decsAll.length?`,
 "posturas":[{"decision":1,"postura":"acepta|rechaza|pide_info|propone|no_menciona","frase":"frase EXACTA de respuesta_es donde se ve (vacío si no_menciona)"}]  ← una por cada decisión numerada arriba`:""}}`;
   const parts = [{ type:"text", text: prompt }];
-  if(r.instrAudio && !adjust) parts.push({ type:"audio", source:{ data:r.instrAudio.b64, media_type:r.instrAudio.type } });
   return idRun(adjust ? "adjust" : "reply", adjust ? `Ajustando: ${adjust}…` : "Redactando tu respuesta…", async ()=>{
     const d = idCleanDeep(idParse(await askAI(parts, { json:true, temperature:0.35 })));
     if(!d.respuesta || !d.respuesta_es) throw new Error("la respuesta de la IA llegó incompleta; reintenta");
     d.sugerencias = Array.isArray(d.sugerencias) ? d.sugerencias : []; d.falta_info = Array.isArray(d.falta_info) ? d.falta_info : [];
-    const heard = (r.instrAudio && !adjust) ? String(d.transcripcion_instrucciones || "").trim() : "";
-    idValidateReply(d, [ (a&&a.asunto_original)||"", (a&&a.texto_original)||idS.text||"", instrText, heard, r.history.join(" "), r.accepted.join(" "), decs.map(x=>x.c.note||"").join(" "), adjust||"" ].join("\n"), decsAll, !!(instrText || heard || r.history.length));
+    idValidateReply(d, [ (a&&a.asunto_original)||"", (a&&a.texto_original)||idS.text||"", instrText, r.history.join(" "), r.accepted.join(" "), decs.map(x=>x.c.note||"").join(" "), adjust||"" ].join("\n"), decsAll, !!(instrText || r.history.length));
     d.lang = r.lang;
     d.sugerencias = (d.sugerencias||[]).filter(x=>x && x.texto_es);
     // contexto que se conserva: lo que pidió el usuario en cada vuelta
     if(adjust) r.history.push(`Ajuste: ${adjust}`);
     else{
-      // audio: se guarda la TRANSCRIPCIÓN COMPLETA (editable), no un resumen
-      if(r.instrAudio){ r.instr = heard || d.instrucciones_entendidas || ""; r.fromAudio = !!heard; r.instrAudio = null; }
       r.history.push([decsTxt.replace(/\n/g," "), r.instr || instrText].filter(Boolean).join(" · ") || "(por voz)");
     }
     r.drafts = r.drafts.slice(0, r.idx+1); r.drafts.push(d); r.idx = r.drafts.length-1; idS.mTab = "resp";
@@ -15909,6 +15992,12 @@ Responde SOLO un JSON válido:
   });
 }
 function idTranslate(){
+  if(idS.audio){
+    return idRun("translate", "Paso 1 de 2: escuchando y transcribiendo el audio…", async ()=>{
+      const tr = await idTranscribeAudio(idS.audio, idS.tr.from!=="auto" ? `El idioma es ${ID_LANGS[idS.tr.from].p}.` : "");
+      idS.text = tr.texto; idS.audio = null; idS.fromAudio = { dudoso: tr.dudoso };
+    }).then(()=>{ if(!idS.error && !idS.audio) idTranslate(); });
+  }
   const tr = idS.tr;
   if(!idS.text.trim() && !idS.image && !idS.audio){ toast("Escribe el texto, sube una imagen o graba un audio.","info"); return; }
   if(tr.from!=="auto" && tr.from===tr.to){ toast("Elige idiomas distintos.","info"); return; }
