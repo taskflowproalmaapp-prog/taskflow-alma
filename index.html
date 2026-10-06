@@ -1019,6 +1019,11 @@ body.cal-fullscreen .cal-fab-fullscreen{bottom:18px;right:18px;}
 
 .fb-mic{padding:0 12px;font-size:18px;}
 .bs-two > .bs-sec:only-child{grid-column:1/-1;}
+
+.bs-ef{outline:1px dashed color-mix(in srgb,#8157EF 45%,transparent);outline-offset:2px;border-radius:4px;padding:0 2px;cursor:text;}
+.bs-ef:focus{outline:2px solid #8157EF;background:color-mix(in srgb,#8157EF 6%,var(--surface));}
+.bs-edit-note{background:color-mix(in srgb,#8157EF 8%,var(--surface));border:1px solid color-mix(in srgb,#8157EF 30%,var(--surface));border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px;}
+.bs-evtitle{font-size:12.5px;margin-top:6px;color:var(--accent-2);font-weight:700;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -14310,6 +14315,10 @@ function bsBindMeetings(wrap){
   }));
   wrap.querySelectorAll("[data-bs-open]").forEach(b=>b.addEventListener("click", ()=>{ bsOpenId = b.dataset.bsOpen; renderBrainstorm(); }));
 }
+function bsListE(arr, path){
+  if(!bsEditing) return bsList(arr);
+  return (arr&&arr.length) ? `<ul class="bs-list">${arr.map((x,i)=>`<li>${bsEf(`${path}.${i}`, esc(x))}</li>`).join("")}</ul>` : `<div class="tl-muted">—</div>`;
+}
 function bsList(arr){ return (arr&&arr.length) ? `<ul class="bs-list">${arr.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : `<div class="tl-muted">—</div>`; }
 function renderBrainstormDoc(wrap, d){
   const people = (d.participants && d.participants.length) ? d.participants.map(x=>x.name).join(", ") : (d.speakers && d.speakers.length ? d.speakers.join(", ") : "");
@@ -14319,6 +14328,9 @@ function renderBrainstormDoc(wrap, d){
       <div class="bs-doc-bar">
         <button class="btn btn-ghost btn-sm" id="bsBack">‹ Volver</button>
         <div class="bs-doc-actions">
+          ${d.status==="listo" ? (bsEditing===d.id
+            ? `<button class="btn btn-ghost btn-sm" id="bsEditCancel">Cancelar</button><button class="btn btn-primary btn-sm" id="bsEditSave">✓ Guardar cambios</button>`
+            : `<button class="btn btn-ghost btn-sm" id="bsEditBtn" title="Editar el texto del informe">✏️ Editar</button><button class="btn btn-ghost btn-sm" id="bsCorrectBtn" title="Corregir una palabra en todo el documento (puedes seleccionarla primero)">🔤 Corregir palabra</button>`) : ""}
           <button class="btn btn-ghost btn-sm" id="bsCopy">📋 Copiar</button>
           <button class="btn btn-ghost btn-sm" id="bsDownload">⬇️ Descargar</button>
           <button class="btn btn-primary btn-sm" id="bsEmail">✉️ Enviar por correo</button>
@@ -14328,6 +14340,7 @@ function renderBrainstormDoc(wrap, d){
       <div class="bs-doc-head">
         <div class="tl-muted">${d.eventId?"📅 Reunión de Calendar · ":""}${esc(bsFmtDate(d.createdAt))} · ${d.source==="texto"?"desde texto":(d.mode==="online"?"reunión online de ":"grabación de ")+bsFmtDur(d.durationSec)}${people?` · ${esc(people)}`:""}</div>
         <h2 class="bs-doc-title" contenteditable="true" spellcheck="false" id="bsTitle" title="Toca para editar el título">${esc(d.title||"Sin título")}</h2>
+        ${(d.eventTitle && d.title!==d.eventTitle) ? `<button type="button" class="btn-link-plain bs-evtitle" id="bsUseEvTitle">↺ Usar el nombre de la reunión: «${esc(d.eventTitle)}»</button>` : ""}
         ${(d.tags||[]).length?`<div class="bs-card-foot" style="margin-top:6px;">${d.tags.map(t=>`<span class="bs-tag">#${esc(t)}</span>`).join("")}</div>`:""}
       </div>
       ${d.status==="procesando" && bsProcessing.has(d.id)?`<div class="bs-sec"><div class="tl-muted">⏳ Alma está armando el documento… (con reuniones largas puede tomar hasta un minuto)</div></div>`:""}
@@ -14336,25 +14349,26 @@ function renderBrainstormDoc(wrap, d){
       ${(d.status==="listo" || (d.status==="procesando" && d.versions))?bsVersionBar(d):""}
       ${d.status==="listo"?`
       ${(d.avisos||[]).length?`<div class="id-warnbox">${d.avisos.map(w=>`<div>⚠️ ${esc(w)}</div>`).join("")}</div>`:""}
-      <div class="bs-sec"><h3>${d.activeLevel==="importante"?"Resumen ejecutivo":"Resumen"}</h3><p class="bs-p">${esc(d.summary||"").replace(/\n/g,"<br>")}</p></div>
-      ${d.context?`<div class="bs-sec"><h3>🧭 Contexto</h3><p class="bs-p">${esc(d.context)}</p></div>`:""}
+      ${bsEditing===d.id?`<div class="bs-edit-note">✏️ Estás editando: toca cualquier texto para corregirlo y luego "Guardar cambios". Para borrar un punto, deja su texto vacío.</div>`:""}
+      <div class="bs-sec"><h3>${d.activeLevel==="importante"?"Resumen ejecutivo":"Resumen"}</h3><p class="bs-p">${bsEf("summary", esc(d.summary||"").replace(/\n/g,"<br>"))}</p></div>
+      ${d.context?`<div class="bs-sec"><h3>🧭 Contexto</h3><p class="bs-p">${bsEf("context", esc(d.context))}</p></div>`:""}
       ${(d.peopleDetected||[]).length && d.activeLevel==="importante"?`<div class="bs-sec"><h3>👥 Participantes</h3><ul class="bs-list">${d.peopleDetected.map(x=>`<li><b>${esc(x.name)}</b>${(x.role||x.org)?` — ${esc([x.role,x.org].filter(Boolean).join(", "))}`:""}</li>`).join("")}</ul></div>`:""}
-      ${(d.topics||[]).length?`<div class="bs-sec"><h3>🗂️ Temas tratados</h3>${d.topics.map(t=>`<div class="bs-topic"><div class="bs-topic-t">${esc(t.title)}</div>${t.detail?`<p class="bs-p">${esc(t.detail)}</p>`:""}${(t.points||[]).length?bsList(t.points):""}</div>`).join("")}</div>`:""}
-      ${(d.figures||[]).length?`<div class="bs-sec"><h3>📊 Cifras y datos clave</h3><div class="id-tablewrap"><table class="id-otable"><thead><tr><th>Dato</th><th>Valor</th><th>A qué corresponde</th>${d.figures.some(f=>f.quien)?"<th>Quién</th>":""}</tr></thead><tbody>${d.figures.map(f=>`<tr><td>${esc(f.dato)}</td><td><b>${esc(f.valor)}</b>${(f.flag||[]).length?` <span class="id-flag" title="No aparece en la transcripción">⚠ revisar</span>`:""}</td><td>${esc(f.contexto||"")}</td>${d.figures.some(x=>x.quien)?`<td>${esc(f.quien||"")}</td>`:""}</tr>`).join("")}</tbody></table></div></div>`:""}
+      ${(d.topics||[]).length?`<div class="bs-sec"><h3>🗂️ Temas tratados</h3>${d.topics.map((t,ti)=>`<div class="bs-topic"><div class="bs-topic-t">${bsEf(`topics.${ti}.title`, esc(t.title))}</div>${t.detail?`<p class="bs-p">${bsEf(`topics.${ti}.detail`, esc(t.detail))}</p>`:""}${(t.points||[]).length?bsListE(t.points, `topics.${ti}.points`):""}</div>`).join("")}</div>`:""}
+      ${(d.figures||[]).length?`<div class="bs-sec"><h3>📊 Cifras y datos clave</h3><div class="id-tablewrap"><table class="id-otable"><thead><tr><th>Dato</th><th>Valor</th><th>A qué corresponde</th>${d.figures.some(f=>f.quien)?"<th>Quién</th>":""}</tr></thead><tbody>${d.figures.map((f,fi)=>`<tr><td>${bsEf(`figures.${fi}.dato`, esc(f.dato))}</td><td><b>${bsEf(`figures.${fi}.valor`, esc(f.valor))}</b>${(f.flag||[]).length?` <span class="id-flag" title="No aparece en la transcripción">⚠ revisar</span>`:""}</td><td>${bsEf(`figures.${fi}.contexto`, esc(f.contexto||""))}</td>${d.figures.some(x=>x.quien)?`<td>${bsEf(`figures.${fi}.quien`, esc(f.quien||""))}</td>`:""}</tr>`).join("")}</tbody></table></div></div>`:""}
       <div class="bs-two">
-        ${(d.ideas||[]).length?`<div class="bs-sec"><h3>💡 Ideas clave</h3>${bsList(d.ideas)}</div>`:""}
-        <div class="bs-sec"><h3>✔️ Decisiones</h3>${bsList(d.decisions)}</div>
+        ${(d.ideas||[]).length?`<div class="bs-sec"><h3>💡 Ideas clave</h3>${bsListE(d.ideas,"ideas")}</div>`:""}
+        <div class="bs-sec"><h3>✔️ Decisiones</h3>${bsListE(d.decisions,"decisions")}</div>
       </div>
       <div class="bs-sec">
         <div class="bs-sec-head"><h3>📋 Tareas y responsables</h3>${actions.some(a=>!a.taskId)?`<button class="btn btn-primary btn-sm" id="bsCreateAll">＋ Crear todas</button>`:""}</div>
         ${actions.length?actions.map((a,i)=>`<div class="bs-act">
-          <div class="bs-act-main"><b>${esc(a.title)}</b><small>👤 ${esc(a.owner||"Por definir")}${a.org?` · 🏢 ${esc(a.org)}`:""}${a.due?` · ⏰ ${esc(almaFriendlyDate(a.due))}`:""}</small></div>
+          <div class="bs-act-main"><b>${bsEf(`actions.${i}.title`, esc(a.title))}</b><small>👤 ${bsEditing===d.id ? bsEf(`actions.${i}.owner`, esc(a.owner||"")) : esc(a.owner||"Por definir")}${a.org?` · 🏢 ${bsEf(`actions.${i}.org`, esc(a.org))}`:""}${a.due?` · ⏰ ${esc(almaFriendlyDate(a.due))}`:""}</small></div>
           ${a.taskId?`<button class="bs-act-done" data-open-task="${a.taskId}">✓ Creada · ver</button>`:`<button class="btn btn-ghost btn-sm" data-make="${i}">＋ Crear tarea</button>`}
         </div>`).join(""):`<div class="tl-muted">No se detectaron tareas concretas.</div>`}
       </div>
-      ${(d.openPoints||[]).length?`<div class="bs-sec"><h3>❓ Puntos abiertos</h3>${bsList(d.openPoints)}</div>`:""}
-      ${(d.risks||[]).length?`<div class="bs-sec"><h3>⚠️ Riesgos</h3>${bsList(d.risks)}</div>`:""}
-      <div class="bs-sec"><h3>➡️ Próximos pasos</h3>${bsList(d.nextSteps)}</div>
+      ${(d.openPoints||[]).length?`<div class="bs-sec"><h3>❓ Puntos abiertos</h3>${bsListE(d.openPoints,"openPoints")}</div>`:""}
+      ${(d.risks||[]).length?`<div class="bs-sec"><h3>⚠️ Riesgos</h3>${bsListE(d.risks,"risks")}</div>`:""}
+      <div class="bs-sec"><h3>➡️ Próximos pasos</h3>${bsListE(d.nextSteps,"nextSteps")}</div>
       ${bsNewPeopleHTML(d)}`:""}
       ${bsWhoIsWhoHTML(d)}
       <details class="bs-sec bs-trans" ${d.status!=="listo"?"open":""}>
@@ -14362,7 +14376,8 @@ function renderBrainstormDoc(wrap, d){
         <div class="bs-trans-body">${esc(d.transcript||"").replace(/\n/g,"<br>")}</div>
       </details>
     </div>`;
-  wrap.querySelector("#bsBack").addEventListener("click", ()=>{ bsOpenId = null; renderBrainstorm(); });
+  wrap.querySelector("#bsBack").addEventListener("click", ()=>{ bsEditing = null; bsOpenId = null; renderBrainstorm(); });
+  const uet = wrap.querySelector("#bsUseEvTitle"); if(uet) uet.addEventListener("click", ()=>{ d.title = d.eventTitle; saveDB(); renderBrainstorm(); toast("✓ Título actualizado.","success"); });
   const titleEl = wrap.querySelector("#bsTitle");
   titleEl.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); titleEl.blur(); } });
   titleEl.addEventListener("blur", ()=>{ const t = titleEl.textContent.trim().slice(0,120); if(t && t!==d.title){ d.title = t; saveDB(); } });
@@ -14375,6 +14390,12 @@ function renderBrainstormDoc(wrap, d){
   });
   const retry = wrap.querySelector("#bsRetry"); if(retry) retry.addEventListener("click", ()=>bsProcessDoc(d.id));
   bsBindWhoIsWho(wrap, d);
+  const eb = wrap.querySelector("#bsEditBtn"); if(eb) eb.addEventListener("click", ()=>{ bsEditing = d.id; renderBrainstorm(); });
+  const ec = wrap.querySelector("#bsEditCancel"); if(ec) ec.addEventListener("click", ()=>{ bsEditing = null; renderBrainstorm(); });
+  const es = wrap.querySelector("#bsEditSave"); if(es) es.addEventListener("click", ()=>bsSaveEdits(wrap, d));
+  const cb = wrap.querySelector("#bsCorrectBtn");
+  if(cb){ cb.addEventListener("mousedown", e=>e.preventDefault());   // no perder la palabra seleccionada
+          cb.addEventListener("click", ()=>{ const sel = String(window.getSelection ? window.getSelection().toString() : "").trim(); bsOpenCorrect(d, sel.length<=60 ? sel : ""); }); }
   wrap.querySelectorAll("[data-bsver]").forEach(b=>b.addEventListener("click", ()=>{ bsShowVersion(d, b.dataset.bsver); saveDB(); renderBrainstorm(); }));
   const gen = wrap.querySelector("#bsGenLevel");
   if(gen) gen.addEventListener("change", ()=>{ const lv = gen.value; gen.value = ""; if(lv) bsProcessDoc(d.id, lv); });
@@ -14685,14 +14706,14 @@ async function bsTranscribeSegment(seg){
   const prev = bsRec ? bsRec.segments.find(x=>x.n===seg.n-1 && x.text) : null;
   const tail = prev ? prev.text.slice(-300) : "";
   const prompt = `Transcribe este audio EN EL IDIOMA EN QUE SE HABLA (no traduzcas). Es el trozo ${seg.n} de una conversación grabada, empieza en el minuto ${bsFmtClock(seg.startSec)}.
-${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}${bsRec && bsRec.participants && bsRec.participants.length ? `Participantes de esta reunión: ${bsPartsText(bsRec.participants)}. Usa un nombre SOLO si es inequívoco: la persona se presenta ("soy Carlos"), o la nombran y responde justo después. Ante la mínima duda usa "Persona 1", "Persona 2"… NUNCA uses el nombre de quien graba para otras voces. Es preferible "Persona N" a un nombre equivocado.\n` : ""}${bsRec && bsRec.glossary && bsRec.glossary.length ? `Términos que pueden aparecer (escríbelos así): ${bsRec.glossary.join(", ")}.\n` : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
+${bsRec && bsRec.mode==="online" ? "Es una reunión online: se escucha a quien graba (micrófono) y a los demás participantes (audio de la reunión).\n" : ""}${bsRec && bsRec.participants && bsRec.participants.length ? `Participantes de esta reunión: ${bsPartsText(bsRec.participants)}. Usa un nombre SOLO si es inequívoco: la persona se presenta ("soy Carlos"), o la nombran y responde justo después. Ante la mínima duda usa "Persona 1", "Persona 2"… NUNCA uses el nombre de quien graba para otras voces. Es preferible "Persona N" a un nombre equivocado.\n` : ""}${bsRec && bsRec.glossary && bsRec.glossary.length ? `Términos que pueden aparecer (escríbelos así): ${bsRec.glossary.join(", ")}.\n` : ""}${bsCorrections().length ? bsCorrectionsText() + "\n" : ""}${bsRec ? (bsOfficialText({ eventTitle: bsRec.event && bsRec.event.title, title: bsRec.title, participants: bsRec.participants, invitees: ((bsRec.event && bsRec.event.attendees)||[]).map(a=>({ name:a.name, email:a.email })), glossary: bsRec.glossary }) + "\n") : ""}${tail ? `Para mantener los mismos nombres de quienes hablan, así terminó el trozo anterior: «${tail}»\n` : ""}Separa por quién habla, una intervención por línea, con el formato "Nombre: texto". Si alguien dice su nombre o lo llaman por su nombre, úsalo; si no, usa "Persona 1", "Persona 2", etc. (mantén el mismo rótulo para la misma voz).
 Escribe lo que se dice, sin resumir ni inventar. Quita muletillas excesivas ("eh", "este…"). Si una parte no se entiende, escribe [inaudible] en vez de adivinar. Si no hay voz entendible, responde exactamente: (sin voz)
 Responde solo con la transcripción, en texto plano.`;
   for(let attempt=1; attempt<=2; attempt++){
     try{
       const b64 = await fileToBase64(seg.blob);
       const out = await askAI([{ type:"text", text: prompt }, { type:"audio", source:{ data:b64, media_type: seg.blob.type || "audio/webm" } }], { temperature:0 });
-      seg.text = /^\(sin voz\)$/i.test(out.trim()) ? "" : out.trim();
+      seg.text = /^\(sin voz\)$/i.test(out.trim()) ? "" : bsApplyCorrectionsToText(out.trim()).text;   // correcciones aprendidas
       seg.status = "listo"; delete seg.blob; delete seg.error; bsRenderRecorder(); return;
     }catch(e){ if(attempt===2){ seg.status = "error"; seg.error = String(e.message||e); bsRenderRecorder(); } }
   }
@@ -14740,6 +14761,7 @@ async function bsStopRecording(){
   const doc = { id: uid("bs"), title: r.title || (r.event && r.event.title) || "", createdAt: new Date(r.startedAt).toISOString(), durationSec: Math.round(r.elapsedMs/1000),
                 source:"grabacion", mode: r.mode, eventId: r.event ? r.event.id : null, eventTitle: r.event ? r.event.title : "",
                 participants: r.participants || [], agenda: (r.event && r.event.description) || "", level: r.level || "normal", glossary: r.glossary || [],
+                invitees: ((r.event && r.event.attendees) || []).filter(a=>a && a.email).map(a=>({ name: a.name||"", email: a.email })),
                 transcript, status:"procesando", actions:[], ideas:[], decisions:[], nextSteps:[], tags:[],
                 missingParts: failed };
   DB.brainstorms = DB.brainstorms || []; DB.brainstorms.push(doc); saveDB();
@@ -14905,7 +14927,7 @@ let bsMemOpen = false;
 function bsMemoryCardHTML(){
   const m = bsMem();
   return `<details class="bs-sec bs-memcard" ${bsMemOpen?"open":""} id="bsMemCard">
-    <summary><b>🧠 Lo que Alma conoce</b> <span class="tl-muted">${m.people.length} persona${m.people.length===1?"":"s"} · ${m.terms.length} término${m.terms.length===1?"":"s"} — se usan para reconocer nombres y escribirlos bien</span></summary>
+    <summary><b>🧠 Lo que Alma conoce</b> <span class="tl-muted">${m.people.length} persona${m.people.length===1?"":"s"} · ${m.terms.length} término${m.terms.length===1?"":"s"} · ${bsCorrections().length} ${bsCorrections().length===1?"corrección":"correcciones"} — se usan para reconocer nombres y escribirlos bien</span></summary>
     <div class="bs-mem-body">
       ${m.people.length?`<div class="bs-mem-people">${m.people.slice().sort((a,b)=>a.name.localeCompare(b.name,"es")).map(p=>`<div class="bs-mem-row" data-mid="${esc(p.id)}">
         <b>${esc(p.name)}</b>
@@ -14913,6 +14935,8 @@ function bsMemoryCardHTML(){
         <input class="tl-input" data-mfield="org" value="${esc(p.org||"")}" placeholder="Empresa" maxlength="60">
         <button type="button" class="small-x" data-mdel title="Olvidar">✕</button></div>`).join("")}</div>`:`<div class="tl-muted" style="font-size:13px;">Todavía no hay personas. Se agregan solas cuando indicas participantes al grabar, o al tocar "Recordar" en un documento.</div>`}
       <div class="bs-part-add" style="margin-top:8px;"><input class="tl-input" id="bsMemName" placeholder="Nombre" maxlength="60"><input class="tl-input" id="bsMemRole" placeholder="Cargo · Empresa" maxlength="120"><button type="button" class="btn btn-ghost btn-sm" id="bsMemAdd">＋ Agregar</button></div>
+      <div class="tl-sec" style="margin-top:12px;">Correcciones aprendidas</div>
+      ${bsCorrections().length ? `<div class="tl-chips">${bsCorrections().map((c,i)=>`<span class="tl-chip on"><s>${esc(c.wrong)}</s> → ${esc(c.right)} <button type="button" class="small-x" data-cdel="${i}" title="Olvidar">✕</button></span>`).join("")}</div>` : `<div class="tl-muted" style="font-size:13px;">Aún no hay. Se agregan con "🔤 Corregir palabra" o al editar un informe.</div>`}
       <div class="tl-sec" style="margin-top:12px;">Términos</div>
       <div class="tl-chips">${m.terms.map((t,i)=>`<span class="tl-chip on">${esc(t)} <button type="button" class="small-x" data-tdel="${i}" title="Quitar">✕</button></span>`).join("")}
         <input class="tl-input bs-term-in" id="bsMemTerm" placeholder="+ término (Enter)" maxlength="40"></div>
@@ -14930,8 +14954,192 @@ function bsBindMemoryCard(wrap){
   const add = ()=>{ const n = wrap.querySelector("#bsMemName").value.trim(); if(!n) return; const [role, org] = wrap.querySelector("#bsMemRole").value.split("·").map(x=>(x||"").trim()); bsMemRemember([{ name:n, role:role||"", org:org||"" }], []); saveDB(); renderBrainstorm(); };
   wrap.querySelector("#bsMemAdd").addEventListener("click", add);
   card.querySelectorAll("[data-tdel]").forEach(b=>b.addEventListener("click", (e)=>{ e.preventDefault(); bsMem().terms.splice(+b.dataset.tdel,1); saveDB(); renderBrainstorm(); }));
+  card.querySelectorAll("[data-cdel]").forEach(b=>b.addEventListener("click", (e)=>{ e.preventDefault(); bsCorrections().splice(+b.dataset.cdel,1); saveDB(); renderBrainstorm(); }));
   const ti = wrap.querySelector("#bsMemTerm");
   ti.addEventListener("keydown", e=>{ if(e.key==="Enter" && ti.value.trim()){ e.preventDefault(); bsMemRemember([], ti.value.split(",")); saveDB(); renderBrainstorm(); } });
+}
+/* ---------- Correcciones aprendidas (ej. "socobox" → "Sokobox") ---------- */
+function bsCorrections(){ const m = bsMem(); m.corrections = Array.isArray(m.corrections) ? m.corrections : []; return m.corrections; }
+function bsEscRe(t){ return String(t).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+// Reemplaza la palabra completa, sin importar mayúsculas (no toca partes de otras palabras)
+function bsReplaceWord(text, wrong, right){
+  if(typeof text!=="string" || !wrong) return { text, n:0 };
+  let n = 0;
+  const re = new RegExp("(^|[^\\p{L}\\p{N}])(" + bsEscRe(wrong) + ")(?=$|[^\\p{L}\\p{N}])", "giu");
+  const out = text.replace(re, (m, pre)=>{ n++; return pre + right; });
+  return { text: out, n };
+}
+function bsApplyCorrectionsToText(text, list){
+  let t = text, total = 0;
+  (list||bsCorrections()).forEach(c=>{ const r = bsReplaceWord(t, c.wrong, c.right); t = r.text; total += r.n; });
+  return { text: t, n: total };
+}
+// Aplica a todos los textos de un objeto (versiones, listas, tablas…)
+function bsApplyDeep(obj, list){
+  let total = 0;
+  const walk = o=>{
+    if(Array.isArray(o)){ o.forEach((v,i)=>{ if(typeof v==="string"){ const r = bsApplyCorrectionsToText(v, list); o[i] = r.text; total += r.n; } else walk(v); }); }
+    else if(o && typeof o==="object"){ Object.keys(o).forEach(k=>{ if(["id","taskId","eventId","createdAt","generatedAt","level","activeLevel","status","source","mode","due"].includes(k)) return; const v = o[k]; if(typeof v==="string"){ const r = bsApplyCorrectionsToText(v, list); o[k] = r.text; total += r.n; } else walk(v); }); }
+  };
+  walk(obj);
+  return total;
+}
+function bsLearnCorrection(wrong, right){
+  wrong = String(wrong||"").trim(); right = String(right||"").trim();
+  if(!wrong || !right || wrong===right) return false;
+  if(/\d/.test(wrong) || /\d/.test(right)) return false;   // las cifras NUNCA se aprenden como corrección de escritura
+  const list = bsCorrections();
+  const ex = list.find(c=>c.wrong.toLowerCase()===wrong.toLowerCase());
+  if(ex) ex.right = right; else list.push({ wrong, right, since: TODAY() });
+  if(list.length > 200) list.splice(0, list.length-200);
+  bsMemRemember([], [right]);   // la forma correcta también va al glosario
+  return true;
+}
+function bsCorrectionsText(){ const l = bsCorrections(); return l.length ? `Correcciones aprendidas (si aparece lo de la izquierda, escribe lo de la derecha): ${l.slice(-60).map(c=>`"${c.wrong}" → "${c.right}"`).join("; ")}.` : ""; }
+
+/* ---------- Corregir una palabra en todo el documento ---------- */
+function bsOpenCorrect(d, preset){
+  openGenericModal("", `<div class="bs-modal"><div class="bs-modal-title">🔤 Corregir palabra</div>
+    <p class="tl-muted" style="margin:0 0 10px;font-size:13px;">Se corrige en todo el documento: todas las versiones, la transcripción y el título.</p>
+    <label class="tl-muted" for="bsCorWrong">Dice</label><input class="tl-input" id="bsCorWrong" value="${esc(preset||"")}" placeholder="Ej: socobox" style="margin:6px 0 10px;" maxlength="80">
+    <label class="tl-muted" for="bsCorRight">Debería decir</label><input class="tl-input" id="bsCorRight" placeholder="Ej: Sokobox" style="margin-top:6px;" maxlength="80">
+    <label class="bs-consent"><input type="checkbox" id="bsCorLearn" checked> <span>Recordarlo para las próximas reuniones (Alma lo corrige sola)</span></label>
+    <div class="tl-muted" id="bsCorCount" style="margin-top:8px;font-size:12.5px;"></div>
+    <button class="btn btn-primary" id="bsCorGo" style="width:100%;justify-content:center;margin-top:10px;">Corregir</button></div>`);
+  document.getElementById("genericModalTitle").style.display = "none";
+  const w = document.getElementById("bsCorWrong"), r = document.getElementById("bsCorRight"), cnt = document.getElementById("bsCorCount");
+  // cuenta exactamente lo mismo que se corrige (título, transcripción, versiones y participantes)
+  const count = ()=>{ bsStoreActive(d); const tmp = JSON.parse(JSON.stringify({ t:d.title, tr:d.transcript, to:d.transcriptOriginal||"", v:d.versions||{}, p:d.participants||[] })); const n = w.value.trim() ? bsApplyDeep(tmp, [{ wrong:w.value.trim(), right:"·" }]) : 0; cnt.textContent = w.value.trim() ? (n ? `Aparece ${n} ${n===1?"vez":"veces"} en el documento.` : "No aparece en el documento (igual puedes guardarla para el futuro).") : ""; };
+  w.addEventListener("input", count); count();
+  setTimeout(()=>(preset ? r : w).focus(), 50);
+  const go = ()=>{
+    const wrong = w.value.trim(), right = r.value.trim();
+    if(!wrong || !right){ toast("Completa las dos palabras.","info"); return; }
+    const list = [{ wrong, right }];
+    bsStoreActive(d);   // lo visible se guarda en su versión antes de corregir
+    let n = 0;
+    ["title","transcript","transcriptOriginal"].forEach(k=>{ if(typeof d[k]==="string"){ const x = bsApplyCorrectionsToText(d[k], list); d[k] = x.text; n += x.n; } });
+    if(d.versions) n += bsApplyDeep(d.versions, list);
+    n += bsApplyDeep(d.participants||[], list);
+    if(d.activeLevel && d.versions && d.versions[d.activeLevel]){ const lv = d.activeLevel; d.activeLevel = null; bsShowVersion(d, lv); }
+    const learned = document.getElementById("bsCorLearn").checked && bsLearnCorrection(wrong, right);
+    if(document.getElementById("bsCorLearn").checked && /\d/.test(wrong+right)) toast("Las cifras se corrigen solo en este documento: Alma no las aprende como regla.","info");
+    trackUse("bs.correccion");
+    saveDB(); closeGenericModal(); renderBrainstorm();
+    toast(`🔤 ${n} ${n===1?"corrección":"correcciones"} en el documento${learned?" · Alma lo recordará":""}.`,"success");
+  };
+  document.getElementById("bsCorGo").addEventListener("click", go);
+  r.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+}
+
+/* ---------- Editar el informe directamente ---------- */
+let bsEditing = null;   // id del documento en edición
+function bsEf(path, html, tag, cls){ return bsEditing ? `<${tag||"span"} class="bs-ef ${cls||""}" contenteditable="true" spellcheck="true" data-ef="${path}">${html}</${tag||"span"}>` : html; }
+function bsGetPath(o, path){ return path.split(".").reduce((a,k)=>a==null?a:a[k], o); }
+function bsSetPath(o, path, val){ const ks = path.split("."); const last = ks.pop(); const t = ks.reduce((a,k)=>a[k], o); t[last] = val; }
+// palabras cambiadas parecidas (ej. socobox → Sokobox) para ofrecer aprenderlas
+function bsSimilar(a, b){ a = a.toLowerCase(); b = b.toLowerCase(); if(a===b) return true; const m = a.length, n = b.length; if(Math.abs(m-n)>3) return false; const dp = Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++) dp[0][j]=j; for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return dp[m][n] <= Math.max(2, Math.floor(Math.max(m,n)/3)); }
+function bsWordDiffs(oldT, newT){
+  const tok = t=>String(t||"").split(/\s+/).map(w=>w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"")).filter(Boolean);
+  const A = tok(oldT), B = tok(newT), out = [];
+  if(A.length !== B.length) return out;
+  A.forEach((w,i)=>{ if(w!==B[i] && w.length>=3 && !/\d/.test(w) && !/\d/.test(B[i]) && bsSimilar(w, B[i])) out.push([w, B[i]]); });
+  return out;
+}
+function bsSaveEdits(wrap, d){
+  const pairs = new Map();
+  wrap.querySelectorAll("[data-ef]").forEach(el=>{
+    const path = el.dataset.ef, val = el.innerText.replace(/\u00a0/g," ").trim();
+    const old = bsGetPath(d, path);
+    if(typeof old==="string" && old!==val){ bsWordDiffs(old, val).forEach(([w,r])=>pairs.set(w.toLowerCase(), [w,r])); bsSetPath(d, path, val); }
+  });
+  // listas: se quitan los puntos que quedaron vacíos
+  ["ideas","decisions","openPoints","risks","nextSteps"].forEach(k=>{ if(Array.isArray(d[k])) d[k] = d[k].filter(x=>String(x).trim()); });
+  (d.topics||[]).forEach(t=>{ t.points = (t.points||[]).filter(x=>String(x).trim()); });
+  // las cifras editadas se vuelven a validar contra la transcripción
+  const v = { summary:d.summary||"", context:d.context||"", decisions:d.decisions||[], nextSteps:d.nextSteps||[], openPoints:d.openPoints||[], topics:d.topics||[], figures:d.figures||[], actions:d.actions||[] };
+  v.figures.forEach(f=>{ delete f.flag; });
+  bsValidateVersion(v, d.transcript); d.avisos = v.avisos;
+  bsStoreActive(d); d.editedAt = new Date().toISOString();
+  bsEditing = null; saveDB(); renderBrainstorm();
+  const learn = [...pairs.values()].filter(([w,r])=>!bsCorrections().some(c=>c.wrong.toLowerCase()===w.toLowerCase() && c.right===r));
+  if(!learn.length){ toast("✓ Cambios guardados.","success"); return; }
+  openGenericModal("", `<div class="bs-modal"><div class="bs-modal-title">🧠 ¿Alma debería aprender esto?</div>
+    <p class="tl-muted" style="margin:0 0 10px;font-size:13px;">Corregiste estas palabras. Si las recuerda, las corregirá sola en las próximas reuniones.</p>
+    ${learn.map(([w,r],i)=>`<label class="bs-consent" style="margin-top:6px;"><input type="checkbox" data-learn="${i}" checked> <span><s>${esc(w)}</s> → <b>${esc(r)}</b></span></label>`).join("")}
+    <div class="tl-row" style="margin-top:12px;"><button class="btn btn-ghost" id="bsLearnNo">No, solo aquí</button><button class="btn btn-primary" id="bsLearnYes">Recordar</button></div></div>`);
+  document.getElementById("genericModalTitle").style.display = "none";
+  document.getElementById("bsLearnNo").addEventListener("click", ()=>{ closeGenericModal(); toast("✓ Cambios guardados.","success"); });
+  document.getElementById("bsLearnYes").addEventListener("click", ()=>{
+    let k = 0; document.querySelectorAll("[data-learn]").forEach(cb=>{ if(cb.checked){ const [w,r] = learn[+cb.dataset.learn]; if(bsLearnCorrection(w, r)) k++; } });
+    saveDB(); closeGenericModal(); toast(`✓ Cambios guardados · Alma recordará ${k} ${k===1?"corrección":"correcciones"}.`,"success");
+  });
+}
+/* ---------- Fuente oficial de nombres: la propia reunión ---------- */
+// Título, invitados (nombre y correo), empresas según el dominio del correo,
+// participantes indicados, personas que Alma conoce y glosario. Los nombres del
+// informe deben salir de aquí, no de lo que la IA "cree" escuchar.
+const BS_GENERIC_MAIL = /^(gmail|googlemail|hotmail|outlook|live|yahoo|icloud|me|msn|aol|proton|protonmail|gmx|yandex|mail)$/i;
+function bsCompact(t){ return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""); }
+function bsOfficial(src){
+  const people = new Map(), orgs = new Map();
+  const addP = n=>{ n = String(n||"").trim(); if(n && !/^persona \d+$/i.test(n)) people.set(n.toLowerCase(), n); };
+  const terms = [...new Set([...(src.glossary||[]), ...bsMem().terms])];
+  (src.participants||[]).forEach(x=>addP(x.name));
+  (src.invitees||[]).forEach(a=>{
+    addP(a.name || bsPrettyFromEmail(a.email));
+    const dom = String(a.email||"").split("@")[1] || "";
+    const label = dom.split(".")[0] || "";
+    if(label && !BS_GENERIC_MAIL.test(label)){
+      // si el glosario tiene la misma palabra (ej. "Do Better" ↔ dobetter), se usa esa escritura
+      const nice = terms.find(t=>bsCompact(t)===bsCompact(label)) || bsMem().people.map(p=>p.org).find(o=>o && bsCompact(o)===bsCompact(label)) || label.charAt(0).toUpperCase()+label.slice(1);
+      orgs.set(bsCompact(nice), { name:nice, domain:dom });
+    }
+  });
+  bsMem().people.forEach(p=>{ if(p.org && !orgs.has(bsCompact(p.org))) orgs.set(bsCompact(p.org), { name:p.org, domain:"" }); });
+  terms.forEach(t=>{ if(!orgs.has(bsCompact(t))) orgs.set(bsCompact(t), { name:t, domain:"" }); });
+  return { title: src.eventTitle || src.title || "", people:[...people.values()], orgs:[...orgs.values()] };
+}
+function bsOfficialText(src){
+  const o = bsOfficial(src);
+  if(!o.people.length && !o.orgs.length && !o.title) return "";
+  return `FUENTE OFICIAL DE NOMBRES (de la propia reunión; tiene prioridad sobre lo que creas escuchar):
+${o.title?`- Nombre de la reunión: "${o.title}".\n`:""}${o.people.length?`- Personas: ${o.people.join(", ")}.\n`:""}${o.orgs.length?`- Organizaciones y términos: ${o.orgs.map(x=>x.name + (x.domain?` (correos @${x.domain})`:"")).join(", ")}.\n`:""}- Si en el audio o la transcripción aparece un nombre PARECIDO a uno oficial (ej. "Tubetter" por "Do Better", "Gerzon" por "Gerson"), escribe el oficial. No introduzcas nombres de personas u organizaciones que no estén en la conversación ni en esta lista.`;
+}
+// Control automático: nombres de personas/empresas del informe parecidos a uno oficial → el oficial
+function bsLev(a, b){ const m = a.length, n = b.length; const dp = Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++) dp[0][j]=j; for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return dp[m][n]; }
+// ¿Es una variante del nombre oficial? (1 letra si es corto; 2 si tiene 7 o más)
+function bsNear(a, b){ if(!a || !b || a===b) return false; const L = Math.min(a.length, b.length); if(L < 4) return false; return bsLev(a, b) <= (L >= 7 ? 2 : 1); }
+function bsSnapToOfficial(name, list){
+  const n = String(name||"").trim(); if(!n) return n;
+  const c = bsCompact(n); if(!c) return n;
+  const exact = list.find(x=>bsCompact(x)===c); if(exact) return exact;
+  // nombre completo o solo una de sus palabras (ej. "Gerzon" ↔ "Gerson Guzmán")
+  const hit = list.find(x=>bsNear(c, bsCompact(x)))
+           || (n.split(/\s+/).length===1 ? list.find(x=>x.split(/\s+/).some(w=>bsNear(c, bsCompact(w)))) : null);
+  return hit || n;
+}
+function bsSnapVersion(v, src){
+  const o = bsOfficial(src), P = o.people, O = o.orgs.map(x=>x.name);
+  let changed = 0;
+  const fixP = s=>{ const r = bsSnapToOfficial(s, P); if(r!==s) changed++; return r; };
+  const fixO = s=>{ const r = bsSnapToOfficial(s, O); if(r!==s) changed++; return r; };
+  (v.peopleDetected||[]).forEach(x=>{ x.name = fixP(x.name); if(x.org) x.org = fixO(x.org); });
+  (v.actions||[]).forEach(a=>{ if(a.owner) a.owner = fixP(a.owner); if(a.org) a.org = fixO(a.org); });
+  (v.figures||[]).forEach(f=>{ if(f.quien) f.quien = bsSnapToOfficial(bsSnapToOfficial(f.quien, P), O); });
+  // en los textos: variantes de organizaciones oficiales (palabra a palabra o de dos palabras)
+  const variants = new Map();
+  const txt = [v.summary, v.context, ...(v.decisions||[]), ...(v.nextSteps||[]), ...(v.openPoints||[]), ...(v.risks||[]), ...(v.topics||[]).map(t=>t.title+" "+t.detail+" "+(t.points||[]).join(" ")), ...(v.actions||[]).map(a=>a.title)].join(" ");
+  // solo palabras con mayúscula inicial (nombres propios) de 6+ letras: así no se tocan palabras comunes
+  (txt.match(/\p{Lu}[\p{L}\p{N}-]{2,}(?:\s\p{Lu}[\p{L}\p{N}-]{1,})?/gu)||[]).forEach(w=>{
+    [w, w.split(/\s/)[0]].forEach(cand=>{
+      const c = bsCompact(cand); if(c.length<6 || variants.has(cand)) return;
+      const off = O.find(x=>{ const ox = bsCompact(x); return ox.length>=6 && ox!==c && Math.abs(c.length-ox.length)<=1 && bsNear(c, ox); });
+      if(off) variants.set(cand, off);
+    });
+  });
+  if(variants.size){ const list = [...variants].map(([wrong,right])=>({ wrong, right })); changed += bsApplyDeep(v, list); }
+  return changed;
 }
 const bsProcessing = new Set();   // documentos que se están armando AHORA en esta sesión
 /* ---------- Niveles de informe: se elige al grabar; una sola consulta a la IA ---------- */
@@ -15005,6 +15213,8 @@ Quien graba es ${me}. Hoy es ${TODAY()}.
 ${(d.participants||[]).length ? `Participantes indicados por el usuario: ${bsPartsText(d.participants)}.` : ""}
 ${known.length ? `Personas que Alma ya conoce (nombre, cargo, empresa): ${known.map(bsPersonText).join("; ")}.` : ""}
 ${terms.length ? `Glosario (escríbelos así): ${terms.join(", ")}.` : ""}
+${bsCorrectionsText()}
+${bsOfficialText(d)}
 ${d.agenda ? `Agenda de la invitación (es lo PLANEADO; puede no reflejar lo que se habló): «${String(d.agenda).slice(0,1500)}»` : ""}
 Proyectos del usuario: ${projects}.
 ${d.title?`Título puesto por el usuario: "${d.title}" (respétalo).`:""}
@@ -15034,9 +15244,11 @@ Responde SOLO un JSON válido:
       actions: (Array.isArray(j.tareas)?j.tareas:[]).filter(t=>t && t.titulo).slice(0,30).map(t=>({ title:String(t.titulo).slice(0,140), owner:String(t.responsable||"").replace(/^null$/,""), org:String(t.organizacion||"").replace(/^null$/,""), due:okD(t.fecha), priority:["alta","media","baja"].includes(t.prioridad)?t.prioridad:"media", tipo: t.tipo==="personal"?"personal":"laboral", taskId:null })),
       peopleDetected: (Array.isArray(j.participantes)?j.participantes:[]).filter(x=>x && x.nombre && !/^persona \d+$/i.test(x.nombre)).slice(0,20).map(x=>({ name:String(x.nombre).slice(0,60), role:String(x.rol||"").replace(/^null$/,"").slice(0,60), org:String(x.organizacion||"").replace(/^null$/,"").slice(0,60) })),
     };
+    bsApplyDeep(v);                                  // correcciones aprendidas (ej. socobox → Sokobox)
+    bsSnapVersion(v, d);                             // nombres parecidos a los oficiales de la reunión → el oficial
     bsValidateVersion(v, d.transcript);
     const dd = (DB.brainstorms||[]).find(x=>x.id===id) || d;   // por si los datos se combinaron entremedio
-    if(!dd.title) dd.title = String(j.titulo||"Lluvia de ideas").slice(0,120);
+    if(!dd.title) dd.title = dd.eventTitle || bsApplyCorrectionsToText(String(j.titulo||"Lluvia de ideas").slice(0,120)).text;   // de Calendar: el nombre real de la reunión
     if(!dd.tags || !dd.tags.length) dd.tags = arr(j.etiquetas,3,30).map(x=>x.toLowerCase());
     dd.speakers = v.peopleDetected.map(x=>x.name);
     dd.versions = dd.versions || {};
@@ -15312,7 +15524,7 @@ const USE_LABELS = {
   "view.projects":"Proyectos y temas","view.kanban":"Kanban","view.calendar":"Calendario","view.gantt":"Cronograma","view.matrix":"Matriz",
   "view.responsables":"Personas","view.reportes":"Reportes","view.notificaciones":"Notificaciones","view.cumpleanos":"Cumpleaños","view.configuracion":"Configuración","view.mejorar":"Ayúdanos a mejorar",
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
-  "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo","bs.quien_es_quien":"Voces nombradas (¿Quién es quién?)",
+  "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo","bs.quien_es_quien":"Voces nombradas (¿Quién es quién?)","bs.correccion":"Palabras corregidas en Brainstorm",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
   "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","feedback.audio":"Sugerencias dictadas","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
 };
