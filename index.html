@@ -1087,6 +1087,10 @@ body.cal-fullscreen .alma-fab, body.cal-fullscreen .alma-panel{display:none!impo
 .fb-msg-imgs img{max-width:150px;max-height:120px;border-radius:8px;border:1px solid rgba(255,255,255,.4);}
 .fb-imgview{display:flex;flex-direction:column;gap:10px;}
 .fb-imgview img{max-width:100%;border-radius:10px;border:1px solid var(--border);}
+
+.fb-dropzone{margin:0 16px 10px;padding:16px;border:2px dashed #8B9DF0;border-radius:16px;background:color-mix(in srgb,#8157EF 6%,var(--surface));text-align:center;outline:none;}
+.fb-dropzone:focus{border-color:#8157EF;}
+.fb-chatcard.fb-drag{box-shadow:0 0 0 3px #8157EF inset;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -5102,6 +5106,7 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 const VIEWS = ["dashboard","projects","notas","brainstorm","idiomas","mejorar","panel","rutinas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
 function showView(view){
   trackUse("view."+view);
+  try{ if(view==="panel" && !panelLoading) panelData = null; }catch(e){}   // el Panel de mejoras siempre trae lo más reciente al abrirse (protegido mientras la app carga)
   selectedTaskIds.clear();
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
     document.body.classList.remove("cal-fullscreen");
@@ -16467,8 +16472,15 @@ function renderMejorar(){
         ${fbRec ? `<div class="id-rec" style="margin:0 12px;"><span class="bs-dot"></span> Grabando <b id="fbRecClock">00:00</b> <span class="tl-muted">(máx. 3 min)</span><button type="button" class="btn btn-ghost btn-sm" id="fbRecCancel">Descartar</button><button type="button" class="btn btn-primary btn-sm" id="fbRecStop">■ Listo</button></div>` : ""}
         ${fbTranscribing ? `<div class="id-busy" style="margin:0 16px;"><span class="id-spin"></span>Transcribiendo tu audio…</div>` : ""}
         ${fbImgs.length ? `<div class="fb-thumbs">${fbImgs.map((im,i)=>`<div class="fb-thumb"><img src="data:${im.type};base64,${im.data}" alt="Imagen adjunta ${i+1}"><button type="button" data-fbimg-x="${i}" aria-label="Quitar imagen">✕</button></div>`).join("")}<span class="tl-muted">Cuéntale a Alma qué muestra${fbRec?"":" (escribiendo o con 🎙️)"}.</span></div>` : ""}
-        <input type="file" id="fbImgFile" accept="image/*" multiple class="hidden">
-        <div class="fb-inputbar"><button type="button" class="btn btn-ghost fb-mic" id="fbImgBtn" title="Adjuntar una captura o imagen (hasta 3)" aria-label="Adjuntar imagen" ${fbChat.busy||fbRec||fbTranscribing||fbTotalImgs()>=3?"disabled":""}>📷</button><button type="button" class="btn btn-ghost fb-mic" id="fbMic" title="Grabar un audio (se transcribe y lo revisas antes de enviar)" ${fbChat.busy||fbRec||fbTranscribing?"disabled":""}>🎙️</button><textarea id="fbInput" rows="1" placeholder="Escribe aquí o graba un audio…" ${fbChat.busy?"disabled":""}>${esc(fbDraft)}</textarea><button class="btn btn-primary" id="fbGo" ${fbChat.busy||fbRec||fbTranscribing?"disabled":""} aria-label="Enviar mensaje">➤</button></div>`}
+        ${fbPhotoOpen && fbTotalImgs()<3 ? `<div class="fb-dropzone" id="fbDropzone" tabindex="0" aria-label="Zona para agregar imágenes">
+          <div style="font-size:26px;">📷</div>
+          <div style="font-weight:600;color:#3A2F5C;margin-top:4px;">Toma una foto, sube una imagen o pega (Ctrl+V)</div>
+          <div class="tl-muted" style="font-size:12.5px;margin-top:2px;">Muéstrale a Alma lo que quieres mejorar (hasta 3). También puedes arrastrarla aquí.</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
+            <label class="af-mini-btn">📷 Tomar foto<input type="file" accept="image/*" capture="environment" id="fbImgCam" class="hidden"></label>
+            <label class="af-mini-btn">🖼️ Subir imagen<input type="file" accept="image/*" multiple id="fbImgFile" class="hidden"></label>
+          </div></div>` : ""}
+        <div class="fb-inputbar"><button type="button" class="btn btn-ghost fb-mic" id="fbImgBtn" title="Foto o imagen: tomar, subir, pegar (Ctrl+V) o arrastrar (hasta 3)" aria-label="Agregar imagen" ${fbChat.busy||fbRec||fbTranscribing||fbTotalImgs()>=3?"disabled":""}>📷</button><button type="button" class="btn btn-ghost fb-mic" id="fbMic" title="Grabar un audio (se transcribe y lo revisas antes de enviar)" ${fbChat.busy||fbRec||fbTranscribing?"disabled":""}>🎙️</button><textarea id="fbInput" rows="1" placeholder="Escribe aquí o graba un audio…" ${fbChat.busy?"disabled":""}>${esc(fbDraft)}</textarea><button class="btn btn-primary" id="fbGo" ${fbChat.busy||fbRec||fbTranscribing?"disabled":""} aria-label="Enviar mensaje">➤</button></div>`}
       </div>
       <div class="fb-side">
         <div class="fb-note">🔒 <b>Tu privacidad:</b> ${TEAM_DISPLAY_NAME.charAt(0).toUpperCase()+TEAM_DISPLAY_NAME.slice(1)} ve cuánto se usa cada función para mejorar la app, pero <b>no ve tus tareas ni tus documentos</b>. Lo que escribas aquí sí le llega, con tu nombre de usuario. <a href="/privacy.html" target="_blank" rel="noopener">Ver política completa</a></div>
@@ -16482,8 +16494,18 @@ function renderMejorar(){
   const go = ()=>{ const v = inp.value.trim(); if(v || fbImgs.length){ fbDraft = ""; fbUserSays(v || "(te adjunto una imagen)"); } };
   if(inp) inp.addEventListener("input", ()=>{ fbDraft = inp.value; });
   const mic = document.getElementById("fbMic"); if(mic) mic.addEventListener("click", fbStartRec);
-  const ib = document.getElementById("fbImgBtn"), fi = document.getElementById("fbImgFile");
-  if(ib && fi){ ib.addEventListener("click", ()=>fi.click()); fi.addEventListener("change", async ()=>{ const files = [...(fi.files||[])]; fi.value = ""; for(const f of files){ if(fbTotalImgs() >= 3){ toast("Puedes adjuntar hasta 3 imágenes por sugerencia.","info"); break; } await fbAddImage(f); } renderMejorar(); }); }
+  const ib = document.getElementById("fbImgBtn");
+  if(ib) ib.addEventListener("click", ()=>{ fbPhotoOpen = !fbPhotoOpen; renderMejorar(); const dz = document.getElementById("fbDropzone"); if(dz) dz.focus(); });
+  ["fbImgFile","fbImgCam"].forEach(id=>{ const fi = document.getElementById(id); if(fi) fi.addEventListener("change", async ()=>{ const files = [...(fi.files||[])]; fi.value = ""; await fbAddFiles(files); }); });
+  // pegar (Ctrl+V) y arrastrar: en el recuadro, en el cuadro de texto o en cualquier parte del chat
+  const card = document.querySelector(".fb-chatcard");
+  const onPaste = async (e)=>{ const files = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f=>/^image\//.test(f.type)); if(!files.length) return; e.preventDefault(); await fbAddFiles(files); };
+  if(card && !card.dataset.imgBound){ card.dataset.imgBound = "1";
+    card.addEventListener("paste", onPaste);
+    card.addEventListener("dragover", e=>{ if([...(e.dataTransfer.items||[])].some(i=>i.kind==="file")){ e.preventDefault(); card.classList.add("fb-drag"); } });
+    card.addEventListener("dragleave", e=>{ if(e.target===card) card.classList.remove("fb-drag"); });
+    card.addEventListener("drop", async e=>{ card.classList.remove("fb-drag"); const files = [...(e.dataTransfer.files||[])].filter(f=>/^image\//.test(f.type)); if(!files.length) return; e.preventDefault(); await fbAddFiles(files); });
+  }
   document.querySelectorAll("[data-fbimg-x]").forEach(b=>b.addEventListener("click", ()=>{ fbImgs.splice(+b.dataset.fbimgX,1); renderMejorar(); }));
   const rs = document.getElementById("fbRecStop"); if(rs) rs.addEventListener("click", ()=>fbStopRec(true));
   const rc = document.getElementById("fbRecCancel"); if(rc) rc.addEventListener("click", ()=>fbStopRec(false));
@@ -16527,6 +16549,12 @@ async function fbStartRec(){
 function fbStopRec(keep){ if(!fbRec) return; fbRec.keep = keep; try{ fbRec.rec.stop(); }catch(e){ fbRec = null; renderMejorar(); } }
 /* ---------- Imágenes en "Ayúdanos a mejorar": capturas para mostrar lo que quieres ---------- */
 let fbImgs = [];          // adjuntas al próximo mensaje
+let fbPhotoOpen = false;  // recuadro "Toma una foto, sube una imagen o pega"
+async function fbAddFiles(files){
+  for(const f of files){ if(fbTotalImgs() >= 3){ toast("Puedes adjuntar hasta 3 imágenes por sugerencia.","info"); break; } await fbAddImage(f); }
+  fbPhotoOpen = false; renderMejorar();
+  const i = document.getElementById("fbInput"); if(i) i.focus();
+}
 function fbTotalImgs(){ return fbImgs.length + ((fbChat && fbChat.msgs) || []).reduce((a,m)=>a + ((m.imgs||[]).length), 0); }
 // Se achica a máx. 1600 px en JPEG (una captura de pantalla queda en ~150-400 KB)
 async function fbAddImage(file){
@@ -16547,6 +16575,7 @@ async function fbAddImage(file){
 }
 async function fbUserSays(text){
   const imgs = fbImgs.splice(0);   // las imágenes van con este mensaje
+  fbPhotoOpen = false;
   fbChat.msgs.push({ role:"usuario", text: text.slice(0,1000), imgs }); fbChat.summary = null; fbChat.busy = true; renderMejorar();
   if(imgs.length) trackUse("feedback.imagen");
   const userTurns = fbChat.msgs.filter(m=>m.role==="usuario").length;
@@ -16644,7 +16673,7 @@ function renderPanel(){
       </tbody></table></div>`:`<div class="tl-muted">Nadie ha usado la app este mes (o aún no hay datos).</div>`}
     </div>
     <div class="bs-sec">
-      <div class="bs-sec-head"><h3>💬 Sugerencias</h3><div class="tl-chips">${[["abiertas","Abiertas"],["nuevo","Nuevas"],["planificado","Planificadas"],["hecho","Hechas"],["todas","Todas"]].map(([k,l])=>`<button type="button" class="tl-chip ${panelFilter===k?"on":""}" data-pf="${k}">${l}</button>`).join("")}</div></div>
+      <div class="bs-sec-head"><h3>💬 Sugerencias <button type="button" class="btn btn-ghost btn-sm" id="pnRefresh" title="Volver a cargar las sugerencias">↻ Actualizar</button></h3><div class="tl-chips">${[["abiertas","Abiertas"],["nuevo","Nuevas"],["planificado","Planificadas"],["hecho","Hechas"],["todas","Todas"]].map(([k,l])=>`<button type="button" class="tl-chip ${panelFilter===k?"on":""}" data-pf="${k}">${l}</button>`).join("")}</div></div>
       ${shownFb.length?shownFb.map(i=>`<div class="pn-fb">
         <div class="pn-fb-top"><span class="bs-chip">${FB_TIPO[i.tipo]||FB_TIPO.otro}</span><span class="tl-muted">${esc(userOf(i))} · ${esc(i.area||"General")} · ${esc(new Date(i.createdAt).toLocaleDateString("es-CL",{day:"numeric",month:"short"}))}</span>
           <select class="tl-select pn-st" data-fbid="${esc(i.id)}">${Object.entries(FB_ESTADO).map(([k,l])=>`<option value="${k}" ${i.status===k?"selected":""}>${l}</option>`).join("")}</select></div>
@@ -16654,6 +16683,7 @@ function renderPanel(){
       </div>`).join(""):`<div class="tl-muted">No hay sugerencias en esta vista.</div>`}
     </div>`;
   wrap.querySelectorAll("[data-pf]").forEach(b=>b.addEventListener("click", ()=>{ panelFilter = b.dataset.pf; renderPanel(); }));
+  const pr = wrap.querySelector("#pnRefresh"); if(pr) pr.addEventListener("click", ()=>{ if(panelLoading) return; panelData = null; renderPanel(); });
   wrap.querySelectorAll("[data-fbimgs]").forEach(b=>b.addEventListener("click", async ()=>{
     const [id, n] = b.dataset.fbimgs.split("|"); b.disabled = true; b.textContent = "Cargando…";
     const imgs = [];
