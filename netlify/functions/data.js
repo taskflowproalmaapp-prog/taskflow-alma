@@ -12,13 +12,26 @@ const { getStore } = require("@netlify/blobs");
 
 // Igual que en auth.js: si Netlify no configura Blobs solo dentro de esta función,
 // nos conectamos manualmente con NETLIFY_SITE_ID / NETLIFY_BLOBS_TOKEN.
+// Lecturas con consistencia FUERTE: lo recién guardado se lee al instante (por defecto
+// Netlify Blobs es "eventual" y una actualización puede tardar hasta 60 s en verse).
+// Si este entorno no admitiera lecturas fuertes, se lee como antes en vez de fallar.
+function strongReads(s) {
+  const get = s.get.bind(s);
+  return {
+    get: async (key, opts) => {
+      try { return await get(key, Object.assign({ consistency: "strong" }, opts || {})); }
+      catch (e) { if (/consisten|uncachedEdgeURL/i.test(String(e && e.message))) return await get(key, opts); throw e; }
+    },
+    set: s.set.bind(s), list: s.list.bind(s), delete: s.delete.bind(s),
+  };
+}
 function store(name) {
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_BLOBS_TOKEN;
   if (siteID && token) {
-    return getStore({ name, siteID, token });
+    return strongReads(getStore({ name, siteID, token }));
   }
-  return getStore(name);
+  return strongReads(getStore(name));
 }
 
 function json(statusCode, obj) {
