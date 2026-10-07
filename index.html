@@ -1092,6 +1092,8 @@ body.cal-fullscreen .alma-fab, body.cal-fullscreen .alma-panel{display:none!impo
 .fb-dropzone:focus{border-color:#8157EF;}
 .fb-chatcard.fb-drag{box-shadow:0 0 0 3px #8157EF inset;}
 .mt-queue-hint{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:color-mix(in srgb,#FF6B45 8%,var(--surface));border:1px solid color-mix(in srgb,#FF6B45 25%,var(--surface));border-radius:12px;padding:8px 12px;font-size:13px;margin-bottom:10px;}
+.ga-ask{background:color-mix(in srgb,#8157EF 7%,var(--surface));border:1px solid color-mix(in srgb,#8157EF 30%,var(--surface));border-radius:12px;padding:12px;margin-bottom:12px;}
+.ga-type{font-size:12.5px;margin-bottom:10px;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -4036,6 +4038,7 @@ async function gtSync(manual){
         nt.description = [g.notes, g.emailLink ? `📧 Desde Gmail${g.emailSubject?`: «${g.emailSubject}»`:""}\n${g.emailLink}` : ""].filter(Boolean).join("\n\n");
         if(g.due){ nt.startDate = g.due; nt.dueDate = g.due; } else { nt.startDate = ""; nt.dueDate = ""; }   // con fecha → ese día; sin fecha → Por agendar
         nt.executionTime = ""; nt.tags = [...new Set([...(nt.tags||[]), "google-tasks", ...(g.emailLink?["gmail"]:[])])];
+        if(googleAccountType()) nt.taskType = googleAccountType();   // cuenta de trabajo → Laboral; personal → Personal
         nt.gtask = { id:g.id, listId:g.listId, synced:"needsAction", emailLink:g.emailLink||"" };
         DB.tasks.push(nt); byGid.set(g.id, nt); known.add(g.id); res.nuevas++;
         continue;
@@ -4093,7 +4096,7 @@ async function renderGTasksPanel(noFetch){
       document.getElementById("gtGrant").addEventListener("click", startGoogleCalendarConnect); return; }
     const lists = st.lists || [];
     if(!c.lists.length && lists.length) c.lists = [lists[0].id];   // por defecto: la primera ("Mis tareas")
-    wrap.innerHTML = `<label class="checkbox-line" style="margin-bottom:8px;"><input type="checkbox" id="gtEnabled" ${c.enabled?"checked":""}> Traer mis tareas de Google Tasks a TaskFlow</label>
+    wrap.innerHTML = `${googleAccountQuestionHTML(true)}<label class="checkbox-line" style="margin-bottom:8px;"><input type="checkbox" id="gtEnabled" ${c.enabled?"checked":""}> Traer mis tareas de Google Tasks a TaskFlow</label>
       <div style="${c.enabled?"":"opacity:.45;pointer-events:none;"}">
         <div class="t-sub" style="margin-bottom:4px;">Listas que se traen:</div>
         ${lists.map(l=>`<label class="checkbox-line"><input type="checkbox" data-gtlist="${esc(l.id)}" ${c.lists.includes(l.id)?"checked":""}> ${esc(l.title)}</label>`).join("") || `<div class="t-sub">No tienes listas en Google Tasks.</div>`}
@@ -4102,11 +4105,40 @@ async function renderGTasksPanel(noFetch){
     document.getElementById("gtEnabled").addEventListener("change", e=>{ c.enabled = e.target.checked; saveDB(); renderGTasksPanel(true); if(c.enabled) gtSync(true); });
     wrap.querySelectorAll("[data-gtlist]").forEach(cb=>cb.addEventListener("change", ()=>{ const id = cb.dataset.gtlist; c.lists = cb.checked ? [...new Set([...c.lists, id])] : c.lists.filter(x=>x!==id); saveDB(); }));
     const sn = document.getElementById("gtSyncNow"); if(sn) sn.addEventListener("click", ()=>gtSync(true));
+    bindGoogleAccountQuestion(wrap, null);
   };
   if(noFetch && renderGTasksPanel._last){ draw(renderGTasksPanel._last); return; }
   wrap.innerHTML = `<div class="t-sub">Verificando…</div>`;
   try{ const st = await apiGTasks("status"); renderGTasksPanel._last = st; draw(st); }
   catch(e){ wrap.innerHTML = `<div class="t-sub">No se pudo verificar Google Tasks ahora (${esc(e.message)}).</div>`; }
+}
+/* ---------- ¿La cuenta de Google es de trabajo o personal? (una sola pregunta para Calendar y Tasks) ---------- */
+function googleAccountType(){ return (DB.config && DB.config.googleAccountType) || ""; }   // "laboral" | "personal" | ""
+function googleAccountQuestionHTML(compact){
+  const cur = googleAccountType();
+  if(cur && compact) return `<div class="ga-type">Lo que llega de esta cuenta entra como <b>${cur==="laboral"?"💼 Laboral":"🏠 Personal"}</b> · <button type="button" class="btn-link-plain" data-ga-change>cambiar</button></div>`;
+  return `<div class="ga-ask"><div style="font-weight:700;margin-bottom:6px;">¿Esta cuenta de Google es de trabajo o personal?</div>
+    <div class="t-sub" style="margin-bottom:8px;">Así tus reuniones y las tareas que lleguen de Gmail se clasifican solas.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" class="btn ${cur==="laboral"?"btn-primary":"btn-ghost"}" data-ga-set="laboral">💼 De trabajo</button><button type="button" class="btn ${cur==="personal"?"btn-primary":"btn-ghost"}" data-ga-set="personal">🏠 Personal</button></div></div>`;
+}
+async function setGoogleAccountType(tipo, calendarIds){
+  DB.config.googleAccountType = tipo;
+  // Calendar: si es de trabajo, todos sus calendarios cuentan como laborales (se pueden desmarcar)
+  if(Array.isArray(calendarIds)){ DB.config.workCalendarIds = tipo==="laboral" ? calendarIds.slice() : []; googleEventsCache = { date:null, events:[] }; }
+  // Google Tasks: las tareas que ya llegaron, ¿también?
+  const ya = (DB.tasks||[]).filter(t=>t.gtask && t.status!=="completada" && t.status!=="cancelada" && t.taskType!==tipo);
+  if(ya.length && confirm(`¿Cambiar también ${ya.length===1?"la tarea que ya llegó":"las "+ya.length+" tareas que ya llegaron"} de Google Tasks a ${tipo==="laboral"?"Laboral":"Personal"}?`)){
+    ya.forEach(t=>{ t.taskType = tipo; t.updatedAt = TODAY(); });
+    recomputeAll(); render();
+  }
+  saveDB();
+  toast(`✓ Lo que llegue de esta cuenta será ${tipo==="laboral"?"💼 Laboral":"🏠 Personal"}.`,"success");
+  trackUse("google.tipo_cuenta");
+  renderGCalPanel();
+}
+function bindGoogleAccountQuestion(root, calendarIds){
+  root.querySelectorAll("[data-ga-set]").forEach(b=>b.addEventListener("click", ()=>setGoogleAccountType(b.dataset.gaSet, calendarIds)));
+  root.querySelectorAll("[data-ga-change]").forEach(b=>b.addEventListener("click", ()=>{ DB.config.googleAccountType = ""; renderGCalPanel(); }));
 }
 async function renderGCalPanel(){
   const wrap = document.getElementById("gcalStatus");
@@ -4124,6 +4156,7 @@ async function renderGCalPanel(){
     const workIds = new Set(DB.config.workCalendarIds || []);
     wrap.innerHTML = `
       <div style="font-size:12.5px;color:var(--success);margin-bottom:10px;">✅ Conectado.</div>
+      ${googleAccountQuestionHTML(true)}
       <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;">Marca cuáles de tus calendarios son de trabajo (el resto se cuenta como personal):</p>
       <div id="gcalCalList" style="margin-bottom:12px;">
         ${(listData.calendars||[]).map(c=>`
@@ -4134,6 +4167,7 @@ async function renderGCalPanel(){
           </label>`).join("")}
       </div>
       <button type="button" class="btn btn-ghost" id="gcalDisconnectBtn">Desconectar</button>`;
+    bindGoogleAccountQuestion(wrap, (listData.calendars||[]).map(c=>c.id));
     wrap.querySelectorAll("[data-gcal-work]").forEach(cb=>{
       cb.addEventListener("change", ()=>{
         const checked = Array.from(wrap.querySelectorAll("[data-gcal-work]:checked")).map(c=>c.dataset.gcalWork);
@@ -4160,6 +4194,8 @@ function handleGoogleCalendarRedirectParams(){
   if(cal === "connected"){
     toast("¡Google Calendar conectado! 🌱","success");
     googleEventsCache = { date:null, events:[] };
+    // si aún no sabemos si la cuenta es de trabajo o personal, se pregunta al tiro
+    setTimeout(()=>{ try{ if(!googleAccountType()){ showView("configuracion"); setTimeout(()=>{ const w = document.getElementById("gcalStatus"); if(w) w.scrollIntoView({ block:"center" }); toast("Cuéntame: ¿esta cuenta de Google es de trabajo o personal?","info"); }, 600); } }catch(e){} }, 1500);
   }else if(cal === "error"){
     toast("No se pudo conectar Google Calendar ("+(params.get("reason")||"error")+").","error");
   }
@@ -13284,7 +13320,7 @@ const ALMA_KB = [
   { id:"calendario", nombre:"Calendario", menu:"PLANIFICACIÓN → Calendario", ir:{ view:"calendar" }, estado:"disponible",
     claves:["calendario","calendar","google","semana","mes","agenda","reunion","meet","invitar","invitacion","horario","bloque","gmail","google tasks","tasks","agregar a tareas","correo"],
     para:"Ver tus tareas y eventos por día, semana o mes, y agendar.",
-    funciones:["Vistas «Hoy», «Día», «Semana» y «Mes».","Tocar un espacio libre abre «Agendar»: Tarea, Actividad o 👥 Reunión.","Reunión: con invitados y link de Google Meet (requiere Google Calendar conectado).","Google Tasks: las tareas que creas en Gmail con «Agregar a Tareas» llegan solas a TaskFlow (con fecha → ese día; sin fecha → «Por agendar»). Al marcarlas hechas aquí, quedan hechas en Gmail, y al revés. Google solo guarda el día, no la hora.","«📹 Entrar ahora» en reuniones que empiezan pronto."],
+    funciones:["Vistas «Hoy», «Día», «Semana» y «Mes».","Tocar un espacio libre abre «Agendar»: Tarea, Actividad o 👥 Reunión.","Reunión: con invitados y link de Google Meet (requiere Google Calendar conectado).","Google Tasks: las tareas que creas en Gmail con «Agregar a Tareas» llegan solas a TaskFlow (con fecha → ese día; sin fecha → «Por agendar»). Al marcarlas hechas aquí, quedan hechas en Gmail, y al revés. Google solo guarda el día, no la hora.","Al conectar tu cuenta de Google te pregunta si es de trabajo o personal: así tus reuniones y las tareas que llegan de Gmail quedan como Laboral o Personal solas (se cambia en Configuración con «cambiar»).","«📹 Entrar ahora» en reuniones que empiezan pronto."],
     pasos:{ conectar_gtasks:{ titulo:"Traer tus tareas de Gmail (Google Tasks)", pasos:["Ve a Configuración.","En «✅ Google Tasks (tareas de Gmail)», si te lo pide, toca «✅ Dar permiso de Google Tasks» y acepta en Google.","Marca «Traer mis tareas de Google Tasks a TaskFlow» y elige las listas.","Desde ahí, cada vez que en Gmail toques «Agregar a Tareas», la tarea llega sola: con fecha queda para ese día; sin fecha, en «Por agendar»."] },
             agendar_espacio:{ titulo:"Agendar en un espacio libre", pasos:["Ve a Calendario.","Toca un espacio vacío en el horario.","Elige Tarea, Actividad o 👥 Reunión, completa los datos y toca «✅ Agendar»."] },
             conectar_google:{ titulo:"Conectar Google Calendar", pasos:["Ve a Configuración.","En «🗓️ Google Calendar», toca «Conectar Google Calendar».","Acepta los permisos en la ventana de Google."] } },
