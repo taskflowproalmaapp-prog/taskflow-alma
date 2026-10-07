@@ -247,6 +247,7 @@ exports.handler = async function (event) {
         } catch (e) { console.error("cleanup " + storeName, e.message); }
       };
       await cleanup("ia_usage", (k) => k.startsWith(targetUser + ":"));
+await cleanup("ia_tokens", (k) => k.startsWith(targetUser + ":"));
       await cleanup("send_doc_usage", (k) => k.startsWith(targetUser + ":"));
       await cleanup("usage", (k) => k.endsWith(":" + targetUser));
       await cleanup("push_subscriptions", (k) => k === targetUser);

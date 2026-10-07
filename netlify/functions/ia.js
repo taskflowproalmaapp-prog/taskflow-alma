@@ -127,6 +127,19 @@ exports.handler = async function (event) {
       const reason = datos?.promptFeedback?.blockReason || datos?.candidates?.[0]?.finishReason || "sin texto";
       return json(502, { error: "La IA no devolvió respuesta (" + reason + ")." });
     }
+    // Medición de uso (para estimar costos): tokens que informa Gemini, por persona y día.
+    // Solo números: nunca se guarda el contenido de la consulta.
+    try {
+      const um = datos.usageMetadata || {};
+      const tk = store("ia_tokens");
+      const key = `${username}:${new Date().toISOString().slice(0, 10)}`;
+      const cur = (await tk.get(key, { type: "json" })) || { calls: 0, input: 0, output: 0, thinking: 0 };
+      cur.calls += 1;
+      cur.input += um.promptTokenCount || 0;
+      cur.output += um.candidatesTokenCount || 0;
+      cur.thinking += um.thoughtsTokenCount || 0;   // Google cobra el "pensamiento" como salida
+      await tk.set(key, JSON.stringify(cur));
+    } catch (e) { console.error("ia_tokens:", e.message); }
     return json(200, { texto });
   } catch (error) {
     return json(500, { error: "Error al hablar con la IA: " + error.message });
