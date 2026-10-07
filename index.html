@@ -1070,6 +1070,14 @@ body.cal-fullscreen .alma-fab, body.cal-fullscreen .alma-panel{display:none!impo
 .alma-mini:disabled{opacity:.5;cursor:default;}
 .alma-nudges{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
 .alma-nudge{background:color-mix(in srgb,#8157EF 7%,var(--surface));border:1px solid color-mix(in srgb,#8157EF 25%,var(--surface));border-radius:12px;padding:8px 10px;font-size:12.5px;}
+
+.alma-tour-ring{position:fixed;z-index:3000;border-radius:12px;pointer-events:none;box-shadow:0 0 0 4px #8157EF, 0 0 0 9999px rgba(20,12,40,.38);transition:all .25s ease;animation:almaTourPulse 1.4s ease-in-out infinite;}
+@keyframes almaTourPulse{0%,100%{box-shadow:0 0 0 4px #8157EF, 0 0 0 9999px rgba(20,12,40,.38);}50%{box-shadow:0 0 0 8px rgba(129,87,239,.55), 0 0 0 9999px rgba(20,12,40,.38);}}
+.alma-tour-tip{position:fixed;z-index:3001;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:0 12px 32px rgba(0,0,0,.22);max-width:calc(100vw - 16px);}
+.alma-tour-h{font-size:11.5px;font-weight:800;color:#6a45d6;margin-bottom:4px;}
+.alma-tour-t{font-size:14px;line-height:1.45;}
+.alma-tour-n{font-size:12px;color:var(--text-muted);margin-top:6px;}
+.alma-tour-b{display:flex;gap:6px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -13075,16 +13083,16 @@ const ALMA_KB = [
   { id:"tareas", nombre:"Mis tareas (y cómo crear una tarea)", menu:"FOCO → Mis tareas", ir:{ view:"mytasks" }, accionCrear:true, estado:"disponible",
     claves:["tarea","tareas","crear","nueva","recurrente","repetir","diaria","semanal","mensual","recordatorio","subtarea","checklist","adjuntar","archivo","pdf","foto","avance","prioridad","vencimiento","fecha","filtrar","buscar","completar","personal","laboral"],
     para:"Ver todas tus tareas, filtrarlas, buscarlas y editarlas.",
-    funciones:["Crear tareas con el botón «Nueva tarea» de arriba (en el celular es el «+»).","Cada tarea tiene título, tipo (personal o laboral), fecha de vencimiento (obligatoria), prioridad, proyecto, hora y más.","Tareas recurrentes: diaria, semanal o mensual; al completarla se crea la siguiente.","Recordatorio con fecha y hora.","Subtareas: el avance se calcula solo.","Archivos adjuntos opcionales: fotos, PDF, Word, Excel o texto, hasta 4 MB cada uno.","Actualización de avance: escribes o dictas cómo vas y Alma actualiza el porcentaje."],
+    funciones:["Crear tareas con el botón «Nueva tarea» de arriba (en el celular es el «+»): se la cuentas a Alma hablando, escribiendo o con una foto.","Al abrir una tarea (tócala en la lista) ves el formulario completo: tipo, fecha de vencimiento (obligatoria), prioridad, proyecto, hora y más.","Tareas recurrentes: diaria, semanal o mensual; al completarla se crea la siguiente.","Recordatorio con fecha y hora.","Subtareas: el avance se calcula solo.","Archivos adjuntos opcionales: fotos, PDF, Word, Excel o texto, hasta 4 MB cada uno.","Actualización de avance: escribes o dictas cómo vas y Alma actualiza el porcentaje."],
     pasos:{
-      crear_tarea:{ titulo:"Crear una tarea", pasos:["Toca «Nueva tarea» arriba a la derecha (en el celular, el botón «+»).","Escribe el título y elige si es personal o laboral.","Pon la fecha de vencimiento (es obligatoria) y, si quieres, prioridad, proyecto y hora.","Toca «Guardar tarea»."] },
-      tarea_recurrente:{ titulo:"Hacer que una tarea se repita", pasos:["Abre la tarea o crea una nueva.","En «Opciones», marca «Tarea recurrente».","Elige la frecuencia: Diaria, Semanal o Mensual.","Toca «Guardar tarea». Cuando la completes, se crea sola la siguiente."] },
-      recordatorio:{ titulo:"Ponerle un recordatorio", pasos:["Abre la tarea.","En «Recordatorio (fecha y hora)», elige cuándo quieres el aviso.","Toca «Guardar tarea»."] },
-      adjuntar:{ titulo:"Adjuntar un archivo", pasos:["Abre la tarea.","En «Archivos adjuntos», toca «Adjuntar archivo (opcional)».","Elige la foto o el documento (hasta 4 MB; las fotos se reducen solas).","Toca «Guardar tarea»."] },
-      avance:{ titulo:"Contar cómo vas en una tarea", pasos:["Abre la tarea.","En «Actualización de avance», escribe o dicta cómo vas (por ejemplo, «llevo la mitad»).","Alma calcula el avance; revisa y guarda."] } },
+      crear_tarea:{ titulo:"Crear una tarea", pasos:["Toca «Nueva tarea» arriba a la derecha (en el celular, el botón «+»).","Elige cómo contarla: «Hablar», «Escribir» o «Foto».","Cuéntala con tus palabras, por ejemplo: «el viernes pagar la luz».","Revisa lo que Alma entendió y confírmalo. Si quieres ajustar algo, después abres la tarea."] },
+      tarea_recurrente:{ titulo:"Hacer que una tarea se repita", pasos:["En «Mis tareas», toca la tarea para abrirla.","En «Opciones», marca «Tarea recurrente».","Elige la frecuencia: Diaria, Semanal o Mensual.","Toca «Guardar tarea». Cuando la completes, se crea sola la siguiente."] },
+      recordatorio:{ titulo:"Ponerle un recordatorio", pasos:["En «Mis tareas», toca la tarea para abrirla.","En «Recordatorio (fecha y hora)», elige cuándo quieres el aviso.","Toca «Guardar tarea»."] },
+      adjuntar:{ titulo:"Adjuntar un archivo", pasos:["En «Mis tareas», toca la tarea para abrirla.","En «Archivos adjuntos», toca «Adjuntar archivo (opcional)».","Elige la foto o el documento (hasta 4 MB; las fotos se reducen solas).","Toca «Guardar tarea»."] },
+      avance:{ titulo:"Contar cómo vas en una tarea", pasos:["En «Mis tareas», toca la tarea para abrirla.","En «Actualización de avance», escribe o dicta cómo vas (por ejemplo, «llevo la mitad»).","Alma calcula el avance; revisa y guarda."] } },
     limites:["La fecha de vencimiento es obligatoria al guardar.","Adjuntos: hasta 4 MB por archivo y 10 por tarea; necesitan internet."],
     problemas:[{ p:"No me deja guardar la tarea", r:"Revisa que tenga título y fecha de vencimiento: son obligatorios." }],
-    ejemplos:["Hogar: «Pagar la luz», vence el día 15, recurrente mensual.","Estudios: «Entregar ensayo», vence el viernes, prioridad alta."] },
+    ejemplos:["Hogar: le dices a Alma «pagar la luz el 15» y después la abres para marcarla recurrente mensual.","Estudios: «entregar ensayo el viernes, es importante»."] },
 
   { id:"por_agendar", nombre:"Por agendar", menu:"FOCO → Por agendar", ir:{ view:"agendar" }, estado:"disponible",
     claves:["agendar","sin fecha","por agendar","cuando","horario","sugerir"],
@@ -13254,13 +13262,13 @@ function almaBuildPrompt(question, view, data){
   const hist = almaChat.msgs.filter(m=>!m.error).slice(-7, -1).map(m=>(m.role==="user"?"Persona: ":"Alma: ") + String(m.text||"").slice(0,400)).join("\n");
   const dataTxt = data ? JSON.stringify(Object.assign({}, data, { refs: undefined, necesita: undefined })) : "";
   return `Eres ${name}, la asistente de TaskFlow Pro, una app para ordenar tareas, estudios, hogar y trabajo. Hablas con ${first||"la persona"}.
-CÓMO HABLAS: español claro, cercano y sencillo (Chile neutro). ${pf.respuestas==="detalladas" ? "Prefiere respuestas más completas (hasta 6 frases)." : "Respuesta breve (1 a 4 frases) y ofreces más detalle si sirve."} Pasos concretos. Sin frases motivacionales repetidas, sin presión, sin lenguaje técnico. No asumas su profesión ni situación.${pf.contexto ? ` Contexto que la persona eligió guardar: "${String(pf.contexto).slice(0,300)}".` : ""}
+CÓMO HABLAS: español claro, cercano y sencillo (Chile neutro). Háblale directo a la persona (tú), nunca en tercera persona. En preguntas de cómo usar la app: "interpretacion", "recomendacion" y "falta" van en null. ${pf.respuestas==="detalladas" ? "Prefiere respuestas más completas (hasta 6 frases)." : "Respuesta breve (1 a 4 frases) y ofreces más detalle si sirve."} Pasos concretos. Sin frases motivacionales repetidas, sin presión, sin lenguaje técnico. No asumas su profesión ni situación.${pf.contexto ? ` Contexto que la persona eligió guardar: "${String(pf.contexto).slice(0,300)}".` : ""}
 REGLAS DE USO DE LA APP:
 - Cómo se usa TaskFlow: responde SOLO con el CONOCIMIENTO. Si no está, di que no lo tienes documentado. Nunca inventes botones, pantallas ni funciones. Lo de NO EXISTE, dilo claro.
 - PASOS: no los escribas; elige en "guia" el id EXACTO de una guía del conocimiento.
 REGLAS DE DATOS (solo si hay DATOS abajo):
 - Usa SOLO los DATOS. No inventes tareas, reuniones, acuerdos, fechas, años ni cifras. Cita en "fuentes" las referencias (T1, E2, R1) que usaste.
-- Separa: "respuesta" (lo registrado, breve), "interpretacion" (lo que deduces), "recomendacion" (lo que sugieres) y "falta" (lo que no se sabe).
+- Separa: "respuesta" (lo registrado, breve), "interpretacion" (lo que deduces), "recomendacion" (lo que sugieres) y "falta" (lo que no se sabe). Úsalos solo si aportan algo nuevo; si no, null.
 - Si una fuente no es "ok" (ej. calendario "no_conectado" o "error"), dilo: NO concluyas que no hay reuniones. Los conteos son de la app: úsalos tal cual.
 - Duraciones: usa "horas_estimadas" solo si existe; si estimas tú, dilo como estimación.
 - Ánimo de hoy (si existe): considéralo con tacto, pero nunca escondas ni postergues algo urgente. Ej.: "Hoy tienes poca energía y dos compromisos importantes; concentrémonos en lo esencial y veamos qué puede esperar."
@@ -13301,7 +13309,8 @@ function almaValidate(r, data){
     tipo: TIPOS.includes(r.tipo) ? r.tipo : "explicacion", respuesta: almaText(r.respuesta).slice(0,1200),
     interpretacion: nn(r.interpretacion), recomendacion: nn(r.recomendacion), falta: nn(r.falta),
     modulo:null, guia:null, ejemplo: nn(r.ejemplo) ? nn(r.ejemplo).slice(0,500) : null, pregunta: nn(r.pregunta) ? nn(r.pregunta).slice(0,300) : null,
-    ofrecer:[], fuentes:[], acciones:[], dificultad:null };
+    ofrecer:[], fuentes:[], acciones:[], dificultad:null, conDatos: !!data };
+  if(!data){ out.interpretacion = null; out.recomendacion = null; out.falta = null; }   // en preguntas de uso no aportan
   let mod = almaKbById(r.modulo);
   if(r.guia){ const owner = (mod && mod.pasos[r.guia]) ? mod : ALMA_KB.find(m=>m.pasos[r.guia]); if(owner){ mod = owner; out.guia = r.guia; } }
   if(mod) out.modulo = mod.id;
@@ -13360,6 +13369,11 @@ const ALMA_WD = ["domingo","lunes","martes","miércoles","jueves","viernes","sá
 function almaAddDays(iso, n){ const d = new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
 function almaNeeds(q){
   q = almaNorm(q);
+  // "¿cómo…?", "enséñame", "¿para qué sirve…?": es una pregunta de USO, no sobre tus datos
+  const howto = /\b(como|ensename|ensenar|ensena|para que sirve|donde|muestrame|guia|paso a paso)\b/.test(q);
+  const personal = /\b(hoy|manana|semana|tengo|mis|atrasad\w*|pendiente\w*|vencid\w*|proxima|acordamos|como voy|que hay)\b/.test(q);
+  const order = /\b(crea|creame|agrega|anota|agendame|mueve|muevela|cambia|posterga|pospon|adelanta|marca|completa|registra|reporta)\b/.test(q);
+  if(howto && !personal && !order) return { tareas:false, calendario:false, reuniones:false, accion:false };
   const act = /\b(crea|creame|agrega|anota|agenda|agendame|mueve|muevela|cambia|posterga|pospon|adelanta|marca|completa|termine|termina|termin[eé]|prioridad|registra|reporta)\b/.test(q);
   return {
     tareas: act || /tarea|tengo|pendiente|atrasad|vencid|hoy|manana|semana|priori|urgente|hacer|plan|organiz|antes de|proyecto|como voy|avance|libre/.test(q),
@@ -13563,6 +13577,140 @@ async function almaOfferReport(msgIdx, extra){
 async function almaFindSimilar(a){
   try{ const r = await apiFeedback("myFeedback"); const prev = (r.items||[]).find(x=>almaSimilar(x.titulo||"", a.titulo) >= 0.6); if(prev) a.relacionado = prev.titulo; }catch(e){}
 }
+/* Recorridos en vivo y accesos directos de cada guía (mismo orden que sus pasos).
+ * Cada paso: { view: pantalla a abrir, prep: preparación (ej. abrir el formulario),
+ *              sel: selector CSS del botón a resaltar, text: texto que debe contener (opcional) }.
+ * Si un botón no está en pantalla, la guía igual muestra el paso, sin resaltar nada. */
+const ALMA_TOURS = {
+  "inicio/organizar_dia": { directo:{ label:"Abrir «Organizar mi día»", run:"organizar" }, tour:[{ view:"dashboard", sel:".nav-item[data-view=\"dashboard\"]" },{ view:"dashboard", sel:"#dashPlanDayBtn" },{ view:"dashboard", sel:"#dashPlanDayBtn" }] },
+  "inicio/crear_por_voz": { directo:{ label:"Abrir «Hablar con Alma»", run:"voz" }, tour:[{ view:"dashboard", sel:"#dashSpeakBtn" },{ view:"dashboard", sel:"#dashSpeakBtn" },{ view:"dashboard", sel:"#dashSpeakBtn" }] },
+  "inicio/captura": { directo:{ label:"Abrir «Agregar captura»", run:"captura" }, tour:[{ view:"dashboard", sel:"#dashCaptureBtn" },{ view:"dashboard", sel:"#dashCaptureBtn" },{ view:"dashboard", sel:"#dashCaptureBtn" }] },
+  "inicio/ponerse_al_dia": { directo:{ label:"Abrir «Ponerme al día»", run:"ponerse" }, tour:[{ view:"dashboard", sel:"#dashCatchUpBtn", alt:[{ sel:"#dashHeroMoreBtn" }] },{ view:"dashboard", sel:"#dashCatchUpBtn", alt:[{ sel:"#dashHeroMoreBtn" }] }] },
+  "tareas/crear_tarea": { directo:{ label:"Abrir «Nueva tarea»", run:"nueva_tarea" }, tour:[{ sel:"#quickAddTask" },{ prep:"entrada", sel:"[data-method=\"write\"]" },{ prep:"entrada", sel:"#afEntryInput", alt:[{ sel:"[data-method]" }] },{ prep:"entrada", sel:"#afEntryGo", alt:[{ sel:"#afEntryInput" }] }] },
+  "tareas/tarea_recurrente": { directo:{ label:"Abrir una tarea en «Opciones»", run:"form_recurrente" }, tour:[{ view:"mytasks", sel:"#taskGroupsWrap [data-open-task]" },{ prep:"form_tarea", sel:"#tf_recurring", parent:"label" },{ prep:"form_tarea", sel:"#tf_recurFreq" },{ prep:"form_tarea", sel:"#saveTaskBtn" }] },
+  "tareas/recordatorio": { tour:[{ view:"mytasks", sel:"#taskGroupsWrap [data-open-task]" },{ prep:"form_tarea", sel:"#tf_reminder" },{ prep:"form_tarea", sel:"#saveTaskBtn" }] },
+  "tareas/adjuntar": { tour:[{ view:"mytasks", sel:"#taskGroupsWrap [data-open-task]" },{ prep:"form_tarea", sel:"#tf_addFile", parent:"label" },{ prep:"form_tarea", sel:"#tf_addFile", parent:"label" },{ prep:"form_tarea", sel:"#saveTaskBtn" }] },
+  "tareas/avance": { tour:[{ view:"mytasks", sel:"#taskGroupsWrap [data-open-task]" },{ prep:"form_tarea", sel:"#tf_updateInput" },{ prep:"form_tarea", sel:"#tf_updateInput" }] },
+  "por_agendar/preguntar_cuando": { directo:{ label:"Ir a «Por agendar»", run:"ver_agendar" }, tour:[{ view:"agendar", sel:"#calQueueList" },{ view:"agendar", sel:"[data-ask-alma]" },{ view:"agendar", sel:"[data-ask-alma]" }] },
+  "memoria/idea_a_tareas": { directo:{ label:"Ir a «Memoria de Alma»", run:"ver_notas" }, tour:[{ sel:".nav-item[data-view=\"notas\"]" },{ view:"notas", sel:"#view-notas .view-header" },{ view:"notas", sel:"#view-notas .view-header" }] },
+  "brainstorm/grabar_online": { directo:{ label:"Abrir «🎙️ Grabar»", run:"bs_grabar" }, tour:[{ view:"brainstorm", sel:"#view-brainstorm .view-header" },{ view:"brainstorm", sel:"#bsRecordBtn" },{ prep:"bs_grabador", sel:".bs-mode[data-mode=\"online\"]" },{ prep:"bs_grabador", sel:"#bsStart" },{ view:"brainstorm", sel:"#bsRecordBtn" }] },
+  "brainstorm/grabar_presencial": { directo:{ label:"Abrir «🎙️ Grabar»", run:"bs_grabar" }, tour:[{ view:"brainstorm", sel:"#bsRecordBtn" },{ prep:"bs_grabador", sel:".bs-mode[data-mode=\"mic\"]" },{ prep:"bs_grabador", sel:"#bsStart" },{ view:"brainstorm", sel:"#bsRecordBtn" }] },
+  "brainstorm/pegar_texto": { directo:{ label:"Abrir «📝 Pegar texto»", run:"bs_pegar" }, tour:[{ view:"brainstorm", sel:"#bsPasteBtn" },{ prep:"bs_pegar", sel:"#bsPasteText" },{ prep:"bs_pegar", sel:"#bsPasteGo" }] },
+  "brainstorm/corregir": { tour:[{ view:"brainstorm", sel:"#view-brainstorm .bs-grid, #bsContainer" },{ prep:"bs_doc", sel:"#bsCorrectBtn" },{ prep:"bs_doc", sel:"#bsCorrectBtn" }] },
+  "idiomas/entender": { directo:{ label:"Abrir «Entender un mensaje»", run:"id_entender" }, tour:[{ sel:".nav-item[data-view=\"idiomas\"]" },{ view:"idiomas", sel:"[data-idmode=\"entender\"]" },{ prep:"id_entender", sel:"#idText" },{ prep:"id_entender", sel:"#idGo" }] },
+  "idiomas/responder": { tour:[{ view:"idiomas", sel:"#idInstr", alt:[{ sel:"[data-idmode=\"entender\"]" },{ sel:"#idGo" }] },{ view:"idiomas", sel:".id-decs, #idInstr", alt:[{ sel:"#idGo" },{ sel:"[data-idmode=\"entender\"]" }] },{ view:"idiomas", sel:"#idReplyGo", alt:[{ sel:"#idGo" },{ sel:"[data-idmode=\"entender\"]" }] }] },
+  "calendario/agendar_espacio": { directo:{ label:"Ir al Calendario", run:"ver_calendario" }, tour:[{ sel:".nav-item[data-view=\"calendar\"]" },{ view:"calendar", sel:"#calBody" },{ view:"calendar", sel:"#calBody" }] },
+  "calendario/conectar_google": { directo:{ label:"Ir a «Conectar Google Calendar»", run:"gcal" }, tour:[{ sel:".nav-item[data-view=\"configuracion\"]" },{ view:"configuracion", sel:"#gcalConnectBtn", alt:[{ sel:"#view-configuracion .panel-title", text:"Google Calendar", parent:".panel" }] },{ view:"configuracion", sel:"#gcalConnectBtn", alt:[{ sel:"#view-configuracion .panel-title", text:"Google Calendar", parent:".panel" }] }] },
+  "rutinas/cargar_rutina": { directo:{ label:"Ir a «Mis rutinas y horarios»", run:"ver_rutinas" }, tour:[{ view:"rutinas", sel:"#view-rutinas .view-header" },{ view:"rutinas", sel:"#view-rutinas .panel, #view-rutinas form" },{ view:"rutinas", sel:"#view-rutinas button", text:"Guardar cambios" }] },
+  "organizar_semana/semana": { tour:[{ view:"rutinas", sel:"#view-rutinas .view-header" },{ sel:"#quickAddTask" },{ view:"calendar", sel:"#calModeWeek" },{ view:"dashboard", sel:"#dashPlanDayBtn" }] },
+  "herramientas/abrir": { tour:[{ sel:".nav-tool[data-tool=\"calc\"]" },{ sel:".nav-tool[data-tool=\"calc\"]" }] },
+  "notificaciones/activar": { directo:{ label:"Ir a esas opciones", run:"cfg_notif" }, tour:[{ sel:".nav-item[data-view=\"configuracion\"]" },{ view:"configuracion", sel:"#view-configuracion .panel-title", text:"Notificaciones en el navegador", parent:".panel" }] },
+  "mejorar/sugerir": { directo:{ label:"Ir a «Ayúdanos a mejorar»", run:"ver_mejorar" }, tour:[{ sel:".nav-item[data-view=\"mejorar\"]" },{ view:"mejorar", sel:"#fbInput" },{ view:"mejorar", sel:"#fbInput" }] },
+  "configuracion/asistente": { directo:{ label:"Ir a «💜 Mi asistente»", run:"cfg_asistente" }, tour:[{ sel:".nav-item[data-view=\"configuracion\"]" },{ view:"configuracion", sel:"#cf_almaName" },{ view:"configuracion", sel:"#cf_almaName" }] },
+  "alma/preferencias": { directo:{ label:"Abrir ⚙ Preferencias", run:"prefs" }, tour:[{ sel:"#almaFab", alt:[{ sel:"#almaPanel" }] },{ prep:"abrir_alma", sel:"#almaPrefsBtn" },{ prep:"abrir_alma", sel:"#almaPrefsBtn" },{ prep:"abrir_alma", sel:"#almaPrefsBtn" }] },
+};
+// Preparaciones y accesos directos: SOLO abren pantallas o formularios reales (no guardan nada)
+function almaScrollTo(el){ if(el) el.scrollIntoView({ behavior:"smooth", block:"center" }); }
+function almaVisible(id){ const e = typeof id==="string" ? document.getElementById(id) : id; if(!e) return false; const r = e.getBoundingClientRect(); return r.width>0 && r.height>0 && e.offsetParent!==null; }
+const ALMA_RUN = {
+  organizar: ()=>{ showView("dashboard"); openPlanDay(); },
+  voz: ()=>{ showView("dashboard"); setTimeout(()=>{ const b = document.getElementById("dashSpeakBtn"); if(b) b.click(); }, 120); },
+  captura: ()=>{ showView("dashboard"); setTimeout(()=>{ const b = document.getElementById("dashCaptureBtn"); if(b) b.click(); }, 120); },
+  ponerse: ()=>{ showView("dashboard"); openCatchUp(); },
+  nueva_tarea: ()=>{ const q = document.getElementById("quickAddTask"); if(q) q.click(); },
+  entrada: ()=>{ if(!almaVisible("afEntryInput") && !document.querySelector(".alma-form [data-method]") ) openAlmaEntry(); const w = document.querySelector('[data-method="write"]'); if(w && !almaVisible("afEntryInput")) w.click(); },
+  // abre una tarea tuya existente (solo para mostrarte dónde está cada cosa; no se cambia nada)
+  form_tarea: ()=>{ const m = document.getElementById("taskModalBackdrop"); if(m && !m.classList.contains("hidden")) return; const t = (DB.tasks||[]).find(x=>!x.archived && x.status!=="completada" && x.status!=="cancelada"); openTaskModal(t ? t.id : null); },
+  form_recurrente: ()=>{ showView("mytasks"); ALMA_RUN.form_tarea(); setTimeout(()=>almaScrollTo(document.getElementById("tf_recurring")), 300); },
+  abrir_alma: ()=>{ if(!almaCloudExpanded){ almaCloudExpanded = true; renderAlmaCloud(almaCurrentView()); } },
+  ver_agendar: ()=>showView("agendar"), ver_notas: ()=>showView("notas"), ver_calendario: ()=>showView("calendar"), ver_rutinas: ()=>showView("rutinas"), ver_mejorar: ()=>showView("mejorar"),
+  bs_grabar: ()=>{ showView("brainstorm"); setTimeout(()=>{ const b = document.getElementById("bsRecordBtn"); if(b) b.click(); }, 120); },
+  bs_grabador: ()=>{ if(!almaVisible("bsStart")){ showView("brainstorm"); const b = document.getElementById("bsRecordBtn"); if(b) b.click(); } },
+  bs_pegar: ()=>{ if(!almaVisible("bsPasteText")){ showView("brainstorm"); openBrainstormPaste(); } },
+  bs_doc: ()=>{ const d = (DB.brainstorms||[]).find(x=>x.status==="listo"); if(d && !document.getElementById("bsCorrectBtn")){ bsOpenId = d.id; showView("brainstorm"); } },
+  id_entender: ()=>{ showView("idiomas"); const b = document.querySelector('[data-idmode="entender"]'); if(b && !almaVisible("idText")) b.click(); },
+  gcal: ()=>{ showView("configuracion"); setTimeout(()=>almaScrollTo(document.getElementById("gcalConnectBtn")), 150); },
+  cfg_notif: ()=>{ showView("configuracion"); setTimeout(()=>{ const t = [...document.querySelectorAll("#view-configuracion .panel-title")].find(x=>/Notificaciones en el navegador/.test(x.textContent)); almaScrollTo(t); }, 150); },
+  cfg_asistente: ()=>{ showView("configuracion"); setTimeout(()=>almaScrollTo(document.getElementById("cf_almaName")), 150); },
+  prefs: ()=>almaOpenPrefs(),
+};
+/* ---------- Guía en vivo: resalta el botón real, paso a paso ---------- */
+let almaTour = null;
+function almaTourFind(step){
+  if(!step || !step.sel) return null;
+  const main = almaTourFind1(step); if(main) return main;
+  for(const a of (step.alt||[])){ const e = almaTourFind1(a); if(e) return e; }
+  return null;
+}
+function almaTourFind1(step){
+  if(!step || !step.sel) return null;
+  let els = [];
+  try{ els = [...document.querySelectorAll(step.sel)]; }catch(e){ return null; }
+  els = els.filter(e=>{ const r = e.getBoundingClientRect(); const target = (e.type==="file" || e.offsetParent===null) && step.parent ? e.closest(step.parent) : e; const rr = target ? target.getBoundingClientRect() : r; return rr.width>0 && rr.height>0; });
+  if(step.text) els = els.filter(e=>e.textContent.includes(step.text));
+  let el = els[0] || null;
+  if(el && step.parent) el = el.closest(step.parent) || el;
+  return el;
+}
+function almaTourStart(modId, gid){
+  const m = almaKbById(modId), g = m && m.pasos[gid], t = ALMA_TOURS[modId+"/"+gid];
+  if(!g || !t) return;
+  almaTour = { modId, gid, i:0, wasOpen: almaCloudExpanded };
+  if(modId!=="alma"){ almaCloudExpanded = false; renderAlmaCloud(almaCurrentView()); }   // Alma se hace a un lado durante la guía
+  trackUse("alma.guia_en_vivo");
+  almaTourShow();
+}
+function almaTourEnd(){
+  ["almaTourRing","almaTourTip"].forEach(id=>{ const e = document.getElementById(id); if(e) e.remove(); });
+  if(almaTour && almaTour.openedMenu){ const sb = document.querySelector(".sidebar"); if(sb && sb.getBoundingClientRect().right > 0){ const mt = document.getElementById("menuToggle"); if(mt) mt.click(); } }
+  window.removeEventListener("resize", almaTourPlace); window.removeEventListener("scroll", almaTourPlace, true);
+  const back = almaTour && almaTour.wasOpen; almaTour = null;
+  if(back){ almaCloudExpanded = true; renderAlmaCloud(almaCurrentView()); almaRenderLog(); }
+}
+function almaTourShow(){
+  if(!almaTour) return;
+  const m = almaKbById(almaTour.modId), g = m.pasos[almaTour.gid], t = ALMA_TOURS[almaTour.modId+"/"+almaTour.gid];
+  const step = t.tour[almaTour.i] || {};
+  if(step.view && almaCurrentView()!==step.view) showView(step.view);
+  if(step.prep && ALMA_RUN[step.prep] && !almaTourFind(step)) ALMA_RUN[step.prep]();
+  setTimeout(()=>{
+    if(!almaTour) return;
+    const el = almaTourFind(step);
+    // en el celular el menú lateral está cerrado: se abre para mostrar el botón
+    const side = el && el.closest(".sidebar");
+    if(side && el.getBoundingClientRect().right <= 0){ const mt = document.getElementById("menuToggle"); if(mt){ mt.click(); almaTour.openedMenu = true; } }
+    if(side) setTimeout(()=>{ try{ el.scrollIntoView({ block:"nearest" }); }catch(e){} almaTourPlace(); }, 260);   // baja dentro del menú si hace falta
+    else if(!side && almaTour.openedMenu){ const sb = document.querySelector(".sidebar"); if(sb && sb.getBoundingClientRect().right > 0){ const mt = document.getElementById("menuToggle"); if(mt) mt.click(); } almaTour.openedMenu = false; }
+    if(el && !side) el.scrollIntoView({ block:"center" });   // inmediato: así el resaltado queda justo encima
+    let ring = document.getElementById("almaTourRing"), tip = document.getElementById("almaTourTip");
+    if(!ring){ ring = document.createElement("div"); ring.id = "almaTourRing"; ring.className = "alma-tour-ring"; document.body.appendChild(ring); }
+    if(!tip){ tip = document.createElement("div"); tip.id = "almaTourTip"; tip.className = "alma-tour-tip"; tip.setAttribute("role","dialog"); document.body.appendChild(tip); }
+    const n = g.pasos.length, i = almaTour.i;
+    tip.innerHTML = `<div class="alma-tour-h">👉 Paso ${i+1} de ${n} · ${esc(g.titulo)}</div><div class="alma-tour-t">${esc(g.pasos[i])}</div>
+      ${el?"":`<div class="alma-tour-n">No veo ese botón en esta pantalla ahora; sigue la indicación de arriba.</div>`}
+      <div class="alma-tour-b"><button type="button" class="alma-mini" id="almaTourX">Salir</button>${i>0?`<button type="button" class="alma-mini" id="almaTourPrev">← Anterior</button>`:""}<button type="button" class="alma-mini go" id="almaTourNext">${i<n-1?"Siguiente →":"Listo ✓"}</button></div>`;
+    almaTour.el = el;
+    document.getElementById("almaTourX").onclick = almaTourEnd;
+    const pv = document.getElementById("almaTourPrev"); if(pv) pv.onclick = ()=>{ almaTour.i--; almaTourShow(); };
+    document.getElementById("almaTourNext").onclick = ()=>{ if(almaTour.i < n-1){ almaTour.i++; almaTourShow(); } else almaTourEnd(); };
+    window.addEventListener("resize", almaTourPlace); window.addEventListener("scroll", almaTourPlace, true);
+    setTimeout(almaTourPlace, 350); almaTourPlace();
+  }, step.prep || step.view ? 320 : 60);
+}
+function almaTourPlace(){
+  if(!almaTour) return;
+  const ring = document.getElementById("almaTourRing"), tip = document.getElementById("almaTourTip"); if(!ring || !tip) return;
+  const el = almaTour.el && document.body.contains(almaTour.el) ? almaTour.el : null;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if(!el){ ring.style.display = "none"; tip.style.left = Math.max(8,(vw - tip.offsetWidth)/2)+"px"; tip.style.top = Math.max(8,(vh - tip.offsetHeight)/2)+"px"; return; }
+  const r = el.getBoundingClientRect(), pad = 6;
+  ring.style.display = "block";
+  Object.assign(ring.style, { left:(r.left-pad)+"px", top:(r.top-pad)+"px", width:(r.width+pad*2)+"px", height:(r.height+pad*2)+"px" });
+  const tw = Math.min(320, vw-16), below = r.bottom + 12 + tip.offsetHeight < vh;
+  tip.style.width = tw+"px";
+  tip.style.left = Math.min(Math.max(8, r.left + r.width/2 - tw/2), vw - tw - 8) + "px";
+  tip.style.top = (below ? r.bottom + 12 : Math.max(8, r.top - tip.offsetHeight - 12)) + "px";
+}
 async function almaAsk(question, opts){
   opts = opts || {};
   question = String(question||"").trim(); if(!question || almaChat.pending) return;
@@ -13623,7 +13771,10 @@ function almaRenderLog(){
     if(d.tipo==="resultado" && (d.undos||[]).length && !d.deshecho) btns.push(`<button type="button" class="alma-mini" data-alma-undo="${idx}">↶ Deshacer</button>`);
     if(d.tipo==="resultado" && d.fallo && !d.reportado) btns.push(`<button type="button" class="alma-mini" data-alma-report-fail="${idx}">📝 Registrar este problema</button>`);
     if(last && d.dificultad && !(d.acciones||[]).some(a=>a.op==="registrar_mejora")) btns.push(`<button type="button" class="alma-mini" data-alma-report="${idx}">📝 ¿Lo registro para el equipo de TaskFlow?</button>`);
-    if(last && mod && mod.id==="tareas" && (d.tipo==="guia") && !(d.acciones||[]).length) btns.push(`<button type="button" class="alma-mini go" data-alma-newtask>Abrir «Nueva tarea»</button>`);
+    const tr = guide ? ALMA_TOURS[mod.id+"/"+d.guia] : null;
+    if(tr && tr.tour) btns.unshift(`<button type="button" class="alma-mini go" data-alma-tour="${mod.id}|${d.guia}">👉 Muéstrame dónde</button>`);
+    if(tr && tr.directo) btns.splice(tr.tour?1:0, 0, `<button type="button" class="alma-mini go" data-alma-direct="${tr.directo.run}">⚡ ${esc(tr.directo.label)}</button>`);
+    if(last && mod && mod.id==="tareas" && (d.tipo==="guia") && !(d.acciones||[]).length && !(tr && tr.directo)) btns.push(`<button type="button" class="alma-mini go" data-alma-newtask>Abrir «Nueva tarea»</button>`);
     // acciones propuestas: vista previa con confirmación (o resultado si ya se ejecutaron)
     let acts = "";
     if((d.acciones||[]).length){
@@ -13632,7 +13783,7 @@ function almaRenderLog(){
         ${pend && last ? `<div class="alma-btns"><button type="button" class="alma-mini go" data-alma-confirm="${idx}">✓ Confirmar</button><button type="button" class="alma-mini" data-alma-cancel="${idx}">Cancelar</button></div>` : ""}
         ${d.estado==="ejecutando" ? `<div class="tl-muted" style="font-size:12px;margin-top:6px;">Haciéndolo y comprobando que quedó guardado…</div>` : ""}</div>`;
     }
-    const lab = (k, v)=> v ? `<div class="alma-lab"><b>${k}:</b> ${esc(v)}</div>` : "";
+    const lab = (k, v)=> (v && (d.tipo==="datos" || (d.fuentes||[]).length)) ? `<div class="alma-lab"><b>${k}:</b> ${esc(v)}</div>` : "";
     return `<div class="alma-msg alma">${esc(m.text).replace(/\n/g,"<br>")}
       ${lab("Interpretación", d.interpretacion)}${lab("Sugerencia", d.recomendacion)}${lab("Falta saber", d.falta)}
       ${d.ejemplo?`<div class="alma-example"><b>Ejemplo</b> <span class="tl-muted">(solo para ilustrar, no se guarda)</span><br>${esc(d.ejemplo)}</div>`:""}
@@ -13653,6 +13804,8 @@ function almaRenderLog(){
   on("[data-alma-confirm]", b=>almaRunActions(+b.dataset.almaConfirm));
   on("[data-alma-cancel]", b=>{ const m = almaChat.msgs[+b.dataset.almaCancel]; if(m && m.data){ m.data.estado = "cancelado"; almaChat.msgs.push({ role:"alma", text:"Ok, no hice ningún cambio.", data:{ tipo:"resultado" }, ts:Date.now() }); almaChatSave(); almaRenderLog(); } });
   on("[data-alma-undo]", b=>almaUndo(+b.dataset.almaUndo));
+  on("[data-alma-tour]", b=>{ const [mid,gid] = b.dataset.almaTour.split("|"); b.disabled = false; almaTourStart(mid, gid); });
+  on("[data-alma-direct]", b=>{ b.disabled = false; const fn = ALMA_RUN[b.dataset.almaDirect]; if(fn){ trackUse("alma.acceso_directo"); if(window.innerWidth <= 600){ almaCloudExpanded = false; renderAlmaCloud(almaCurrentView()); } fn(); } });
   on("[data-alma-report]", b=>almaOfferReport(+b.dataset.almaReport));
   on("[data-alma-report-fail]", b=>{ const m = almaChat.msgs[+b.dataset.almaReportFail]; if(!m) return; m.data.reportado = true; almaOfferReport(+b.dataset.almaReportFail, { tipo:"error", titulo:`Falló: ${m.data.fallo.desc}`.slice(0,120), descripcion:"Una acción pedida a Alma no se pudo completar.", accion_intentada:m.data.fallo.desc, observado:m.data.fallo.motivo }); });
   almaRenderChips();
@@ -16273,7 +16426,7 @@ const USE_LABELS = {
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
   "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo","bs.quien_es_quien":"Voces nombradas (¿Quién es quién?)","bs.correccion":"Palabras corregidas en Brainstorm",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
-  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","feedback.audio":"Sugerencias dictadas","alma.pregunta":"Preguntas a Alma (asistente)","alma.consulta_datos":"Consultas de Alma sobre tus datos","alma.accion":"Acciones hechas por Alma","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
+  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","feedback.audio":"Sugerencias dictadas","alma.pregunta":"Preguntas a Alma (asistente)","alma.consulta_datos":"Consultas de Alma sobre tus datos","alma.accion":"Acciones hechas por Alma","alma.guia_en_vivo":"Guías en vivo de Alma","alma.acceso_directo":"Accesos directos de Alma","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
 };
 const useLabel = k => USE_LABELS[k] || k;
 
