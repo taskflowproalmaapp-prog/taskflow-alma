@@ -262,7 +262,11 @@ await cleanup("ia_tokens", (k) => k.startsWith(targetUser + ":"));
         const l = await fb.list({ prefix: "fb:" });
         for (const e of l.blobs || []) {
           const it = await fb.get(e.key, { type: "json" });
-          if (it && it.username === targetUser) { it.username = "usuario eliminado"; it.conversacion = []; await fb.set(e.key, JSON.stringify(it)); }
+          if (it && it.username === targetUser) {
+            // sus imágenes pueden tener datos personales: se borran
+            for (let i = 0; i < (it.imagenes || 0); i++) { try { await store("feedback_images").delete(`${e.key}:${i}`); } catch (x) {} }
+            it.username = "usuario eliminado"; it.conversacion = []; it.imagenes = 0; await fb.set(e.key, JSON.stringify(it));
+          }
         }
       } catch (e) { console.error("cleanup feedback", e.message); }
 

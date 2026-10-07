@@ -6,6 +6,7 @@
 //     contenido de tareas ni documentos). Una "caja" por persona y mes.
 //   - "submitFeedback": guarda una sugerencia conversada con Alma.
 //   - "myFeedback": la persona ve sus propias sugerencias y su estado.
+//  Imágenes de sugerencias: "feedbackImage" (quien la envió o el admin).
 //  Solo ADMIN (ADMIN_USERNAME en Netlify, igual que en auth.js):
 //   - "adminOverview": uso por persona y mes + todas las sugerencias.
 //   - "setFeedbackStatus": marcar una sugerencia (en revisión, hecho…).
@@ -93,7 +94,21 @@ exports.handler = async function (event) {
         area: clip(it.area, 60), titulo: titulo || clip(detalle, 80), detalle,
         impacto: ["alto", "medio", "bajo"].includes(it.impacto) ? it.impacto : "medio",
         conversacion: conv,
+        imagenes: 0,
       };
+      // Imágenes (capturas): hasta 3, solo JPG/PNG/WEBP, máx. 1,5 MB cada una. Se guardan
+      // aparte; solo pueden verlas quien envió la sugerencia y el administrador.
+      const imgs = (Array.isArray(it.imagenes) ? it.imagenes : []).slice(0, 3);
+      const fimg = store("feedback_images");
+      for (const im of imgs) {
+        const type = String(im && im.type || "").toLowerCase();
+        const data = String(im && im.data || "");
+        if (!/^image\/(jpeg|png|webp)$/.test(type) || !/^[A-Za-z0-9+/=]+$/.test(data)) continue;
+        const buf = Buffer.from(data, "base64");
+        if (!buf.length || buf.length > 1.5 * 1024 * 1024) continue;
+        await fimg.set(`${id}:${item.imagenes}`, JSON.stringify({ type, data }));
+        item.imagenes++;
+      }
       await feedback.set(id, JSON.stringify(item));
       await feedback.set(limKey, String(used + 1));
       return json(200, { ok: true, id });
@@ -105,10 +120,22 @@ exports.handler = async function (event) {
       const listing = await feedback.list({ prefix: "fb:" });
       for (const e of (listing.blobs || []).slice(-300)) {
         const it = await feedback.get(e.key, { type: "json" });
-        if (it && it.username === username) out.push({ id: it.id, titulo: it.titulo, tipo: it.tipo, status: it.status, createdAt: it.createdAt });
+        if (it && it.username === username) out.push({ id: it.id, titulo: it.titulo, tipo: it.tipo, status: it.status, createdAt: it.createdAt, imagenes: it.imagenes || 0 });
       }
       out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
       return json(200, { items: out.slice(0, 50) });
+    }
+
+    // ── Ver una imagen de una sugerencia (quien la envió o el admin) ──
+    if (action === "feedbackImage") {
+      const id = String(body.id || ""), i = parseInt(body.i, 10);
+      if (!id.startsWith("fb:") || !(i >= 0 && i < 3)) return json(400, { error: "Imagen no válida" });
+      const it = await feedback.get(id, { type: "json" });
+      if (!it) return json(404, { error: "Esa sugerencia ya no existe" });
+      if (it.username !== username && !isAdmin) return json(403, { error: "No tienes permiso para ver esto" });
+      const im = await store("feedback_images").get(`${id}:${i}`, { type: "json" });
+      if (!im) return json(404, { error: "Esa imagen ya no existe" });
+      return json(200, im);
     }
 
     // ── Desde aquí: solo admin ──
