@@ -1091,6 +1091,7 @@ body.cal-fullscreen .alma-fab, body.cal-fullscreen .alma-panel{display:none!impo
 .fb-dropzone{margin:0 16px 10px;padding:16px;border:2px dashed #8B9DF0;border-radius:16px;background:color-mix(in srgb,#8157EF 6%,var(--surface));text-align:center;outline:none;}
 .fb-dropzone:focus{border-color:#8157EF;}
 .fb-chatcard.fb-drag{box-shadow:0 0 0 3px #8157EF inset;}
+.mt-queue-hint{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:color-mix(in srgb,#FF6B45 8%,var(--surface));border:1px solid color-mix(in srgb,#FF6B45 25%,var(--surface));border-radius:12px;padding:8px 12px;font-size:13px;margin-bottom:10px;}
 /* La barra Hoy/Semana/Mes y acciones secundarias no existe en el ejemplo */
 .route-toolbar{display:none;}
 
@@ -2922,14 +2923,15 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <div class="view-header">
           <div>
             <h1>Mis tareas</h1>
-            <p>Todas las tareas — filtra, ordena y busca en segundos</p>
+            <p>Tus tareas agendadas — las que esperan horario están en «Por agendar»</p>
           </div>
         </div>
         <div id="taskFiltersBarNew"></div>
       </div>
       <div class="view-sticky-spacer"></div>
       <div id="bulkActionsBar" class="hidden"></div>
-      <div id="taskGroupsWrap">
+      <div class="mt-queue-hint hidden" id="myTasksQueueHint"></div>
+<div id="taskGroupsWrap">
         <div class="empty-state hidden" id="taskEmptyState">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
           <div>No se encontraron tareas con los filtros actuales.</div>
@@ -4012,6 +4014,7 @@ async function gtSync(manual){
   if(!getAuthToken() || !c.enabled || !c.lists.length || gtSyncing || !navigator.onLine) return null;
   gtSyncing = true;
   const res = { nuevas:0, completadas:0, enviadas:0, borradas:0 };
+  gtLastAuto = Date.now();
   try{
     const r = await apiGTasks("sync", { lists: c.lists });
     if(!r.connected || r.needsScope){ gtState = r.needsScope ? "permiso" : "sin_google"; if(manual) toast("Falta el permiso de Google Tasks: ve a Configuración → Google Tasks.","error"); return null; }
@@ -4071,8 +4074,16 @@ function gtMaybeSoon(){
   const c = DB.config.gtasks; if(!c || !c.enabled) return;
   if((DB.tasks||[]).some(t=>t.gtask && !t.gtask.removed && gtStatusOf(t)!==(t.gtask.synced||"needsAction"))){ clearTimeout(gtSoonTimer); gtSoonTimer = setTimeout(()=>gtSync(false), 3000); }
 }
-setInterval(()=>{ if(document.visibilityState==="visible") gtSync(false); }, 5*60*1000);
-document.addEventListener("visibilitychange", ()=>{ if(!gtReady()) return; const c = DB.config.gtasks; if(document.visibilityState==="visible" && c && c.enabled && (!c.lastSync || Date.now()-Date.parse(c.lastSync) > 2*60*1000)) gtSync(false); });
+// Automático (Google Tasks no avisa cambios: se le pregunta). Nunca más de una vez por minuto.
+let gtLastAuto = 0;
+function gtAuto(){
+  if(!gtReady()) return; const c = DB.config.gtasks;
+  if(!c || !c.enabled || document.visibilityState!=="visible" || Date.now()-gtLastAuto < 60*1000) return;
+  gtLastAuto = Date.now(); gtSync(false);
+}
+setInterval(gtAuto, 2*60*1000);                                              // cada 2 min con la app abierta y visible
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") gtAuto(); });   // al volver a la pestaña
+window.addEventListener("focus", gtAuto);                                   // al volver a la ventana (ej. desde Gmail)
 async function renderGTasksPanel(noFetch){
   const wrap = document.getElementById("gtStatus"); if(!wrap) return;
   const c = gtCfg();
@@ -5225,7 +5236,8 @@ document.querySelectorAll(".modal-backdrop").forEach(bd=>{
 const VIEWS = ["dashboard","projects","notas","brainstorm","idiomas","mejorar","panel","rutinas","mytasks","kanban","agendar","calendar","gantt","matrix","responsables","reportes","notificaciones","cumpleanos","usuarios","configuracion"];
 function showView(view){
   trackUse("view."+view);
-  try{ if(view==="panel" && !panelLoading) panelData = null; }catch(e){}   // el Panel de mejoras siempre trae lo más reciente al abrirse (protegido mientras la app carga)
+  try{ if(view==="panel" && !panelLoading) panelData = null; }catch(e){}
+  try{ if(["dashboard","mytasks","agendar","calendar"].includes(view)) gtAuto(); }catch(e){}   // Google Tasks al día al entrar a estas pantallas   // el Panel de mejoras siempre trae lo más reciente al abrirse (protegido mientras la app carga)
   selectedTaskIds.clear();
   if(view!=="calendar" && document.body.classList.contains("cal-fullscreen")){
     document.body.classList.remove("cal-fullscreen");
@@ -7170,7 +7182,13 @@ function taskCardHTML(t){
 }
 function renderTaskList(){
   renderTaskFiltersSimple();
-  const list = sortTasks(DB.tasks.filter(matchesTaskFilters));
+  // "Mis tareas" muestra las tareas AGENDADAS (con hora). Las que esperan horario o están
+  // atrasadas viven en "Por agendar" (no se repiten). Si buscas algo, se muestran todas.
+  const searching = !!((taskFilterState.search||"").trim() || searchQuery);
+  const list = sortTasks(DB.tasks.filter(t=>matchesTaskFilters(t) && (searching || t.status==="completada" || t.status==="cancelada" || !needsScheduling(t))));
+  const waiting = DB.tasks.filter(t=>!t.archived && needsScheduling(t)).length;
+  const hint = document.getElementById("myTasksQueueHint");
+  if(hint){ hint.classList.toggle("hidden", !waiting || searching); hint.innerHTML = `⏳ ${waiting} ${waiting===1?"tarea espera":"tareas esperan"} un horario en <b>Por agendar</b> <button type="button" class="btn btn-ghost btn-sm" id="myTasksQueueGo">Ver →</button>`; const b = document.getElementById("myTasksQueueGo"); if(b) b.onclick = ()=>showView("agendar"); }
   const wrap = document.getElementById("taskGroupsWrap");
   const emptyState = document.getElementById("taskEmptyState");
   if(!list.length){ wrap.querySelectorAll(".tk-group").forEach(x=>x.remove()); emptyState.classList.remove("hidden"); renderBulkBar(); return; }
@@ -13150,7 +13168,7 @@ function computeNotifications(){
   return {dueSoon, overdue, blocked, atRiskProjects, upcomingMilestones, unassigned, overloaded, recentComments};
 }
 function renderSidebarCounters(){
-  const mine = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada")).length;
+  const mine = DB.tasks.filter(t=>!t.archived && (t.status!=="completada"&&t.status!=="cancelada") && !needsScheduling(t)).length;   // solo las agendadas (sin repetir "Por agendar")
   const badge = document.getElementById("navMyTasksBadge");
   badge.textContent = mine;
   badge.classList.toggle("alert", DB.tasks.some(isTaskOverdue));
@@ -13215,7 +13233,7 @@ const ALMA_KB = [
 
   { id:"tareas", nombre:"Mis tareas (y cómo crear una tarea)", menu:"FOCO → Mis tareas", ir:{ view:"mytasks" }, accionCrear:true, estado:"disponible",
     claves:["tarea","tareas","crear","nueva","recurrente","repetir","diaria","semanal","mensual","recordatorio","subtarea","checklist","adjuntar","archivo","pdf","foto","avance","prioridad","vencimiento","fecha","filtrar","buscar","completar","personal","laboral"],
-    para:"Ver todas tus tareas, filtrarlas, buscarlas y editarlas.",
+    para:"Ver tus tareas agendadas (con hora), filtrarlas, buscarlas y editarlas. Las que esperan horario o están atrasadas están en «Por agendar»; si buscas por nombre, aparecen todas.",
     funciones:["Crear tareas con el botón «Nueva tarea» de arriba (en el celular es el «+»): se la cuentas a Alma hablando, escribiendo o con una foto.","Al abrir una tarea (tócala en la lista) ves el formulario completo: tipo, fecha de vencimiento (obligatoria), prioridad, proyecto, hora y más.","Tareas recurrentes: diaria, semanal o mensual; al completarla se crea la siguiente.","Recordatorio con fecha y hora.","Subtareas: el avance se calcula solo.","Archivos adjuntos opcionales: fotos, PDF, Word, Excel o texto, hasta 4 MB cada uno.","Actualización de avance: escribes o dictas cómo vas y Alma actualiza el porcentaje."],
     pasos:{
       crear_tarea:{ titulo:"Crear una tarea", pasos:["Toca «Nueva tarea» arriba a la derecha (en el celular, el botón «+»).","Elige cómo contarla: «Hablar», «Escribir» o «Foto».","Cuéntala con tus palabras, por ejemplo: «el viernes pagar la luz».","Revisa lo que Alma entendió y confírmalo. Si quieres ajustar algo, después abres la tarea."] },
