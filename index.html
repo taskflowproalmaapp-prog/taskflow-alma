@@ -3506,6 +3506,11 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
         <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Conecta tu calendario real para ver tus reuniones junto a tus tareas, y entrar a ellas directo con un clic.</p>
         <div id="gcalStatus"></div>
       </div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">✅ Google Tasks (tareas de Gmail)</div>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Cuando en Gmail tocas «Agregar a Tareas», la tarea llega sola a TaskFlow: si tiene fecha, queda para ese día; si no, en «Por agendar». Al marcarla hecha aquí, también queda hecha en Gmail.</p>
+        <div id="gtStatus"></div>
+      </div>
 
             <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">🔌 Integraciones</div>
@@ -3980,9 +3985,122 @@ async function apiData(action, payload){
   if(!res.ok) throw new Error(data.error || "No se pudo conectar con el servidor de datos.");
   return data;
 }
+/* ====================================================================== *
+ * GOOGLE TASKS (tareas creadas en Gmail con "Agregar a Tareas")
+ * Reglas:
+ *  - Una tarea nueva de Google llega sola a TaskFlow. Con fecha → queda para
+ *    ese día (Google solo guarda el día, no la hora). Sin fecha → "Por agendar".
+ *  - Lo que hagas después (agendar, mover, prioridad…) queda en TaskFlow.
+ *  - Completada en un lado → completada en el otro (gana el último cambio).
+ *  - Si se borra en Google, TaskFlow avisa; no la borra en silencio.
+ *  - Se sincroniza al abrir la app, cada 5 min mientras la usas y con
+ *    "↻ Sincronizar ahora". Sin procesos en el servidor (no gasta créditos).
+ * ====================================================================== */
+async function apiGTasks(action, payload){
+  const res = await fetch("/.netlify/functions/google-tasks", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(Object.assign({ action, token:getAuthToken() }, payload||{})) });
+  const j = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(j.error || ("HTTP "+res.status));
+  return j;
+}
+function gtCfg(){ DB.config.gtasks = Object.assign({ enabled:false, lists:[], lastSync:"", ignored:[], known:[] }, DB.config.gtasks||{}); return DB.config.gtasks; }
+function gtReady(){ try{ return typeof DB!=="undefined" && DB && DB.config && Array.isArray(DB.tasks); }catch(e){ return false; } }
+let gtSyncing = false, gtState = "";
+const gtStatusOf = t => t.status==="completada" ? "completed" : "needsAction";
+async function gtSync(manual){
+  if(!gtReady()) return null;   // la app aún no cargó tus datos
+  const c = gtCfg();
+  if(!getAuthToken() || !c.enabled || !c.lists.length || gtSyncing || !navigator.onLine) return null;
+  gtSyncing = true;
+  const res = { nuevas:0, completadas:0, enviadas:0, borradas:0 };
+  try{
+    const r = await apiGTasks("sync", { lists: c.lists });
+    if(!r.connected || r.needsScope){ gtState = r.needsScope ? "permiso" : "sin_google"; if(manual) toast("Falta el permiso de Google Tasks: ve a Configuración → Google Tasks.","error"); return null; }
+    gtState = "ok";
+    const byGid = new Map(), seen = new Set();
+    (DB.tasks||[]).forEach(t=>{ if(t.gtask && t.gtask.id) byGid.set(t.gtask.id, t); });
+    // tareas de Google que ya se trajeron alguna vez (aunque después las borraras aquí): no se vuelven a traer
+    const known = new Set(c.known||[]);
+    byGid.forEach((t,id)=>known.add(id));
+    (DB.trash||[]).forEach(x=>{ const d = x && x.data; if(d && d.gtask && d.gtask.id) known.add(d.gtask.id); });
+    for(const g of r.tasks||[]){
+      seen.add(g.id);
+      const t = byGid.get(g.id);
+      if(!t){
+        if(g.deleted || g.status!=="needsAction" || c.ignored.includes(g.id) || known.has(g.id)) continue;
+        // tarea nueva de Google → TaskFlow
+        const nt = buildTaskFromParsedVoiceItem(g.title, { titulo:g.title, kind:"tarea", descripcion:"" });
+        nt.title = (g.title || "Tarea de Google").slice(0,120);
+        nt.description = [g.notes, g.emailLink ? `📧 Desde Gmail${g.emailSubject?`: «${g.emailSubject}»`:""}\n${g.emailLink}` : ""].filter(Boolean).join("\n\n");
+        if(g.due){ nt.startDate = g.due; nt.dueDate = g.due; } else { nt.startDate = ""; nt.dueDate = ""; }   // con fecha → ese día; sin fecha → Por agendar
+        nt.executionTime = ""; nt.tags = [...new Set([...(nt.tags||[]), "google-tasks", ...(g.emailLink?["gmail"]:[])])];
+        nt.gtask = { id:g.id, listId:g.listId, synced:"needsAction", emailLink:g.emailLink||"" };
+        DB.tasks.push(nt); byGid.set(g.id, nt); known.add(g.id); res.nuevas++;
+        continue;
+      }
+      if(g.deleted){ if(!t.gtask.removed && t.status!=="completada"){ gtMarkRemoved(t); res.borradas++; } continue; }
+      // completada en un lado → en el otro (comparando con el último estado sincronizado)
+      const s0 = t.gtask.synced || "needsAction", gNow = g.status, tNow = gtStatusOf(t);
+      if(gNow!==s0 && tNow===s0){ applyManualStatusChange(t, gNow==="completed" ? "completada" : "pendiente"); t.gtask.synced = gNow; if(gNow==="completed") res.completadas++; }
+      else if(tNow!==s0){
+        const p = await apiGTasks(tNow==="completed" ? "complete" : "reopen", { listId:t.gtask.listId, taskId:t.gtask.id }).catch(()=>null);
+        if(p && p.ok){ t.gtask.synced = tNow; res.enviadas++; }
+        else if(p && p.notFound){ gtMarkRemoved(t); }
+      }
+      // si en Google le pusieron fecha después y aquí aún no tiene, se agenda para ese día
+      if(g.due && !t.startDate && !t.dueDate && t.status!=="completada"){ t.startDate = g.due; t.dueDate = g.due; }
+    }
+    // vinculadas que ya no vienen de Google (lista quitada o borradas definitivamente)
+    (DB.tasks||[]).forEach(t=>{ if(t.gtask && !t.gtask.removed && c.lists.includes(t.gtask.listId) && !seen.has(t.gtask.id) && t.status!=="completada"){ gtMarkRemoved(t); res.borradas++; } });
+    c.known = [...known].slice(-3000);
+    c.lastSync = new Date().toISOString();
+    if(res.nuevas || res.completadas || res.enviadas || res.borradas){ recomputeAll(); saveDB(); render(); }
+    else saveDB();
+    if(res.nuevas) toast(`📥 ${res.nuevas} ${res.nuevas===1?"tarea nueva":"tareas nuevas"} desde Google Tasks.`,"success");
+    if(res.borradas) toast(`${res.borradas} ${res.borradas===1?"tarea se eliminó":"tareas se eliminaron"} en Google Tasks. Siguen aquí, marcadas «Eliminada en Google».`,"info");
+    if(manual && !res.nuevas && !res.borradas) toast(`✓ Google Tasks al día${res.completadas||res.enviadas?` (${res.completadas+res.enviadas} completada(s) sincronizada(s))`:""}.`,"success");
+    trackUse("gtasks.sync");
+    return res;
+  }catch(e){ if(manual) toast("No se pudo sincronizar con Google Tasks: "+e.message,"error"); return null; }
+  finally{ gtSyncing = false; if(document.getElementById("gtStatus")) renderGTasksPanel(true); }
+}
+function gtMarkRemoved(t){ t.gtask.removed = true; t.tags = [...new Set([...(t.tags||[]), "eliminada-en-google"])]; }
+// Al completar (o reabrir) una tarea vinculada, se avisa a Google pronto (sin esperar 5 min)
+let gtSoonTimer = null;
+function gtMaybeSoon(){
+  if(!gtReady()) return;
+  const c = DB.config.gtasks; if(!c || !c.enabled) return;
+  if((DB.tasks||[]).some(t=>t.gtask && !t.gtask.removed && gtStatusOf(t)!==(t.gtask.synced||"needsAction"))){ clearTimeout(gtSoonTimer); gtSoonTimer = setTimeout(()=>gtSync(false), 3000); }
+}
+setInterval(()=>{ if(document.visibilityState==="visible") gtSync(false); }, 5*60*1000);
+document.addEventListener("visibilitychange", ()=>{ if(!gtReady()) return; const c = DB.config.gtasks; if(document.visibilityState==="visible" && c && c.enabled && (!c.lastSync || Date.now()-Date.parse(c.lastSync) > 2*60*1000)) gtSync(false); });
+async function renderGTasksPanel(noFetch){
+  const wrap = document.getElementById("gtStatus"); if(!wrap) return;
+  const c = gtCfg();
+  const draw = (st)=>{
+    if(st.connected===false){ wrap.innerHTML = `<div class="t-sub">Primero conecta Google Calendar (arriba): Google Tasks usa la misma conexión.</div>`; return; }
+    if(st.needsScope){ wrap.innerHTML = `<div class="t-sub" style="margin-bottom:8px;">Tu conexión con Google todavía no incluye el permiso de Google Tasks.</div><button type="button" class="btn btn-primary" id="gtGrant">✅ Dar permiso de Google Tasks</button><div class="t-sub" style="margin-top:6px;">Google te pedirá aceptar de nuevo; tu calendario sigue igual.</div>`;
+      document.getElementById("gtGrant").addEventListener("click", startGoogleCalendarConnect); return; }
+    const lists = st.lists || [];
+    if(!c.lists.length && lists.length) c.lists = [lists[0].id];   // por defecto: la primera ("Mis tareas")
+    wrap.innerHTML = `<label class="checkbox-line" style="margin-bottom:8px;"><input type="checkbox" id="gtEnabled" ${c.enabled?"checked":""}> Traer mis tareas de Google Tasks a TaskFlow</label>
+      <div style="${c.enabled?"":"opacity:.45;pointer-events:none;"}">
+        <div class="t-sub" style="margin-bottom:4px;">Listas que se traen:</div>
+        ${lists.map(l=>`<label class="checkbox-line"><input type="checkbox" data-gtlist="${esc(l.id)}" ${c.lists.includes(l.id)?"checked":""}> ${esc(l.title)}</label>`).join("") || `<div class="t-sub">No tienes listas en Google Tasks.</div>`}
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;"><button type="button" class="btn btn-ghost btn-sm" id="gtSyncNow" ${gtSyncing?"disabled":""}>${gtSyncing?"Sincronizando…":"↻ Sincronizar ahora"}</button><span class="t-sub">${c.lastSync?`Última sincronización: ${esc(relativeTime(c.lastSync))}`:"Aún no se sincroniza."}</span></div>
+      </div>`;
+    document.getElementById("gtEnabled").addEventListener("change", e=>{ c.enabled = e.target.checked; saveDB(); renderGTasksPanel(true); if(c.enabled) gtSync(true); });
+    wrap.querySelectorAll("[data-gtlist]").forEach(cb=>cb.addEventListener("change", ()=>{ const id = cb.dataset.gtlist; c.lists = cb.checked ? [...new Set([...c.lists, id])] : c.lists.filter(x=>x!==id); saveDB(); }));
+    const sn = document.getElementById("gtSyncNow"); if(sn) sn.addEventListener("click", ()=>gtSync(true));
+  };
+  if(noFetch && renderGTasksPanel._last){ draw(renderGTasksPanel._last); return; }
+  wrap.innerHTML = `<div class="t-sub">Verificando…</div>`;
+  try{ const st = await apiGTasks("status"); renderGTasksPanel._last = st; draw(st); }
+  catch(e){ wrap.innerHTML = `<div class="t-sub">No se pudo verificar Google Tasks ahora (${esc(e.message)}).</div>`; }
+}
 async function renderGCalPanel(){
   const wrap = document.getElementById("gcalStatus");
   if(!wrap) return;
+  renderGTasksPanel();
   wrap.innerHTML = `<div class="t-sub">Verificando conexión...</div>`;
   try{
     const status = await apiGCalList("status", {});
@@ -4198,7 +4316,7 @@ function startGoogleCalendarConnect(){
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
-    scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events",
+    scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/tasks",
     access_type: "offline",
     prompt: "consent",
     state: getAuthToken(),
@@ -4558,6 +4676,7 @@ function saveDB(){
   }
   syncPending = true; syncWriteMeta();
   scheduleRemoteSave();
+  try{ gtMaybeSoon(); }catch(e){}
 }
 function scheduleRemoteSave(){
   if(!getAuthToken()) return; // sin sesión, no hay a quién guardarle en el servidor
@@ -13145,10 +13264,11 @@ const ALMA_KB = [
     problemas:[], ejemplos:["Un correo de un proveedor en inglés sobre una entrega atrasada."] },
 
   { id:"calendario", nombre:"Calendario", menu:"PLANIFICACIÓN → Calendario", ir:{ view:"calendar" }, estado:"disponible",
-    claves:["calendario","calendar","google","semana","mes","agenda","reunion","meet","invitar","invitacion","horario","bloque"],
+    claves:["calendario","calendar","google","semana","mes","agenda","reunion","meet","invitar","invitacion","horario","bloque","gmail","google tasks","tasks","agregar a tareas","correo"],
     para:"Ver tus tareas y eventos por día, semana o mes, y agendar.",
-    funciones:["Vistas «Hoy», «Día», «Semana» y «Mes».","Tocar un espacio libre abre «Agendar»: Tarea, Actividad o 👥 Reunión.","Reunión: con invitados y link de Google Meet (requiere Google Calendar conectado).","«📹 Entrar ahora» en reuniones que empiezan pronto."],
-    pasos:{ agendar_espacio:{ titulo:"Agendar en un espacio libre", pasos:["Ve a Calendario.","Toca un espacio vacío en el horario.","Elige Tarea, Actividad o 👥 Reunión, completa los datos y toca «✅ Agendar»."] },
+    funciones:["Vistas «Hoy», «Día», «Semana» y «Mes».","Tocar un espacio libre abre «Agendar»: Tarea, Actividad o 👥 Reunión.","Reunión: con invitados y link de Google Meet (requiere Google Calendar conectado).","Google Tasks: las tareas que creas en Gmail con «Agregar a Tareas» llegan solas a TaskFlow (con fecha → ese día; sin fecha → «Por agendar»). Al marcarlas hechas aquí, quedan hechas en Gmail, y al revés. Google solo guarda el día, no la hora.","«📹 Entrar ahora» en reuniones que empiezan pronto."],
+    pasos:{ conectar_gtasks:{ titulo:"Traer tus tareas de Gmail (Google Tasks)", pasos:["Ve a Configuración.","En «✅ Google Tasks (tareas de Gmail)», si te lo pide, toca «✅ Dar permiso de Google Tasks» y acepta en Google.","Marca «Traer mis tareas de Google Tasks a TaskFlow» y elige las listas.","Desde ahí, cada vez que en Gmail toques «Agregar a Tareas», la tarea llega sola: con fecha queda para ese día; sin fecha, en «Por agendar»."] },
+            agendar_espacio:{ titulo:"Agendar en un espacio libre", pasos:["Ve a Calendario.","Toca un espacio vacío en el horario.","Elige Tarea, Actividad o 👥 Reunión, completa los datos y toca «✅ Agendar»."] },
             conectar_google:{ titulo:"Conectar Google Calendar", pasos:["Ve a Configuración.","En «🗓️ Google Calendar», toca «Conectar Google Calendar».","Acepta los permisos en la ventana de Google."] } },
     limites:["Las reuniones con Meet e invitaciones requieren Google Calendar conectado."],
     problemas:[{ p:"No veo mis reuniones de Google", r:"Conecta Google Calendar en Configuración → «🗓️ Google Calendar»." }], ejemplos:[] },
@@ -13224,7 +13344,7 @@ const ALMA_KB = [
 ];
 // Lo que NO existe hoy (para no prometerlo)
 const ALMA_KB_NO_EXISTE = [
-  "Seguimiento de correos o conexión con Gmail.",
+  "Leer tus correos de Gmail. (Lo que sí existe: traer las tareas que creas en Gmail con «Agregar a Tareas», mediante Google Tasks.)",
   "Calendario de Outlook o Microsoft (solo Google Calendar).",
   "Compartir tareas o proyectos con otros usuarios de TaskFlow.",
   "Que Alma envíe correos o mensajes por ti.",
@@ -13614,6 +13734,7 @@ const ALMA_TOURS = {
   "idiomas/entender": { directo:{ label:"Abrir «Entender un mensaje»", run:"id_entender" }, tour:[{ sel:".nav-item[data-view=\"idiomas\"]" },{ view:"idiomas", sel:"[data-idmode=\"entender\"]" },{ prep:"id_entender", sel:"#idText" },{ prep:"id_entender", sel:"#idGo" }] },
   "idiomas/responder": { tour:[{ view:"idiomas", sel:"#idInstr", alt:[{ sel:"[data-idmode=\"entender\"]" },{ sel:"#idGo" }] },{ view:"idiomas", sel:".id-decs, #idInstr", alt:[{ sel:"#idGo" },{ sel:"[data-idmode=\"entender\"]" }] },{ view:"idiomas", sel:"#idReplyGo", alt:[{ sel:"#idGo" },{ sel:"[data-idmode=\"entender\"]" }] }] },
   "calendario/agendar_espacio": { directo:{ label:"Ir al Calendario", run:"ver_calendario" }, tour:[{ sel:".nav-item[data-view=\"calendar\"]" },{ view:"calendar", sel:"#calBody" },{ view:"calendar", sel:"#calBody" }] },
+  "calendario/conectar_gtasks": { directo:{ label:"Ir a «Google Tasks»", run:"gtasks" }, tour:[{ sel:".nav-item[data-view=\"configuracion\"]" },{ view:"configuracion", sel:"#gtGrant", alt:[{ sel:"#gtStatus" }] },{ view:"configuracion", sel:"#gtEnabled", parent:"label", alt:[{ sel:"#gtStatus" }] },{ view:"configuracion", sel:"#gtStatus" }] },
   "calendario/conectar_google": { directo:{ label:"Ir a «Conectar Google Calendar»", run:"gcal" }, tour:[{ sel:".nav-item[data-view=\"configuracion\"]" },{ view:"configuracion", sel:"#gcalConnectBtn", alt:[{ sel:"#view-configuracion .panel-title", text:"Google Calendar", parent:".panel" }] },{ view:"configuracion", sel:"#gcalConnectBtn", alt:[{ sel:"#view-configuracion .panel-title", text:"Google Calendar", parent:".panel" }] }] },
   "rutinas/cargar_rutina": { directo:{ label:"Ir a «Mis rutinas y horarios»", run:"ver_rutinas" }, tour:[{ view:"rutinas", sel:"#view-rutinas .view-header" },{ view:"rutinas", sel:"#view-rutinas .panel, #view-rutinas form" },{ view:"rutinas", sel:"#view-rutinas button", text:"Guardar cambios" }] },
   "organizar_semana/semana": { tour:[{ view:"rutinas", sel:"#view-rutinas .view-header" },{ sel:"#quickAddTask" },{ view:"calendar", sel:"#calModeWeek" },{ view:"dashboard", sel:"#dashPlanDayBtn" }] },
@@ -13644,6 +13765,7 @@ const ALMA_RUN = {
   bs_doc: ()=>{ const d = (DB.brainstorms||[]).find(x=>x.status==="listo"); if(d && !document.getElementById("bsCorrectBtn")){ bsOpenId = d.id; showView("brainstorm"); } },
   id_entender: ()=>{ showView("idiomas"); const b = document.querySelector('[data-idmode="entender"]'); if(b && !almaVisible("idText")) b.click(); },
   gcal: ()=>{ showView("configuracion"); setTimeout(()=>almaScrollTo(document.getElementById("gcalConnectBtn")), 150); },
+  gtasks: ()=>{ showView("configuracion"); setTimeout(()=>almaScrollTo(document.getElementById("gtStatus")), 150); },
   cfg_notif: ()=>{ showView("configuracion"); setTimeout(()=>{ const t = [...document.querySelectorAll("#view-configuracion .panel-title")].find(x=>/Notificaciones en el navegador/.test(x.textContent)); almaScrollTo(t); }, 150); },
   cfg_asistente: ()=>{ showView("configuracion"); setTimeout(()=>almaScrollTo(document.getElementById("cf_almaName")), 150); },
   prefs: ()=>almaOpenPrefs(),
@@ -16440,7 +16562,7 @@ const USE_LABELS = {
   "alma.dictate":"Alma por voz","alma.write":"Alma escribiendo","alma.photo":"Alma con foto","alma.tarea_creada":"Tareas creadas con Alma",
   "bs.grabar":"Grabaciones presenciales","bs.grabar_online":"Grabaciones de reuniones online","bs.texto":"Brainstorm desde texto","bs.correo":"Documentos enviados por correo","bs.quien_es_quien":"Voces nombradas (¿Quién es quién?)","bs.correccion":"Palabras corregidas en Brainstorm",
   "tools.calc":"Calculadora","tools.focus":"Temporizador de foco","tools.foco_iniciado":"Bloques de foco iniciados","tools.ind":"Monedas","tools.days":"Contador de días","tools.hol":"Feriados","tools.split":"Dividir cuenta",
-  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","feedback.audio":"Sugerencias dictadas","feedback.imagen":"Sugerencias con imagen","alma.pregunta":"Preguntas a Alma (asistente)","alma.consulta_datos":"Consultas de Alma sobre tus datos","alma.accion":"Acciones hechas por Alma","alma.guia_en_vivo":"Guías en vivo de Alma","alma.acceso_directo":"Accesos directos de Alma","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
+  "cal.agendar.tarea":"Tareas agendadas en el calendario","cal.agendar.actividad":"Actividades agendadas en el calendario","cal.agendar.reunion":"Reuniones creadas","clima.pronostico":"Pronóstico del clima","feedback.enviada":"Sugerencias enviadas","feedback.audio":"Sugerencias dictadas","feedback.imagen":"Sugerencias con imagen","alma.pregunta":"Preguntas a Alma (asistente)","alma.consulta_datos":"Consultas de Alma sobre tus datos","alma.accion":"Acciones hechas por Alma","alma.guia_en_vivo":"Guías en vivo de Alma","alma.acceso_directo":"Accesos directos de Alma","gtasks.sync":"Sincronizaciones con Google Tasks","archivos.subido":"Archivos adjuntados","view.idiomas":"Alma Idiomas","idiomas.entender":"Idiomas: entender (abrir)","idiomas.preparar":"Idiomas: preparar (abrir)","idiomas.traducir":"Idiomas: traducir (abrir)","idiomas.entendido":"Mensajes entendidos","idiomas.respuesta":"Respuestas redactadas","idiomas.ajuste":"Ajustes de respuesta","idiomas.traduccion":"Traducciones","idiomas.transcripcion":"Audios transcritos (Idiomas)",
 };
 const useLabel = k => USE_LABELS[k] || k;
 
@@ -19223,6 +19345,7 @@ function bootFromServer(got){
   }
   adoptRemoteOrLocalAndBoot(remote);
   setTimeout(()=>{ attMaintenance().catch(()=>{}); }, 4000);   // adjuntos: migrar antiguos y limpiar huérfanos
+  setTimeout(()=>{ gtSync(false).catch(()=>{}); }, 6000);     // Google Tasks: tareas nuevas de Gmail
   syncBase = JSON.parse(JSON.stringify(DB)); syncWriteBase();
   const k = syncKeys(); if(k){ try{ localStorage.setItem(k.db, JSON.stringify(DB)); }catch(e){} }
   syncPending = !remote; syncWriteMeta();
