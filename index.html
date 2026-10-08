@@ -8285,6 +8285,79 @@ Nunca inventes fechas, horas, proyectos ni personas que no se desprendan del con
 // "Esto entendí" y se confirma. "source" = "dictate" | "write" | "photo" (para
 // que "Corregir" te devuelva al mismo lugar). Si la IA falla, cae al flujo manual.
 let almaCaptureSource = "dictate";
+/* ---------- Fechas explícitas: se leen por reglas y corrigen a la IA si se equivoca ----------
+ * Ej.: "máximo el 12 de octubre" → plazo 12 de octubre (la IA a veces lo leía como "en 12 días").
+ * Reconoce: "12 de octubre (de 2026)", "12/10", "el lunes", "hoy", "mañana", "pasado mañana",
+ * y "máximo / a más tardar / hasta / plazo / vence / antes del 12" (día del mes). */
+const ES_MONTHS = { enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6, julio:7, agosto:8, septiembre:9, setiembre:9, octubre:10, noviembre:11, diciembre:12 };
+const ES_WD = { domingo:0, lunes:1, martes:2, miercoles:3, jueves:4, viernes:5, sabado:6 };
+function explicitDatesIn(text){
+  const raw = String(text||""), t = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const today = new Date(TODAY()+"T12:00:00"), out = [];
+  const iso = d => d.toISOString().slice(0,10);
+  const mk = (y,m,d)=>{ const x = new Date(Date.UTC(y, m-1, d, 12)); return (x.getUTCMonth()===m-1 && x.getUTCDate()===d) ? x : null; };
+  const futureYear = (m,d)=>{ let y = today.getFullYear(); let x = mk(y,m,d); if(x && iso(x) < TODAY()) x = mk(y+1,m,d); return x; };
+  const DEAD = /(maximo|max\.?|a mas tardar|hasta el|hasta|plazo|vence|vencimiento|limite|antes del|antes de|para el dia)\s*(el\s*|del\s*|dia\s*)?$/;
+  const kindAt = (idx)=>{ const before = t.slice(Math.max(0, idx-28), idx); const m = before.match(DEAD); return m ? (/antes/.test(m[1]) ? "antes" : "plazo") : "otro"; };
+  const push = (x, idx)=>{ if(!x) return; const k = kindAt(idx); let d = iso(x); if(k==="antes"){ const y = new Date(x); y.setUTCDate(y.getUTCDate()-1); d = iso(y); } out.push({ iso:d, plazo: k!=="otro", idx }); };
+  let m;
+  const reMonth = /\b(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+(?:de|del)\s+(\d{4}))?/g;
+  while((m = reMonth.exec(t))){ const d = +m[1], mo = ES_MONTHS[m[2]]; push(m[3] ? mk(+m[3], mo, d) : futureYear(mo, d), m.index); }
+  const reNum = /\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/g;   // día/mes (formato chileno)
+  while((m = reNum.exec(t))){ const d = +m[1], mo = +m[2]; if(mo<1 || mo>12) continue; let y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : null; push(y ? mk(y, mo, d) : futureYear(mo, d), m.index); }
+  const reDayOnly = /(maximo|max\.?|a mas tardar|hasta el|hasta|plazo|vence|limite|antes del)\s*(el\s*|del\s*|dia\s*)?(\d{1,2})\b(?!\s*(de\s|\/|-|:|h\b|hrs|horas|am|pm|dias|semanas))/g;
+  while((m = reDayOnly.exec(t))){ const d = +m[3]; if(d<1 || d>31) continue; let x = mk(today.getFullYear(), today.getMonth()+1, d); if(!x || iso(x) < TODAY()){ const n = new Date(today); n.setMonth(n.getMonth()+1); x = mk(n.getFullYear(), n.getMonth()+1, d); } push(x, m.index + m[0].indexOf(m[3])); }
+  const addD = n => { const x = new Date(today); x.setDate(x.getDate()+n); return x; };
+  if((m = /\bpasado manana\b/.exec(t))) push(addD(2), m.index);
+  else if((m = /\bmanana\b/.exec(t))) push(addD(1), m.index);
+  if((m = /\bhoy\b/.exec(t))) push(addD(0), m.index);
+  const reWd = /\b(?:el\s+|este\s+|proximo\s+)?(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b/g;
+  while((m = reWd.exec(t))){ const target = ES_WD[m[1]]; let diff = (target - today.getDay() + 7) % 7; if(diff===0) diff = 7; push(addD(diff), m.index); }
+  // sin duplicados (si un plazo y "otro" caen el mismo día, gana el plazo)
+  const by = {}; out.forEach(o=>{ if(!by[o.iso] || o.plazo) by[o.iso] = o; });
+  return Object.values(by).sort((a,b)=>a.idx-b.idx);
+}
+// Hora escrita en el texto: "18:00", "18_00", "18.00", "a las 18", "18 hrs", "6 de la tarde", "6 pm", "mediodía".
+function explicitTimeIn(text){
+  const t = String(text||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const DEAD = /(maximo|a mas tardar|hasta|plazo|vence|vencimiento|limite|antes de)\b[^.]{0,40}$/;
+  const fin = (h, mi, idx)=>{ if(h<0||h>23||mi<0||mi>59) return null; return { hhmm: String(h).padStart(2,"0")+":"+String(mi).padStart(2,"0"), plazo: DEAD.test(t.slice(Math.max(0, idx-60), idx)), idx }; };
+  const ampm = (h, suf)=>{ if(!suf) return h; if(/(tarde|noche|pm|p\.m)/.test(suf) && h<12) return h+12; if(/(manana|am|a\.m)/.test(suf) && h===12) return 0; return h; };
+  let m;
+  if((m = /\b(\d{1,2})\s*[:._,h]\s*(\d{2})\s*(hrs?|horas?|h)?\s*(de la (?:manana|tarde|noche)|am|pm|a\.m\.?|p\.m\.?)?/.exec(t))) return fin(ampm(+m[1], m[4]), +m[2], m.index);
+  if((m = /\ba las?\s+(\d{1,2})(?!\s*(?:de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)|\/|-|\d))\s*(hrs?|horas?|h)?\s*(de la (?:manana|tarde|noche)|am|pm|a\.m\.?|p\.m\.?)?/.exec(t))) return fin(ampm(+m[1], m[3]), 0, m.index);
+  if((m = /\b(\d{1,2})\s*(hrs?|horas)\b/.exec(t)) && !/\b(\d{1,2})\s*(hrs?|horas)\s+(de trabajo|al dia|diarias|semanales|de duracion)/.test(t) && !/\b(dura|demora|toma|tarda|durante|por)\s+\d{1,2}\s*(hrs?|horas)/.test(t)) return fin(+m[1], 0, m.index);
+  if((m = /\b(\d{1,2})\s*(de la (?:manana|tarde|noche)|am|pm|a\.m\.?|p\.m\.?)/.exec(t))) return fin(ampm(+m[1], m[2]), 0, m.index);
+  if((m = /\b(al )?mediodia\b/.exec(t))) return fin(12, 0, m.index);
+  return null;
+}
+// Corrige las fechas que propuso la IA con las que el texto dice explícitamente.
+function almaFixDatesWithText(item, text){
+  if(!item || !text) return item;
+  const found = explicitDatesIn(text);
+  const set = new Set(found.map(f=>f.iso)), plazos = found.filter(f=>f.plazo);
+  const notes = [];
+  // 1) si el texto marca un plazo ("máximo el 12…"), ese es el vencimiento
+  if(plazos.length===1 && item.fecha_vencimiento !== plazos[0].iso){ notes.push(`plazo ${item.fecha_vencimiento||"—"} → ${plazos[0].iso}`); item.fecha_vencimiento = plazos[0].iso; }
+  // 2) una fecha de la IA que no aparece en el texto se reemplaza (o se quita) por la explícita
+  ["fecha_vencimiento","fecha_ejecucion"].forEach(k=>{
+    const v = item[k]; if(!v || set.has(v)) return;
+    const alt = found.length===1 ? found[0].iso : null;
+    if(k==="fecha_ejecucion" && plazos.length && alt===plazos[0].iso){ notes.push(`ejecución ${v} quitada`); item[k] = null; if(!item.hora_ejecucion) item.hora_ejecucion = null; return; }
+    if(alt){ notes.push(`${k} ${v} → ${alt}`); item[k] = alt; }
+  });
+  // 3) la hora escrita: si la IA no la tomó (ej. "18_00 horas"), se completa
+  const tm = explicitTimeIn(text);
+  if(tm){
+    if(tm.plazo){ if(item.hora_vencimiento !== tm.hhmm){ notes.push(`hora plazo → ${tm.hhmm}`); item.hora_vencimiento = tm.hhmm; } }
+    else if(item.hora_ejecucion !== tm.hhmm){
+      const day = item.fecha_ejecucion || (found.find(f=>!f.plazo)||{}).iso || (!found.length ? TODAY() : "");
+      if(day){ notes.push(`hora ${item.hora_ejecucion||"—"} → ${tm.hhmm} (${day})`); item.hora_ejecucion = tm.hhmm; item.fecha_ejecucion = day; }
+    }
+  }
+  if(notes.length) console.info("Fechas corregidas con el texto:", notes.join("; "));
+  return item;
+}
 async function almaEntryCreateSmart(rawText, source, imageFile){
   almaCaptureSource = source || "dictate";
   trackUse("alma."+almaCaptureSource);
@@ -8305,6 +8378,7 @@ async function almaEntryCreateSmart(rawText, source, imageFile){
     const raw = await askAI(content, { thinking:"low" });
     const parsed = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
     const items = (parsed && Array.isArray(parsed.items)) ? parsed.items.filter(x=>x && x.titulo) : [];
+    if(!imageFile){ if(items.length===1) almaFixDatesWithText(items[0], rawText); if(parsed && parsed.item) almaFixDatesWithText(parsed.item, rawText); if(parsed && !parsed.item && !items.length) almaFixDatesWithText(parsed, rawText); }
     if(parsed && parsed.varias===true && items.length>1){
       almaRenderMultiVoicePreview(rawText, items);
     }else{
@@ -9128,6 +9202,9 @@ function openAlmaScheduleForm(tid, mode){
       projectId: t.projectId || "",
       requestedBy: t.requestedBy || "",
       dueDate: t.dueDate || "",
+      _dueKnown: !!t.dueDate,          // si ya dijiste el plazo, no se vuelve a preguntar
+      _typeKnown: !!t.taskType,        // personal/laboral ya definido (ej. lo entendió Alma)
+      _kindKnown: !!t.kind,            // tarea/actividad ya definido
       dueTime: t.dueTime && t.dueTime!=="18:00" ? t.dueTime : "",
       estimatedTime: t.estimatedTime || 0,
       execDate: t.startDate || "",
@@ -9147,7 +9224,7 @@ function almaManualSteps(){
     { key:"requestedBy", q:"¿Quién te lo pidió?", hint:"Si es algo tuyo, puedes saltarlo.", type:"text",
       placeholder:"Un nombre… o déjalo vacío", skip:"Es mío / nadie", onlyIf:(d)=>d.taskType==="laboral" },
     // Fecha y hora fusionadas en una sola pantalla (antes eran 2 pasos separados).
-    { key:"dueDate", timeKey:"dueTime", q:"¿Para cuándo debe estar lista?", hint:"Su fecha límite (el plazo) — la hora es opcional.", type:"datetime", skip:"Sin fecha límite" },
+    { key:"dueDate", timeKey:"dueTime", q:"¿Para cuándo debe estar lista?", hint:"Su fecha límite (el plazo) — la hora es opcional.", type:"datetime", skip:"Sin fecha límite", onlyIf:(d)=>!d._dueKnown },
     { key:"estimatedTime", q:"¿Cuántas horas crees que te toma?", type:"hours" },
     { key:"execDate", timeKey:"execTime", q:"¿Cuándo la vas a hacer?", hint:"Cuándo te sientas a hacerla — la hora es opcional.", type:"datetime", skip:"Aún no sé" },
   ];
@@ -9157,7 +9234,7 @@ function almaIaSteps(){
     { key:"projectId", q:"¿Es parte de algún proyecto?", hint:"Opcional — puedes saltarlo.", type:"project", skip:"Ninguno", onlyIf:(d)=>d.taskType==="laboral" },
     { key:"requestedBy", q:"¿Quién te lo pidió?", hint:"Si es algo tuyo, puedes saltarlo.", type:"text",
       placeholder:"Un nombre… o déjalo vacío", skip:"Es mío / nadie", onlyIf:(d)=>d.taskType==="laboral" },
-    { key:"dueDate", q:"¿Para cuándo debe estar lista?", hint:"Su fecha límite me ayuda a ubicarla mejor.", type:"date", skip:"Sin fecha límite" },
+    { key:"dueDate", q:"¿Para cuándo debe estar lista?", hint:"Su fecha límite me ayuda a ubicarla mejor.", type:"date", skip:"Sin fecha límite", onlyIf:(d)=>!d._dueKnown },
     { key:"estimatedTime", q:"¿Cuántas horas crees que te toma?", type:"hours" },
     { key:"urgency", q:"¿Con qué ganas la hacemos?", hint:"Elijo tus mejores horarios según esto.", type:"choice",
       options:[
@@ -9177,9 +9254,9 @@ function almaActivitySteps(){
 }
 function almaSteps(){
   const st = almaFormState;
-  const typeStep = { key:"taskType", q:"¿Esto es personal o de trabajo?", type:"choice",
+  const typeStep = { key:"taskType", q:"¿Esto es personal o de trabajo?", type:"choice", onlyIf:(d)=>!d._typeKnown,
     options:[{v:"personal",label:"🌿 Personal"},{v:"laboral",label:"💼 De trabajo"}] };
-  const kindStep = { key:"kind", q:"¿Esto es algo que debes hacer, o un evento con hora ya definida?", hint:"Una tarea la agendo contigo; una actividad ya tiene su hora.", type:"choice",
+  const kindStep = { key:"kind", q:"¿Esto es algo que debes hacer, o un evento con hora ya definida?", hint:"Una tarea la agendo contigo; una actividad ya tiene su hora.", type:"choice", onlyIf:(d)=>!d._kindKnown,
     options:[{v:"tarea",label:"📋 Una tarea"},{v:"actividad",label:"📅 Una actividad"}] };
   if(!st) return [typeStep, kindStep, ...almaManualSteps()];
   // Si ya se eligió "actividad", usar el flujo corto de actividad.
@@ -12726,6 +12803,8 @@ async function callGeminiFunction(content, opts){
   // La función "ia" ahora exige la sesión (igual que "data"), así nadie de
   // afuera puede usar la clave de Gemini.
   const ctrl = new AbortController(); const killer = setTimeout(()=>ctrl.abort(), 100000);   // máx. 100 s: nunca queda girando para siempre
+  const tStart = performance.now();
+  const flow = iaFlowName();
   let response;
   try{
     response = await fetch("/.netlify/functions/ia", {
@@ -12744,10 +12823,37 @@ async function callGeminiFunction(content, opts){
     throw new Error(msg);
   }
   const data = await response.json();
+  iaRecordSpeed({ flow, total: Math.round(performance.now()-tStart), meta: data.meta || null, media: media ? media.mediaType : "" });
   const text = (data.texto || "").trim();
   if(!text) throw new Error("Respuesta vacía");
   return text;
 }
+/* ---------- Velocidad de la IA (diagnóstico): últimas 30 consultas en este dispositivo ---------- */
+const IA_FLOW_NAMES = { almaEntryCreateSmart:"Crear tarea (Alma)", quickUpdateAnalyze:"Actualizar avance", analyzeTaskUpdate:"Actualizar avance (ficha)", startDictation:"Dictado", idTranscribeAudio:"Transcribir audio", bsTranscribeSegment:"Brainstorm: transcribir", bsProcessDoc:"Brainstorm: informe", idAnalyze:"Idiomas: entender", idReply:"Idiomas: responder", idTranslate:"Idiomas: traducir", almaAsk:"Pregunta a Alma", askAIForSchedule:"Sugerir horario", askAlmaSlotIntelligence:"Elegir mejor día", submitAskAlmaMessage:"Preguntar cuándo", refinePlanWithAI:"Organizar mi día", runSmartCaptureFromText:"Captura (texto)", runSmartCaptureFromImage:"Captura (imagen)", fbUserSays:"Sugerencias", enrichTaskWithAI:"Completar tarea", improveDescriptionWithAI:"Mejorar descripción", panelRunInsights:"Panel: propuestas" };
+function iaFlowName(){
+  try{ const st = String(new Error().stack||""); for(const k of Object.keys(IA_FLOW_NAMES)) if(st.includes(k)) return IA_FLOW_NAMES[k]; }catch(e){}
+  return "Otra";
+}
+// Panel de mejoras → "⚡ Velocidad de la IA": dónde se va el tiempo (solo este dispositivo)
+function iaSpeedPanelHTML(){
+  const log = iaSpeedLog().slice(0,15);
+  const sec = ms => (ms/1000).toFixed(1).replace(".",",")+" s";
+  const st = m => !m ? "—" : m.estado==="aplicado" ? `✓ ${esc(m.thinking)}` : m.estado==="no pedido" ? "normal" : `<span title="${esc(m.estado)}" style="color:var(--danger);">✕ rechazado</span>`;
+  return `<div class="bs-sec"><div class="bs-sec-head"><h3>⚡ Velocidad de la IA <span class="tl-muted" style="font-weight:400;font-size:12px;">últimas consultas en este dispositivo</span></h3></div>
+    ${log.length ? `<div style="overflow-x:auto;"><table class="pn-table"><thead><tr><th>Hora</th><th>Función</th><th>Total</th><th>Gemini</th><th>Razonamiento</th><th>"Pensó"</th></tr></thead><tbody>
+      ${log.map(r=>`<tr><td>${esc(new Date(r.at).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit",second:"2-digit"}))}</td><td>${esc(r.flow)}${r.media?` <span class="tl-muted">(${esc(r.media.split("/")[0])})</span>`:""}</td><td><b>${sec(r.total)}</b></td><td>${r.meta?sec(r.meta.ms):"—"}</td><td>${st(r.meta)}</td><td>${r.meta?esc(String(r.meta.pensamiento))+" tokens":"—"}</td></tr>`).join("")}
+    </tbody></table></div><div class="tl-muted" style="font-size:12px;margin-top:6px;">Total = desde que tocas hasta que llega la respuesta. Gemini = lo que tardó el modelo. Si la diferencia es grande, el tiempo se va en la conexión o en Netlify.</div>`
+    : `<div class="tl-muted">Aún no hay mediciones. Crea una tarea o actualiza un avance y vuelve aquí.</div>`}</div>`;
+}
+function iaRecordSpeed(rec){
+  try{
+    rec.at = new Date().toISOString();
+    const k = "tf_ia_speed_v1", arr = JSON.parse(localStorage.getItem(k) || "[]");
+    arr.unshift(rec); localStorage.setItem(k, JSON.stringify(arr.slice(0,30)));
+    if(rec.total > 5000) console.info("IA lenta:", rec.flow, (rec.total/1000).toFixed(1)+" s", rec.meta);
+  }catch(e){}
+}
+function iaSpeedLog(){ try{ return JSON.parse(localStorage.getItem("tf_ia_speed_v1") || "[]"); }catch(e){ return []; } }
 
 async function callClaudeAPI(content){
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -16859,6 +16965,7 @@ function renderPanel(){
         return `<tr><td><b>${esc(userOf(p))}</b></td><td>${p.activeDays}</td><td>${tot}</td><td>${esc(top.join(" · "))}</td><td>${p.lastSeen?esc(new Date(p.lastSeen).toLocaleDateString("es-CL",{day:"numeric",month:"short"})):"—"}</td></tr>`; }).join("")}
       </tbody></table></div>`:`<div class="tl-muted">Nadie ha usado la app este mes (o aún no hay datos).</div>`}
     </div>
+    ${iaSpeedPanelHTML()}
     <div class="bs-sec">
       <div class="bs-sec-head"><h3>💬 Sugerencias <button type="button" class="btn btn-ghost btn-sm" id="pnRefresh" title="Volver a cargar las sugerencias">↻ Actualizar</button></h3><div class="tl-chips">${[["abiertas","Abiertas"],["nuevo","Nuevas"],["planificado","Planificadas"],["hecho","Hechas"],["todas","Todas"]].map(([k,l])=>`<button type="button" class="tl-chip ${panelFilter===k?"on":""}" data-pf="${k}">${l}</button>`).join("")}</div></div>
       ${shownFb.length?shownFb.map(i=>`<div class="pn-fb">
