@@ -51,11 +51,14 @@ exports.handler = async function (event) {
 
     if (action === "sync") {
       const listIds = (Array.isArray(body.lists) ? body.lists : []).map(String).filter((x) => ID_RE.test(x)).slice(0, 10);
+      // Opcional: solo lo que cambió desde esta fecha (consultas rápidas y livianas)
+      const updatedMin = (typeof body.updatedMin === "string" && !isNaN(Date.parse(body.updatedMin))) ? new Date(body.updatedMin).toISOString() : "";
       const out = [];
       for (const listId of listIds) {
         let pageToken = "", pages = 0;
         do {
           const q = new URLSearchParams({ maxResults: "100", showCompleted: "true", showHidden: "true", showDeleted: "true" });
+          if (updatedMin) q.set("updatedMin", updatedMin);
           if (pageToken) q.set("pageToken", pageToken);
           const r = await gfetch(accessToken, `/lists/${encodeURIComponent(listId)}/tasks?` + q.toString());
           if (r.status === 403 || r.status === 401) return json(200, { connected: true, needsScope: true });
@@ -76,7 +79,7 @@ exports.handler = async function (event) {
           pages++;
         } while (pageToken && pages < 10);
       }
-      return json(200, { connected: true, needsScope: false, tasks: out });
+      return json(200, { connected: true, needsScope: false, tasks: out, partial: !!updatedMin });
     }
 
     if (action === "complete" || action === "reopen") {
