@@ -7171,6 +7171,7 @@ function renderTaskFiltersSimple(contId, onChange){
 }
 function taskTimeGroup(t){
   if(t.status==="completada") return "done";
+  if(t.status==="cancelada") return "cancelled";   // fuera de las activas, como las completadas
   if(isTaskOverdue(t)) return "overdue";
   const today = TODAY();
   if(t.dueDate===today || t.startDate===today) return "today";
@@ -7188,8 +7189,9 @@ const TASK_GROUPS = [
   {key:"later",   label:"🌤️ MÁS ADELANTE",color:"#5B8CB0"},
   {key:"nofecha", label:"📭 SIN FECHA",   color:"#8A7D95"},
   {key:"done",    label:"✓ COMPLETADAS",  color:"#4E9E77", collapsedByDefault:true},
+  {key:"cancelled", label:"✕ CANCELADAS",  color:"#9A8FA3", collapsedByDefault:true},
 ];
-let taskGroupCollapsed = { done:true };
+let taskGroupCollapsed = { done:true, cancelled:true };
 function taskCardHTML(t){
   const owner = byId(DB.responsables, t.owner);
   const st = byId(TASK_STATUSES, t.status) || TASK_STATUSES[0];
@@ -7932,6 +7934,7 @@ function isUnscheduled(t){ return (t.status!=="completada"&&t.status!=="cancelad
 function needsScheduling(t){
   if(t.status==="completada" || t.status==="cancelada") return false;
   if(!t.executionTime) return true;
+  if(!t.startDate && !t.dueDate) return true;   // tiene hora pero ningún día: todavía no está agendada
   if(isTaskOverdue(t)) return true;
   return false;
 }
@@ -8299,7 +8302,7 @@ async function almaEntryCreateSmart(rawText, source, imageFile){
       const origen = almaCaptureSource==="write" ? "escrito" : "dictado por voz";
       content = `Texto ${origen} por el usuario para crear una o varias tareas: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
     }
-    const raw = await askAI(content);
+    const raw = await askAI(content, { thinking:"low" });
     const parsed = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
     const items = (parsed && Array.isArray(parsed.items)) ? parsed.items.filter(x=>x && x.titulo) : [];
     if(parsed && parsed.varias===true && items.length>1){
@@ -8885,6 +8888,16 @@ function setupUpdateHoldMic(container, tid){
   if(confirmBtn) confirmBtn.addEventListener("click", finishRecording);
   if(cancelBtn) cancelBtn.addEventListener("click", cancelRecording);
 }
+// Frases cortas y obvias de "terminé" se entienden sin IA (respuesta instantánea).
+// Solo si el mensaje ES eso (máx. ~5 palabras), para no perder matices como "lista, pero falta el informe".
+function quickStatusFromText(text){
+  const t = String(text||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[.!¡¿?,;:]+/g," ").replace(/\s+/g," ").trim();
+  if(!t || t.split(" ").length > 5) return null;
+  if(/\b(pero|falta|faltan|menos|casi|todavia|aun|no)\b/.test(t)) return null;
+  const done = /^(la |esta |esa )?(tarea )?(ya )?(esta |quedo |quedo )?(lista|listo|lista ya|terminada|terminado|termine|hecha|hecho|completada|completado|finalizada|finalizado|resuelta|resuelto|entregada|entregado|ok lista|ya esta|ya quedo|ya la hice|ya lo hice|la termine|lo termine|done)( ya)?$/;
+  if(done.test(t)) return { status:"completada", resumen:"Tarea completada.", proxima_fecha:null, proxima_hora:null, _instant:true };
+  return null;
+}
 async function quickUpdateAnalyze(tid, input){
   const area = document.getElementById("quEntryArea");
   if(area) area.innerHTML = `<div class="af-hint">✨ Interpretando el avance...</div>`;
@@ -8907,9 +8920,8 @@ Responde solo el JSON.`;
     }else{
       content = `Actualización dictada/escrita por el usuario sobre el avance de su tarea: """${input.text}"""\n\n${instructions}`;
     }
-    const raw = await askAI(content);
-    const cleaned = raw.replace(/```json|```/g,"").trim();
-    const parsed = JSON.parse(cleaned);
+    // Atajo sin IA: "lista", "terminada", "hecha", "ya está"… → completada al instante
+    const parsed = (!input.imageFile && quickStatusFromText(input.text)) || JSON.parse(String(await askAI(content, { thinking:"minimal" })).replace(/```json|```/g,"").trim());
     quickUpdateRenderPreview(tid, input, parsed);
   }catch(e){
     const area2 = document.getElementById("quEntryArea");
@@ -9089,7 +9101,7 @@ Responde a su último mensaje de forma natural y breve (2-4 frases), en español
 
 Responde SOLO JSON válido: {"reply":"<tu respuesta>", "suggested_slot_id": "<un id de la lista, o null>"}`;
   try{
-    const raw = await askAI(prompt);
+    const raw = await askAI(prompt, { thinking:"low" });
     const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
     stt.messages = stt.messages.filter(m=>!m.pending);
     let slot = null;
@@ -9696,7 +9708,7 @@ Responde SOLO JSON válido:
  "best_slot_id":"<id de un slot existente>",
  "reason":"<frase breve, cálida y humana explicando por qué ese momento>",
  "warning": null }`;
-  const raw = await askAI(prompt);
+  const raw = await askAI(prompt, { thinking:"low" });
   const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
   return parsed;
 }
@@ -9832,7 +9844,7 @@ Genera dos cosas:
 2. Clasifícala en UNA de estas áreas de vida (usa el nombre exacto): ${areaNames}. Elige la más adecuada; si ninguna calza claramente, usa "".
 Responde SOLO JSON válido, sin texto adicional:
 {"descripcion":"...","area":"..."}`;
-    const raw = await askAI(prompt);
+    const raw = await askAI(prompt, { thinking:"low" });
     const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
     const t2 = byId(DB.tasks, tid);
     if(!t2) return;
@@ -10021,7 +10033,7 @@ Responde SOLO con JSON válido, sin texto adicional:
 - Evita proponer horas fuera de sentido común (por ejemplo, de madrugada) salvo que la propia tarea lo sugiera.
 ${t.dueDate?`- REGLA DURA, sin excepciones: esta tarea vence el ${t.dueDate}. NUNCA sugieras una fecha posterior a esa — como máximo, el mismo día del vencimiento.`:""}
 Responde solo el JSON.`;
-    const raw = await askAI(prompt);
+    const raw = await askAI(prompt, { thinking:"low" });
     const cleaned = raw.replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(cleaned);
     renderAISuggestions(tid, parsed);
@@ -12455,7 +12467,7 @@ function startDictation(btn){
         ? "Es un TÍTULO breve: sin punto final, sin viñetas."
         : "Es un texto libre: usa oraciones completas y puntuación correcta.";
       const prompt = `Corrige y da formato natural en español a este texto dictado por voz. No agregues información que no esté, no inventes datos, conserva el significado exacto. ${guia} Responde SOLO con el texto corregido, sin comillas ni explicaciones.\n\nTexto dictado: """${rawFinal}"""`;
-      const polished = await askAI(prompt);
+      const polished = await askAI(prompt, { thinking:"minimal" });
       const clean = polished.trim().replace(/^["“]+|["”]+$/g,"");
       if(clean && document.body.contains(field)){
         field.value = startValue + clean;
@@ -12719,7 +12731,7 @@ async function callGeminiFunction(content, opts){
     response = await fetch("/.netlify/functions/ia", {
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.assign({ prompt: prompt.trim(), media, token: getAuthToken() }, (opts && opts.json) ? { json:true } : {}, (opts && typeof opts.temperature==="number") ? { temperature: opts.temperature } : {})),
+      body: JSON.stringify(Object.assign({ prompt: prompt.trim(), media, token: getAuthToken() }, (opts && opts.json) ? { json:true } : {}, (opts && typeof opts.temperature==="number") ? { temperature: opts.temperature } : {}, (opts && opts.thinking) ? { thinking: opts.thinking } : {})),
     });
   }catch(e){
     if(e && e.name==="AbortError") throw new Error("la IA tardó demasiado en responder; reintenta");
@@ -12782,7 +12794,7 @@ async function improveDescriptionWithAI(fieldId, btn){
   btn.disabled = true; btn.innerHTML = "Pensando...";
   try{
     const prompt = `Actúa como asistente de redacción para una app de gestión de tareas. Te paso una descripción de tarea dictada por voz o escrita de forma informal, que puede tener ideas sueltas, repeticiones o errores. Redáctala de forma clara, profesional y concisa en español, conservando toda la información importante sin inventar datos que no estén presentes. Si detectas varias sub-ideas, puedes organizarlas en frases separadas o una lista breve. Devuelve SOLO la descripción final, sin comentarios, introducciones ni comillas.\n\nTexto original:\n"""${raw}"""`;
-    const improved = await askAI(prompt);
+    const improved = await askAI(prompt, { thinking:"low" });
     resultBox.innerHTML = `
       <div class="panel" style="margin-top:10px;border-color:var(--accent);">
         <div class="panel-title" style="font-size:12.5px;">✨ Sugerencia de la IA</div>
@@ -13048,7 +13060,7 @@ async function runSmartCaptureFromText(text, resultBoxId){
   resultBox.innerHTML = `<div class="t-sub" style="margin-top:8px;">🔎 Entendiendo la tarea...</div>`;
   try{
     const content = `Instrucción o texto escrito por el usuario para crear/describir una tarea: """${text}"""\n\n${smartCaptureInstructions()}`;
-    const raw = await askAI(content);
+    const raw = await askAI(content, { thinking:"low" });
     const cleaned = raw.replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(cleaned);
     renderSmartCapturePreview(parsed, resultBox);
@@ -13066,7 +13078,7 @@ async function runSmartCaptureFromImage(file, resultBoxId){
       { type:"image", source:{ type:"base64", media_type: mediaType, data: base64 } },
       { type:"text", text: smartCaptureImageInstructions() },
     ];
-    const raw = await askAI(content);
+    const raw = await askAI(content, { thinking:"low" });
     const cleaned = raw.replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(cleaned);
     if(parsed && parsed.varias && Array.isArray(parsed.tareas) && parsed.tareas.length>1){
@@ -13121,9 +13133,8 @@ Responde solo el JSON.`;
     }else{
       content = `Actualización dictada por el usuario sobre el avance de su tarea: """${input.text}"""\n\n${instructions}`;
     }
-    const raw = await askAI(content);
-    const cleaned = raw.replace(/```json|```/g,"").trim();
-    const parsed = JSON.parse(cleaned);
+    // Atajo sin IA: "lista", "terminada", "hecha", "ya está"… → completada al instante
+    const parsed = (!input.imageFile && quickStatusFromText(input.text)) || JSON.parse(String(await askAI(content, { thinking:"minimal" })).replace(/```json|```/g,"").trim());
     const st = byId(TASK_STATUSES, parsed.status) || {id:"en_progreso", label:"En progreso", color:"var(--info)"};
 
     const rescheduleLine = parsed.proxima_fecha
@@ -13913,7 +13924,7 @@ async function almaAsk(question, opts){
     if(recent > 40) throw new Error("Hiciste muchas preguntas en la última hora. Espera un rato y seguimos.");
     const view = almaCurrentView();
     const data = await almaGatherData(question);          // datos frescos, solo los necesarios
-    const raw = await askAI(almaBuildPrompt(question, view, data), { json:true, temperature:0.3 });
+    const raw = await askAI(almaBuildPrompt(question, view, data), Object.assign({}, { json:true, temperature:0.3 }, { thinking:"low" }));
     const out = almaValidate(idParse(raw), data);
     if(out.acciones.length){
       for(const a of out.acciones) if(a.op==="registrar_mejora") await almaFindSimilar(a);
@@ -14378,7 +14389,7 @@ ${taskList}
 
 Proponme a qué hora hacer cada una, con criterio real (lo que requiere concentración temprano, no encimar cosas, respetar lo ya ocupado). Responde SOLO JSON válido:
 {"plan":[{"titulo":"...","hora":"HH:MM","duracion_horas":1}]}`;
-    const raw = await askAI(prompt);
+    const raw = await askAI(prompt, { thinking:"low" });
     const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
     // reconstruye el plan casando por título
     const byTitle = {};
@@ -15801,7 +15812,7 @@ Responde solo con la transcripción, en texto plano.`;
   for(let attempt=1; attempt<=2; attempt++){
     try{
       const b64 = await fileToBase64(seg.blob);
-      const out = await askAI([{ type:"text", text: prompt }, { type:"audio", source:{ data:b64, media_type: seg.blob.type || "audio/webm" } }], { temperature:0 });
+      const out = await askAI([{ type:"text", text: prompt }, { type:"audio", source:{ data:b64, media_type: seg.blob.type || "audio/webm" } }], Object.assign({}, { temperature:0 }, { thinking:"minimal" }));
       seg.text = /^\(sin voz\)$/i.test(out.trim()) ? "" : bsApplyCorrectionsToText(out.trim()).text;   // correcciones aprendidas
       seg.status = "listo"; delete seg.blob; delete seg.error; bsRenderRecorder(); return;
     }catch(e){ if(attempt===2){ seg.status = "error"; seg.error = String(e.message||e); bsRenderRecorder(); } }
@@ -16769,7 +16780,7 @@ Responde SOLO un JSON válido, sin texto extra:
 {"respuesta":"lo que dice Alma (si cierras: agradece breve y di que abajo está el resumen para confirmar)","listo":true|false,"resumen":{"tipo":"idea|mejora|problema|elogio|otro","area":"sección de la app o 'General'","titulo":"máx 70 caracteres, claro","detalle":"2-4 frases con lo que dijo el usuario, sin inventar","impacto":"alto|medio|bajo"}}
 "resumen" solo es obligatorio si "listo" es true.`;
   try{
-    const raw = await askAI(allImgs.length ? [{ type:"text", text:prompt }, ...allImgs.map(im=>({ type:"image", source:{ data:im.data, media_type:im.type } }))] : prompt);
+    const raw = await askAI(allImgs.length ? [{ type:"text", text:prompt }, ...allImgs.map(im=>({ type:"image", source:{ data:im.data, media_type:im.type } }))] : prompt, { thinking:"low" });
     const j = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
     fbChat.msgs.push({ role:"alma", text: String(j.respuesta||"¡Gracias! Te entendí.").slice(0,600) });
     if(j.listo && j.resumen) fbChat.summary = j.resumen;
@@ -17652,7 +17663,7 @@ async function idTranscribeAudio(audio, hint){
   const prompt = `Transcribe este audio de forma LITERAL, en el idioma en que se habla (no traduzcas, no resumas, no ordenes).${hint?` ${hint}`:""} Si es mandarín, escríbelo en caracteres chinos simplificados.
 Si una palabra, nombre, cifra o fecha no se entiende, escribe [inaudible] en ese lugar: no la adivines.
 Responde SOLO un JSON válido: {"idioma":"es|en|pt|zh|ko|otro","texto":"transcripción completa","dudoso":["fragmentos que no se entendieron bien"]}`;
-  const r = idCleanDeep(idParse(await askAI([{ type:"text", text:prompt }, { type:"audio", source:{ data:audio.b64, media_type:audio.type } }], { json:true, temperature:0 })));
+  const r = idCleanDeep(idParse(await askAI([{ type:"text", text:prompt }, { type:"audio", source:{ data:audio.b64, media_type:audio.type } }], Object.assign({}, { json:true, temperature:0 }, { thinking:"minimal" }))));
   const texto = String(r.texto||"").trim();
   if(!texto) throw new Error("no se escuchó voz en el audio");
   return { texto, idioma: String(r.idioma||""), dudoso: Array.isArray(r.dudoso) ? r.dudoso.map(String) : [] };
@@ -18887,7 +18898,7 @@ async function handleSubjectPhoto(file, listId, statusId){
       { type:"image", source:{ type:"base64", media_type: mediaType, data: base64 } },
       { type:"text", text: subjectExtractionInstructions() },
     ];
-    const raw = await askAI(content);
+    const raw = await askAI(content, { thinking:"low" });
     await extractSubjectsFromParsed(raw, listId, statusId);
   }catch(e){
     console.error("handleSubjectPhoto:", e.message);
@@ -18922,7 +18933,7 @@ async function handleSubjectExcel(file, listId, statusId){
       }).join("\n\n");
       prompt = `${subjectExtractionInstructions()}\n\nEsta es la tabla del archivo Excel (formato CSV, puede tener columnas o filas por día):\n${asText.slice(0,6000)}`;
     }
-    const raw = await askAI(prompt);
+    const raw = await askAI(prompt, { thinking:"low" });
     await extractSubjectsFromParsed(raw, listId, statusId);
   }catch(e){
     console.error("handleSubjectExcel:", e.message);
