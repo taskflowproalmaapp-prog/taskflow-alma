@@ -4018,7 +4018,8 @@ async function gtSync(manual){
   const res = { nuevas:0, completadas:0, enviadas:0, borradas:0 };
   gtLastAuto = Date.now();
   try{
-    const r = await apiGTasks("sync", { lists: c.lists });
+    const full = manual || !c.lastFull || Date.now()-Date.parse(c.lastFull) > 10*60*1000 || !c.lastSync;
+    const r = await apiGTasks("sync", Object.assign({ lists: c.lists }, full ? {} : { updatedMin: new Date(Date.parse(c.lastSync) - 2*60*1000).toISOString() }));
     if(!r.connected || r.needsScope){ gtState = r.needsScope ? "permiso" : "sin_google"; if(manual) toast("Falta el permiso de Google Tasks: ve a Configuración → Google Tasks.","error"); return null; }
     gtState = "ok";
     const byGid = new Map(), seen = new Set();
@@ -4036,8 +4037,9 @@ async function gtSync(manual){
         const nt = buildTaskFromParsedVoiceItem(g.title, { titulo:g.title, kind:"tarea", descripcion:"" });
         nt.title = (g.title || "Tarea de Google").slice(0,120);
         nt.description = [g.notes, g.emailLink ? `📧 Desde Gmail${g.emailSubject?`: «${g.emailSubject}»`:""}\n${g.emailLink}` : ""].filter(Boolean).join("\n\n");
-        if(g.due){ nt.startDate = g.due; nt.dueDate = g.due; } else { nt.startDate = ""; nt.dueDate = ""; }   // con fecha → ese día; sin fecha → Por agendar
-        nt.executionTime = ""; nt.tags = [...new Set([...(nt.tags||[]), "google-tasks", ...(g.emailLink?["gmail"]:[])])];
+        const w = gtInterpret(g);   // fecha de Google + lo que digan el título y los "Detalles"
+        nt.startDate = w.startDate; nt.dueDate = w.dueDate; nt.executionTime = w.executionTime;
+        if(w.priority) nt.priority = w.priority; nt.tags = [...new Set([...(nt.tags||[]), "google-tasks", ...(g.emailLink?["gmail"]:[])])];
         if(googleAccountType()) nt.taskType = googleAccountType();   // cuenta de trabajo → Laboral; personal → Personal
         nt.gtask = { id:g.id, listId:g.listId, synced:"needsAction", emailLink:g.emailLink||"" };
         DB.tasks.push(nt); byGid.set(g.id, nt); known.add(g.id); res.nuevas++;
@@ -4053,10 +4055,13 @@ async function gtSync(manual){
         else if(p && p.notFound){ gtMarkRemoved(t); }
       }
       // si en Google le pusieron fecha después y aquí aún no tiene, se agenda para ese día
-      if(g.due && !t.startDate && !t.dueDate && t.status!=="completada"){ t.startDate = g.due; t.dueDate = g.due; }
+      // si aquí aún no tiene día y en Google le pusieron fecha o instrucciones después, se aplican
+      if(!t.startDate && !t.dueDate && t.status!=="completada" && t.status!=="cancelada"){ const w = gtInterpret(g); if(w.startDate || w.dueDate){ t.startDate = w.startDate; t.dueDate = w.dueDate; if(w.executionTime) t.executionTime = w.executionTime; if(w.priority) t.priority = w.priority; } }
     }
     // vinculadas que ya no vienen de Google (lista quitada o borradas definitivamente)
-    (DB.tasks||[]).forEach(t=>{ if(t.gtask && !t.gtask.removed && c.lists.includes(t.gtask.listId) && !seen.has(t.gtask.id) && t.status!=="completada"){ gtMarkRemoved(t); res.borradas++; } });
+    // solo en la revisión completa: las vinculadas que ya no vienen de Google se marcan
+    if(!r.partial) (DB.tasks||[]).forEach(t=>{ if(t.gtask && !t.gtask.removed && c.lists.includes(t.gtask.listId) && !seen.has(t.gtask.id) && t.status!=="completada"){ gtMarkRemoved(t); res.borradas++; } });
+    if(!r.partial) c.lastFull = new Date().toISOString();
     c.known = [...known].slice(-3000);
     c.lastSync = new Date().toISOString();
     if(res.nuevas || res.completadas || res.enviadas || res.borradas){ recomputeAll(); saveDB(); render(); }
@@ -4068,6 +4073,23 @@ async function gtSync(manual){
     return res;
   }catch(e){ if(manual) toast("No se pudo sincronizar con Google Tasks: "+e.message,"error"); return null; }
   finally{ gtSyncing = false; if(document.getElementById("gtStatus")) renderGTasksPanel(true); }
+}
+// Lee el título y los "Detalles" de la tarea de Google como instrucciones:
+// "revisar el correo mañana" → ese día (contado desde cuando la creaste en Gmail),
+// "a las 10" → hora, "máximo el viernes" → plazo, "urgente/importante" → prioridad alta.
+function gtLocalDay(isoTs){ const d = new Date(isoTs); if(isNaN(d)) return TODAY(); const p = n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function gtInterpret(g){
+  const text = `${g.title||""}. ${g.notes||""}`;
+  const base = g.updated ? gtLocalDay(g.updated) : TODAY();
+  const found = explicitDatesIn(text, base), tm = explicitTimeIn(text);
+  const plazo = found.find(f=>f.plazo), hacer = found.find(f=>!f.plazo);
+  const out = { startDate:"", executionTime:"", dueDate: g.due || "", priority:"" };
+  if(plazo) out.dueDate = plazo.iso;
+  if(hacer){ out.startDate = hacer.iso; if(!out.dueDate) out.dueDate = hacer.iso; }
+  else if(g.due){ out.startDate = g.due; }
+  if(tm && !tm.plazo && out.startDate) out.executionTime = tm.hhmm;          // día + hora → queda agendada
+  if(/\b(urgente|urgencia|importante|prioridad alta|cuanto antes|asap|si o si|sin falta)\b/.test(text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))) out.priority = "alta";
+  return out;
 }
 function gtMarkRemoved(t){ t.gtask.removed = true; t.tags = [...new Set([...(t.tags||[]), "eliminada-en-google"])]; }
 // Al completar (o reabrir) una tarea vinculada, se avisa a Google pronto (sin esperar 5 min)
@@ -4081,10 +4103,10 @@ function gtMaybeSoon(){
 let gtLastAuto = 0;
 function gtAuto(){
   if(!gtReady()) return; const c = DB.config.gtasks;
-  if(!c || !c.enabled || document.visibilityState!=="visible" || Date.now()-gtLastAuto < 60*1000) return;
+  if(!c || !c.enabled || document.visibilityState!=="visible" || Date.now()-gtLastAuto < 15*1000) return;
   gtLastAuto = Date.now(); gtSync(false);
 }
-setInterval(gtAuto, 2*60*1000);                                              // cada 2 min con la app abierta y visible
+setInterval(gtAuto, 30*1000);                                                // cada 30 s mientras miras TaskFlow (solo cambios)
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") gtAuto(); });   // al volver a la pestaña
 window.addEventListener("focus", gtAuto);                                   // al volver a la ventana (ej. desde Gmail)
 async function renderGTasksPanel(noFetch){
@@ -8291,12 +8313,13 @@ let almaCaptureSource = "dictate";
  * y "máximo / a más tardar / hasta / plazo / vence / antes del 12" (día del mes). */
 const ES_MONTHS = { enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6, julio:7, agosto:8, septiembre:9, setiembre:9, octubre:10, noviembre:11, diciembre:12 };
 const ES_WD = { domingo:0, lunes:1, martes:2, miercoles:3, jueves:4, viernes:5, sabado:6 };
-function explicitDatesIn(text){
+function explicitDatesIn(text, baseIso){
   const raw = String(text||""), t = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const today = new Date(TODAY()+"T12:00:00"), out = [];
+  const BASE = (typeof baseIso==="string" && /^\d{4}-\d{2}-\d{2}$/.test(baseIso)) ? baseIso : TODAY();
+  const today = new Date(BASE+"T12:00:00"), out = [];
   const iso = d => d.toISOString().slice(0,10);
   const mk = (y,m,d)=>{ const x = new Date(Date.UTC(y, m-1, d, 12)); return (x.getUTCMonth()===m-1 && x.getUTCDate()===d) ? x : null; };
-  const futureYear = (m,d)=>{ let y = today.getFullYear(); let x = mk(y,m,d); if(x && iso(x) < TODAY()) x = mk(y+1,m,d); return x; };
+  const futureYear = (m,d)=>{ let y = today.getFullYear(); let x = mk(y,m,d); if(x && iso(x) < BASE) x = mk(y+1,m,d); return x; };
   const DEAD = /(maximo|max\.?|a mas tardar|hasta el|hasta|plazo|vence|vencimiento|limite|antes del|antes de|para el dia)\s*(el\s*|del\s*|dia\s*)?$/;
   const kindAt = (idx)=>{ const before = t.slice(Math.max(0, idx-28), idx); const m = before.match(DEAD); return m ? (/antes/.test(m[1]) ? "antes" : "plazo") : "otro"; };
   const push = (x, idx)=>{ if(!x) return; const k = kindAt(idx); let d = iso(x); if(k==="antes"){ const y = new Date(x); y.setUTCDate(y.getUTCDate()-1); d = iso(y); } out.push({ iso:d, plazo: k!=="otro", idx }); };
@@ -8306,7 +8329,7 @@ function explicitDatesIn(text){
   const reNum = /\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/g;   // día/mes (formato chileno)
   while((m = reNum.exec(t))){ const d = +m[1], mo = +m[2]; if(mo<1 || mo>12) continue; let y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : null; push(y ? mk(y, mo, d) : futureYear(mo, d), m.index); }
   const reDayOnly = /(maximo|max\.?|a mas tardar|hasta el|hasta|plazo|vence|limite|antes del)\s*(el\s*|del\s*|dia\s*)?(\d{1,2})\b(?!\s*(de\s|\/|-|:|h\b|hrs|horas|am|pm|dias|semanas))/g;
-  while((m = reDayOnly.exec(t))){ const d = +m[3]; if(d<1 || d>31) continue; let x = mk(today.getFullYear(), today.getMonth()+1, d); if(!x || iso(x) < TODAY()){ const n = new Date(today); n.setMonth(n.getMonth()+1); x = mk(n.getFullYear(), n.getMonth()+1, d); } push(x, m.index + m[0].indexOf(m[3])); }
+  while((m = reDayOnly.exec(t))){ const d = +m[3]; if(d<1 || d>31) continue; let x = mk(today.getFullYear(), today.getMonth()+1, d); if(!x || iso(x) < BASE){ const n = new Date(today); n.setMonth(n.getMonth()+1); x = mk(n.getFullYear(), n.getMonth()+1, d); } push(x, m.index + m[0].indexOf(m[3])); }
   const addD = n => { const x = new Date(today); x.setDate(x.getDate()+n); return x; };
   if((m = /\bpasado manana\b/.exec(t))) push(addD(2), m.index);
   else if((m = /\bmanana\b/.exec(t))) push(addD(1), m.index);
@@ -8375,7 +8398,7 @@ async function almaEntryCreateSmart(rawText, source, imageFile){
       const origen = almaCaptureSource==="write" ? "escrito" : "dictado por voz";
       content = `Texto ${origen} por el usuario para crear una o varias tareas: """${rawText}"""\n\n${almaVoiceCaptureInstructions()}`;
     }
-    const raw = await askAI(content, { thinking:"low" });
+    const raw = await askAI(content, { thinking: imageFile ? "low" : "minimal" });   // texto: mínimo (rápido); imagen: bajo (leerla bien)
     const parsed = JSON.parse(String(raw).replace(/```json|```/g,"").trim());
     const items = (parsed && Array.isArray(parsed.items)) ? parsed.items.filter(x=>x && x.titulo) : [];
     if(!imageFile){ if(items.length===1) almaFixDatesWithText(items[0], rawText); if(parsed && parsed.item) almaFixDatesWithText(parsed.item, rawText); if(parsed && !parsed.item && !items.length) almaFixDatesWithText(parsed, rawText); }
