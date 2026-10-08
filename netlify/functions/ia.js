@@ -11,7 +11,8 @@
 //   - Límite diario por persona (IA_DAILY_LIMIT, por defecto 400 llamadas)
 //     para que una cuenta no pueda agotar la cuota de todos.
 //
-//  Opcional: json: true (respuesta solo JSON) y temperature (0–1, precisión).
+//  Opcional: json: true (respuesta solo JSON), temperature (0–1, precisión) y
+//  thinking (minimal|low|medium|high: cuánto razona; "minimal" = más rápido).
 //  Acepta texto (prompt) y, opcionalmente, UN archivo:
 //   - media: { data: base64, mediaType }  → imagen o audio (para Brainstorm)
 //   - image: { data, mediaType }          → formato antiguo, sigue funcionando
@@ -96,8 +97,12 @@ exports.handler = async function (event) {
   // "temperature" (0 a 1) baja la creatividad para tareas que exigen precisión
   // (ej. Alma Idiomas). Si no se envían, todo funciona como antes.
   let generationConfig = null;
-  if (body.json === true || typeof body.temperature === "number") {
+  // Opcional: "thinking" = cuánto razona Gemini antes de responder (minimal|low|medium|high).
+  // "minimal" para tareas simples (entender una tarea, un avance) = respuestas mucho más rápidas.
+  const thinking = ["minimal", "low", "medium", "high"].includes(body.thinking) ? body.thinking : null;
+  if (body.json === true || typeof body.temperature === "number" || thinking) {
     generationConfig = {};
+    if (thinking) generationConfig.thinkingConfig = { thinkingLevel: thinking };
     if (body.json === true) generationConfig.responseMimeType = "application/json";
     if (typeof body.temperature === "number" && body.temperature >= 0 && body.temperature <= 1) generationConfig.temperature = body.temperature;
   }
@@ -106,12 +111,19 @@ exports.handler = async function (event) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${API_KEY}`;
 
   try {
-    const respuesta = await fetch(url, {
+    const send = (gc) => fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.assign({ contents: [{ parts }] }, generationConfig ? { generationConfig } : {})),
+      body: JSON.stringify(Object.assign({ contents: [{ parts }] }, gc && Object.keys(gc).length ? { generationConfig: gc } : {})),
     });
-    const datos = await respuesta.json().catch(() => ({}));
+    let respuesta = await send(generationConfig);
+    let datos = await respuesta.json().catch(() => ({}));
+    // Si este modelo no acepta el nivel de razonamiento pedido, se reintenta sin él (nunca falla por esto)
+    if (!respuesta.ok && respuesta.status === 400 && generationConfig && generationConfig.thinkingConfig && /think/i.test(JSON.stringify(datos))) {
+      const gc = Object.assign({}, generationConfig); delete gc.thinkingConfig;
+      respuesta = await send(gc);
+      datos = await respuesta.json().catch(() => ({}));
+    }
 
     // Si Gemini responde con error (cuota agotada, clave inválida, etc.), lo
     // decimos claramente en vez de devolver un texto falso con código 200.
