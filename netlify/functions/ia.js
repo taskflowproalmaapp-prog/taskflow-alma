@@ -116,14 +116,22 @@ exports.handler = async function (event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(Object.assign({ contents: [{ parts }] }, gc && Object.keys(gc).length ? { generationConfig: gc } : {})),
     });
+    const t0 = Date.now();
+    let estadoThinking = thinking ? "aplicado" : "no pedido";
     let respuesta = await send(generationConfig);
     let datos = await respuesta.json().catch(() => ({}));
     // Si este modelo no acepta el nivel de razonamiento pedido, se reintenta sin él (nunca falla por esto)
     if (!respuesta.ok && respuesta.status === 400 && generationConfig && generationConfig.thinkingConfig && /think/i.test(JSON.stringify(datos))) {
       const gc = Object.assign({}, generationConfig); delete gc.thinkingConfig;
+      estadoThinking = "rechazado: " + String((datos && datos.error && datos.error.message) || "").slice(0, 160);
       respuesta = await send(gc);
       datos = await respuesta.json().catch(() => ({}));
     }
+    // Medición (para saber dónde se va el tiempo): queda en los registros de Netlify y vuelve a la app
+    const um0 = datos.usageMetadata || {};
+    const meta = { ms: Date.now() - t0, modelo, thinking: thinking || "-", estado: estadoThinking,
+      pensamiento: um0.thoughtsTokenCount || 0, entrada: um0.promptTokenCount || 0, salida: um0.candidatesTokenCount || 0 };
+    console.log("IA", JSON.stringify(meta));
 
     // Si Gemini responde con error (cuota agotada, clave inválida, etc.), lo
     // decimos claramente en vez de devolver un texto falso con código 200.
@@ -152,7 +160,7 @@ exports.handler = async function (event) {
       cur.thinking += um.thoughtsTokenCount || 0;   // Google cobra el "pensamiento" como salida
       await tk.set(key, JSON.stringify(cur));
     } catch (e) { console.error("ia_tokens:", e.message); }
-    return json(200, { texto });
+    return json(200, { texto, meta });
   } catch (error) {
     return json(500, { error: "Error al hablar con la IA: " + error.message });
   }
