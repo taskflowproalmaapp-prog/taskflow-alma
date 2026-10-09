@@ -3512,7 +3512,7 @@ body.cal-fullscreen .cal-dow{top:var(--cal-sticky-offset, 64px);}
       </div>
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-title">✅ Google Tasks (tareas de Gmail)</div>
-        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Cuando en Gmail tocas «Agregar a Tareas», la tarea llega sola a TaskFlow: si tiene fecha, queda para ese día; si no, en «Por agendar». Al marcarla hecha aquí, también queda hecha en Gmail.</p>
+        <p style="font-size:12.3px;color:var(--text-muted);margin:0 0 12px;">Cuando en Gmail tocas «Agregar a Tareas», la tarea llega sola a TaskFlow: si tiene fecha, queda para ese día; si no, en «Por agendar». Al marcarla hecha, cancelarla o eliminarla aquí, sale de tus pendientes en Gmail (Google no tiene "cancelada": la marca hecha con una nota).</p>
         <div id="gtStatus"></div>
       </div>
 
@@ -4006,10 +4006,15 @@ async function apiGTasks(action, payload){
   if(!res.ok) throw new Error(j.error || ("HTTP "+res.status));
   return j;
 }
+function gtMetaKey(){ return "tf_gt_meta_v1:" + (localStorage.getItem(AUTH_USER_KEY)||"local"); }
+function gtMeta(){ try{ return JSON.parse(localStorage.getItem(gtMetaKey())||"{}"); }catch(e){ return {}; } }
+function gtSetMeta(patch){ try{ localStorage.setItem(gtMetaKey(), JSON.stringify(Object.assign(gtMeta(), patch))); }catch(e){} }
 function gtCfg(){ DB.config.gtasks = Object.assign({ enabled:false, lists:[], lastSync:"", ignored:[], known:[] }, DB.config.gtasks||{}); return DB.config.gtasks; }
 function gtReady(){ try{ return typeof DB!=="undefined" && DB && DB.config && Array.isArray(DB.tasks); }catch(e){ return false; } }
 let gtSyncing = false, gtState = "";
-const gtStatusOf = t => t.status==="completada" ? "completed" : "needsAction";
+// Google Tasks solo tiene "pendiente" y "completada": cancelada también cierra la tarea en Gmail (con una nota)
+const gtStatusOf = t => (t.status==="completada" || t.status==="cancelada") ? "completed" : "needsAction";
+const gtNoteFor = t => t.status==="cancelada" ? "Cancelada en TaskFlow" : "";
 async function gtSync(manual){
   if(!gtReady()) return null;   // la app aún no cargó tus datos
   const c = gtCfg();
@@ -4018,8 +4023,9 @@ async function gtSync(manual){
   const res = { nuevas:0, completadas:0, enviadas:0, borradas:0 };
   gtLastAuto = Date.now();
   try{
-    const full = manual || !c.lastFull || Date.now()-Date.parse(c.lastFull) > 10*60*1000 || !c.lastSync;
-    const r = await apiGTasks("sync", Object.assign({ lists: c.lists }, full ? {} : { updatedMin: new Date(Date.parse(c.lastSync) - 2*60*1000).toISOString() }));
+    const meta = gtMeta();
+    const full = manual || !meta.lastFull || Date.now()-Date.parse(meta.lastFull) > 10*60*1000 || !meta.lastSync;
+    const r = await apiGTasks("sync", Object.assign({ lists: c.lists }, full ? {} : { updatedMin: new Date(Date.parse(meta.lastSync) - 2*60*1000).toISOString() }));
     if(!r.connected || r.needsScope){ gtState = r.needsScope ? "permiso" : "sin_google"; if(manual) toast("Falta el permiso de Google Tasks: ve a Configuración → Google Tasks.","error"); return null; }
     gtState = "ok";
     const byGid = new Map(), seen = new Set();
@@ -4050,7 +4056,7 @@ async function gtSync(manual){
       const s0 = t.gtask.synced || "needsAction", gNow = g.status, tNow = gtStatusOf(t);
       if(gNow!==s0 && tNow===s0){ applyManualStatusChange(t, gNow==="completed" ? "completada" : "pendiente"); t.gtask.synced = gNow; if(gNow==="completed") res.completadas++; }
       else if(tNow!==s0){
-        const p = await apiGTasks(tNow==="completed" ? "complete" : "reopen", { listId:t.gtask.listId, taskId:t.gtask.id }).catch(()=>null);
+        const p = await apiGTasks(tNow==="completed" ? "complete" : "reopen", { listId:t.gtask.listId, taskId:t.gtask.id, note: tNow==="completed" ? gtNoteFor(t) : "" }).catch(()=>null);
         if(p && p.ok){ t.gtask.synced = tNow; res.enviadas++; }
         else if(p && p.notFound){ gtMarkRemoved(t); }
       }
@@ -4059,13 +4065,31 @@ async function gtSync(manual){
       if(!t.startDate && !t.dueDate && t.status!=="completada" && t.status!=="cancelada"){ const w = gtInterpret(g); if(w.startDate || w.dueDate){ t.startDate = w.startDate; t.dueDate = w.dueDate; if(w.executionTime) t.executionTime = w.executionTime; if(w.priority) t.priority = w.priority; } }
     }
     // vinculadas que ya no vienen de Google (lista quitada o borradas definitivamente)
+    // lo que completaste (o reabriste) en TaskFlow se avisa a Google SIEMPRE, aunque esa
+    // tarea no haya cambiado allá (con la revisión "solo cambios" no viene en la lista)
+    for(const t of (DB.tasks||[])){
+      if(!t.gtask || t.gtask.removed || seen.has(t.gtask.id) || !c.lists.includes(t.gtask.listId)) continue;
+      const s0 = t.gtask.synced || "needsAction", tNow = gtStatusOf(t);
+      if(tNow===s0) continue;
+      const p = await apiGTasks(tNow==="completed" ? "complete" : "reopen", { listId:t.gtask.listId, taskId:t.gtask.id, note: tNow==="completed" ? gtNoteFor(t) : "" }).catch(()=>null);
+      if(p && p.ok){ t.gtask.synced = tNow; res.enviadas++; }
+      else if(p && p.notFound){ gtMarkRemoved(t); }
+    }
+    // eliminadas en TaskFlow (en la papelera): en Gmail salen de pendientes, con nota
+    for(const x of (DB.trash||[])){
+      const d = x && x.data; if(!d || !d.gtask || d.gtask.removed || (d.gtask.synced||"needsAction")==="completed" || !c.lists.includes(d.gtask.listId)) continue;
+      const p = await apiGTasks("complete", { listId:d.gtask.listId, taskId:d.gtask.id, note:"Eliminada en TaskFlow" }).catch(()=>null);
+      if(p && (p.ok || p.notFound)){ d.gtask.synced = "completed"; res.enviadas++; }
+    }
     // solo en la revisión completa: las vinculadas que ya no vienen de Google se marcan
     if(!r.partial) (DB.tasks||[]).forEach(t=>{ if(t.gtask && !t.gtask.removed && c.lists.includes(t.gtask.listId) && !seen.has(t.gtask.id) && t.status!=="completada"){ gtMarkRemoved(t); res.borradas++; } });
-    if(!r.partial) c.lastFull = new Date().toISOString();
-    c.known = [...known].slice(-3000);
-    c.lastSync = new Date().toISOString();
+    if(!r.partial) gtSetMeta({ lastFull: new Date().toISOString() });
+    const knownArr = [...known].slice(-3000), knownChanged = knownArr.length !== (c.known||[]).length;
+    if(knownChanged) c.known = knownArr;
+    gtSetMeta({ lastSync: new Date().toISOString() });
+    // se guarda en el servidor SOLO si cambió algo de verdad (antes se guardaba cada 30 s)
     if(res.nuevas || res.completadas || res.enviadas || res.borradas){ recomputeAll(); saveDB(); render(); }
-    else saveDB();
+    else if(knownChanged) saveDB();
     if(res.nuevas) toast(`📥 ${res.nuevas} ${res.nuevas===1?"tarea nueva":"tareas nuevas"} desde Google Tasks.`,"success");
     if(res.borradas) toast(`${res.borradas} ${res.borradas===1?"tarea se eliminó":"tareas se eliminaron"} en Google Tasks. Siguen aquí, marcadas «Eliminada en Google».`,"info");
     if(manual && !res.nuevas && !res.borradas) toast(`✓ Google Tasks al día${res.completadas||res.enviadas?` (${res.completadas+res.enviadas} completada(s) sincronizada(s))`:""}.`,"success");
@@ -4097,7 +4121,9 @@ let gtSoonTimer = null;
 function gtMaybeSoon(){
   if(!gtReady()) return;
   const c = DB.config.gtasks; if(!c || !c.enabled) return;
-  if((DB.tasks||[]).some(t=>t.gtask && !t.gtask.removed && gtStatusOf(t)!==(t.gtask.synced||"needsAction"))){ clearTimeout(gtSoonTimer); gtSoonTimer = setTimeout(()=>gtSync(false), 3000); }
+  const pendTasks = (DB.tasks||[]).some(t=>t.gtask && !t.gtask.removed && gtStatusOf(t)!==(t.gtask.synced||"needsAction"));
+  const pendTrash = (DB.trash||[]).some(x=>x && x.data && x.data.gtask && !x.data.gtask.removed && (x.data.gtask.synced||"needsAction")!=="completed");
+  if(pendTasks || pendTrash){ clearTimeout(gtSoonTimer); gtSoonTimer = setTimeout(()=>gtSync(false), 3000); }
 }
 // Automático (Google Tasks no avisa cambios: se le pregunta). Nunca más de una vez por minuto.
 let gtLastAuto = 0;
@@ -4122,7 +4148,7 @@ async function renderGTasksPanel(noFetch){
       <div style="${c.enabled?"":"opacity:.45;pointer-events:none;"}">
         <div class="t-sub" style="margin-bottom:4px;">Listas que se traen:</div>
         ${lists.map(l=>`<label class="checkbox-line"><input type="checkbox" data-gtlist="${esc(l.id)}" ${c.lists.includes(l.id)?"checked":""}> ${esc(l.title)}</label>`).join("") || `<div class="t-sub">No tienes listas en Google Tasks.</div>`}
-        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;"><button type="button" class="btn btn-ghost btn-sm" id="gtSyncNow" ${gtSyncing?"disabled":""}>${gtSyncing?"Sincronizando…":"↻ Sincronizar ahora"}</button><span class="t-sub">${c.lastSync?`Última sincronización: ${esc(relativeTime(c.lastSync))}`:"Aún no se sincroniza."}</span></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;"><button type="button" class="btn btn-ghost btn-sm" id="gtSyncNow" ${gtSyncing?"disabled":""}>${gtSyncing?"Sincronizando…":"↻ Sincronizar ahora"}</button><span class="t-sub">${gtMeta().lastSync?`Última sincronización: ${esc(relativeTime(gtMeta().lastSync))}`:"Aún no se sincroniza."}</span></div>
       </div>`;
     document.getElementById("gtEnabled").addEventListener("change", e=>{ c.enabled = e.target.checked; saveDB(); renderGTasksPanel(true); if(c.enabled) gtSync(true); });
     wrap.querySelectorAll("[data-gtlist]").forEach(cb=>cb.addEventListener("change", ()=>{ const id = cb.dataset.gtlist; c.lists = cb.checked ? [...new Set([...c.lists, id])] : c.lists.filter(x=>x!==id); saveDB(); }));
@@ -4831,6 +4857,7 @@ function syncNow(){
   syncInFlight = (async ()=>{
     for(let attempt=0; attempt<3; attempt++){
       const sent = JSON.stringify(DB);
+      if(sent.length > 5.5*1024*1024) throw new Error(`tus datos pesan ${(sent.length/1048576).toFixed(1).replace(".",",")} MB y el servidor acepta hasta ~6 MB por envío`);
       let res, body;
       try{
         res = await fetch("/.netlify/functions/data", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ action:"save", token:getAuthToken(), data: JSON.parse(sent), baseRev: syncRev }) });
@@ -4871,6 +4898,8 @@ function syncNow(){
     return ok;
   }, err=>{
     syncInFlight = null; syncAgain = false; syncFails++;
+    syncLastError = String((err && err.message) || "error desconocido");
+    if(syncFails===1 && !err.session) console.warn("No se guardó:", syncLastError);
     if(err.session) setSyncState("session");
     else { setSyncState(navigator.onLine ? "error" : "offline"); clearTimeout(syncRetryTimer); syncRetryTimer = setTimeout(()=>{ if(syncPending) syncNow().catch(()=>{}); }, Math.min(60000, 15000*syncFails)); }
     throw err;
@@ -4879,12 +4908,13 @@ function syncNow(){
 }
 // Indicador de guardado (arriba). Nunca dice "Guardado" sin confirmación del servidor.
 let _syncFadeTimer = null;
+let syncLastError = "";   // motivo del último "No se guardó" (se muestra en el indicador)
 function setSyncState(st){
   const prev = syncState;
   syncState = st;
   // aviso una sola vez al entrar en un estado de problema (en el celular el indicador es solo un ícono)
   if(st!==prev){
-    if(st==="error") toast("No se pudo guardar en el servidor. Tus cambios siguen en este dispositivo; reintentaremos solos.","error");
+    if(st==="error") toast(`No se pudo guardar en el servidor${syncLastError?` (${syncLastError})`:""}. Tus cambios siguen en este dispositivo; reintentaremos solos.`,"error");
     if(st==="session") toast("Tu sesión se cerró. Tus cambios siguen aquí: vuelve a entrar con la misma cuenta para guardarlos.","error");
   }
   const chip = document.getElementById("syncChip"); if(!chip) return;
@@ -4900,7 +4930,8 @@ function setSyncState(st){
   if(!M){ chip.classList.add("hidden"); return; }
   chip.className = "sync-chip " + M[2];
   chip.innerHTML = `<span class="sync-ico" aria-hidden="true">${M[0]}</span><span class="sync-txt">${M[1]}</span>`;
-  chip.title = M[3]; chip.setAttribute("aria-label", M[3]);
+  const why = (st==="error" && syncLastError) ? ` — Motivo: ${syncLastError}` : "";
+  chip.title = M[3] + why; chip.setAttribute("aria-label", M[3] + why);
   if(st==="saved") _syncFadeTimer = setTimeout(()=>chip.classList.add("sync-faded"), 2500);
 }
 (function initSyncUI(){
