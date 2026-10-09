@@ -6,7 +6,8 @@
 //  Acciones:
 //   - status   → ¿hay permiso de Google Tasks? + tus listas
 //   - sync     → tareas de las listas elegidas (solo los campos necesarios)
-//   - complete → marca una tarea como completada en Google
+//   - complete → marca una tarea como completada en Google (con nota opcional:
+//                "Cancelada en TaskFlow" / "Eliminada en TaskFlow")
 //   - reopen   → la vuelve a dejar pendiente (por si deshaces en TaskFlow)
 // ────────────────────────────────────────────────────────────────
 
@@ -86,6 +87,18 @@ exports.handler = async function (event) {
       const listId = String(body.listId || ""), taskId = String(body.taskId || "");
       if (!ID_RE.test(listId) || !ID_RE.test(taskId)) return json(400, { error: "Tarea no válida" });
       const patch = action === "complete" ? { status: "completed" } : { status: "needsAction", completed: null };
+      // Opcional: nota que explica el cierre (Google Tasks no tiene "cancelada")
+      const note = typeof body.note === "string" ? body.note.replace(/[\u0000-\u001f]/g, " ").slice(0, 80).trim() : "";
+      if (note || action === "reopen") {
+        const cur = await gfetch(accessToken, `/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`);
+        if (cur.status === 404) return json(200, { ok: false, notFound: true });
+        if (cur.ok) {
+          const MARK = /\n?— (Cancelada|Eliminada) en TaskFlow\.?$/;
+          const notes = String((cur.body && cur.body.notes) || "").replace(MARK, "");
+          if (note) patch.notes = (notes ? notes + "\n" : "") + `— ${note}`;
+          else if (MARK.test(String((cur.body && cur.body.notes) || ""))) patch.notes = notes;   // al reabrir se quita la marca
+        }
+      }
       const r = await gfetch(accessToken, `/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`, { method: "PATCH", body: JSON.stringify(patch) });
       if (r.status === 403 || r.status === 401) return json(200, { ok: false, needsScope: true });
       if (r.status === 404) return json(200, { ok: false, notFound: true });
